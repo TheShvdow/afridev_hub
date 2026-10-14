@@ -9,6 +9,11 @@ const prisma = new PrismaClient();
 
 // ── Badges ────────────────────────────────────────────────────────────────────
 
+// Seuils de réputation : identiques à checkBadgeMilestones (gamification.service.ts).
+const REPUTATION_THRESHOLDS: Record<string, number> = {
+  newcomer: 10, contributor: 50, established: 100, trusted: 500, expert: 1000, master: 5000, guru: 10000,
+};
+
 const BADGES = [
   // Reputation milestones (sync with gamification.service.ts checkBadgeMilestones)
   { slug: 'newcomer',    name: 'Newcomer',    description: 'Premiers pas sur AfriDev Hub', icon: '🌱', category: 'REPUTATION' },
@@ -35,20 +40,20 @@ const BADGES = [
 // ── Project categories ─────────────────────────────────────────────────────────
 
 const PROJECT_CATEGORIES = [
-  { slug: 'web-app',     name: 'Web App',       description: 'Applications web et SaaS' },
-  { slug: 'mobile-app',  name: 'Mobile App',    description: 'Applications iOS / Android' },
-  { slug: 'api-backend', name: 'API / Backend', description: 'APIs, microservices et backends' },
-  { slug: 'devtools',    name: 'Dev Tools',     description: 'Outils pour développeurs' },
-  { slug: 'ai-ml',       name: 'IA / ML',       description: 'Intelligence artificielle et machine learning' },
-  { slug: 'fintech',     name: 'Fintech',       description: 'Finance, paiements, cryptomonnaie' },
-  { slug: 'edtech',      name: 'Edtech',        description: 'Éducation et apprentissage en ligne' },
-  { slug: 'healthtech',  name: 'Healthtech',    description: 'Santé et bien-être' },
-  { slug: 'agritech',    name: 'Agritech',      description: 'Agriculture et alimentation' },
-  { slug: 'ecommerce',   name: 'E-commerce',    description: 'Commerce et marketplace' },
-  { slug: 'open-source', name: 'Open Source',   description: 'Bibliothèques et frameworks open source' },
-  { slug: 'cli-tools',   name: 'CLI / Scripts', description: 'Outils en ligne de commande et scripts' },
-  { slug: 'game',        name: 'Jeux',          description: 'Jeux vidéo et applications interactives' },
-  { slug: 'other',       name: 'Autre',         description: 'Autres types de projets' },
+  { slug: 'web-app',     name: 'Web App' },
+  { slug: 'mobile-app',  name: 'Mobile App' },
+  { slug: 'api-backend', name: 'API / Backend' },
+  { slug: 'devtools',    name: 'Dev Tools' },
+  { slug: 'ai-ml',       name: 'IA / ML' },
+  { slug: 'fintech',     name: 'Fintech' },
+  { slug: 'edtech',      name: 'Edtech' },
+  { slug: 'healthtech',  name: 'Healthtech' },
+  { slug: 'agritech',    name: 'Agritech' },
+  { slug: 'ecommerce',   name: 'E-commerce' },
+  { slug: 'open-source', name: 'Open Source' },
+  { slug: 'cli-tools',   name: 'CLI / Scripts' },
+  { slug: 'game',        name: 'Jeux' },
+  { slug: 'other',       name: 'Autre' },
 ] as const;
 
 // ── Forum tags (popular seed) ─────────────────────────────────────────────────
@@ -90,7 +95,11 @@ async function main() {
     await prisma.badge.upsert({
       where:  { slug: badge.slug },
       update: { name: badge.name, description: badge.description, icon: badge.icon },
-      create: { ...badge },
+      create: {
+        ...badge,
+        condition:      REPUTATION_THRESHOLDS[badge.slug] ? `reputation >= ${REPUTATION_THRESHOLDS[badge.slug]}` : badge.description,
+        requiredPoints: REPUTATION_THRESHOLDS[badge.slug] ?? 0,
+      },
     });
   }
   console.log(`     ✓ ${BADGES.length} badges`);
@@ -100,7 +109,7 @@ async function main() {
   for (const cat of PROJECT_CATEGORIES) {
     await prisma.projectCategory.upsert({
       where:  { slug: cat.slug },
-      update: { name: cat.name, description: cat.description },
+      update: { name: cat.name },
       create: { ...cat },
     });
   }
