@@ -20,6 +20,7 @@ import { GamificationModule } from './gamification/gamification.module';
 import { AdminModule } from './admin/admin.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
+import { UploadModule } from './upload/upload.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
@@ -72,6 +73,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
     ModerationModule,
     GamificationModule,
     AdminModule,
+    UploadModule,
   ],
   providers: [
     // Enveloppe AD-7 : succès { data }, erreur { error: { code, message } }

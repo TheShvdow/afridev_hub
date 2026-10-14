@@ -328,7 +328,8 @@ export type ErrorCode =
   | 'PAYMENTS_PAYMENT_NOT_FOUND'
   | 'PAYMENTS_PROVIDER_NOT_CONFIGURED'
   | 'PAYMENTS_PROVIDER_ERROR'
-  | 'PAYMENTS_WEBHOOK_INVALID_SIGNATURE';
+  | 'PAYMENTS_WEBHOOK_INVALID_SIGNATURE'
+  | 'UPLOAD_NOT_CONFIGURED';
 
 // ── Événements de domaine (EventEmitter2, AD-1 / AD-8) ───────────────────────
 // Nommage : <module>.<entité>.<action>. Payloads typés ici, jamais `any`.
