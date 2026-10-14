@@ -6,6 +6,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import { randomBytes } from 'crypto';
+import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { LoginDto } from './dto/login.dto';
@@ -17,6 +19,7 @@ import { DomainException } from '../common/errors/domain.exception';
 const BCRYPT_ROUNDS = 12;
 const ACCESS_TTL_MS  = 15 * 60 * 1000;           // 15 min
 const REFRESH_TTL_S  = 7 * 24 * 60 * 60;         // 7 jours en secondes
+const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;  // lien de vérification : 24 h
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
@@ -37,6 +40,7 @@ export class AuthService {
     private readonly redis: RedisService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly mail: MailService,
   ) {}
 
   // ── Inscription ─────────────────────────────────────────────────────
@@ -63,7 +67,63 @@ export class AuthService {
       },
     });
 
+    await this.sendVerificationEmail(user).catch((error: unknown) => {
+      // L'inscription réussit même si l'email échoue : le renvoi reste possible.
+      this.logger.error('Envoi de l\'email de vérification impossible', error instanceof Error ? error.stack : String(error));
+    });
+
     return this.generateTokenPair(user);
+  }
+
+  // ── Vérification email ──────────────────────────────────────────────
+
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    const record = await this.prisma.verificationToken.findUnique({ where: { token } });
+    if (!record || record.expires.getTime() < Date.now()) {
+      throw new DomainException('AUTH_VERIFICATION_TOKEN_INVALID', 'Lien de vérification invalide ou expiré.', 400);
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: record.identifier }, data: { isVerified: true } }),
+      this.prisma.verificationToken.deleteMany({ where: { identifier: record.identifier } }),
+    ]);
+
+    return { message: 'Email vérifié.' };
+  }
+
+  async resendVerification(userId: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new DomainException('AUTH_USER_NOT_FOUND', 'Utilisateur introuvable.', 401);
+    if (user.isVerified) {
+      throw new DomainException('AUTH_ALREADY_VERIFIED', 'Cet email est déjà vérifié.', 409);
+    }
+
+    await this.sendVerificationEmail(user);
+    return { message: 'Email de vérification renvoyé.' };
+  }
+
+  private async sendVerificationEmail(user: User): Promise<void> {
+    // Un seul lien valide à la fois : on remplace les précédents.
+    await this.prisma.verificationToken.deleteMany({ where: { identifier: user.id } });
+
+    const token = randomBytes(32).toString('hex');
+    await this.prisma.verificationToken.create({
+      data: { identifier: user.id, token, expires: new Date(Date.now() + VERIFICATION_TTL_MS) },
+    });
+
+    const webUrl = this.config.get<string>('WEB_URL', 'http://localhost:4200');
+    const link = `${webUrl}/auth/verify-email?token=${token}`;
+
+    if (process.env['NODE_ENV'] !== 'production') {
+      // Sandbox : le lien est visible dans les logs pour tester le parcours sans boîte mail.
+      this.logger.log(`Lien de vérification (sandbox) pour ${user.email} : ${link}`);
+    }
+
+    await this.mail.send(
+      user.email,
+      'Confirmez votre adresse email',
+      `<p>Bonjour ${user.username},</p><p>Confirmez votre adresse : <a href="${link}">${link}</a></p><p>Ce lien expire dans 24 heures.</p>`,
+    );
   }
 
   // ── Connexion ────────────────────────────────────────────────────────

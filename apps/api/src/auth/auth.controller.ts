@@ -8,8 +8,9 @@ import {
   Res,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiNoContentResponse, ApiResponse, ApiExcludeEndpoint } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiNoContentResponse, ApiResponse, ApiExcludeEndpoint, ApiQuery } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
@@ -106,6 +107,28 @@ export class AuthController {
   @ApiData({ type: UserMeDto, description: 'Utilisateur connecté' })
   async getMe(@CurrentUser('id') userId: string) {
     return this.authService.getMe(userId);
+  }
+
+  // ── Vérification email ───────────────────────────────────────────────
+
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Confirmer son adresse email avec le lien reçu' })
+  @ApiQuery({ name: 'token', required: true })
+  @ApiResponse({ status: 200, description: 'Email vérifié' })
+  @ApiResponse({ status: 400, description: 'Lien invalide ou expiré' })
+  verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyEmail(token);
+  }
+
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Renvoyer l\'email de vérification' })
+  @ApiResponse({ status: 409, description: 'Email déjà vérifié' })
+  resendVerification(@CurrentUser('id') userId: string) {
+    return this.authService.resendVerification(userId);
   }
 
   // ── GitHub OAuth ─────────────────────────────────────────────────────
