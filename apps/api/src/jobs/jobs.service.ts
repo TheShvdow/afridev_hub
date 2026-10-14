@@ -4,6 +4,7 @@ import {
 import { JobMode, JobType, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateJobDto } from './dto/create-job.dto';
+import { UpdateJobDto } from './dto/update-job.dto';
 import { DomainException } from '../common/errors/domain.exception';
 
 @Injectable()
@@ -118,20 +119,31 @@ export class JobsService {
     });
   }
 
-  async update(jobId: string, userId: string, dto: Partial<CreateJobDto>) {
+  async update(jobId: string, userId: string, dto: UpdateJobDto) {
     const job = await this.prisma.jobOffer.findUnique({ where: { id: jobId } });
     if (!job) throw new DomainException('JOBS_OFFER_NOT_FOUND', 'Offre introuvable.', 404);
     if (job.recruiterId !== userId) throw new DomainException('JOBS_FORBIDDEN', 'Non autorisé.', 403);
 
+    // Contrôle sur les valeurs finales : une seule borne peut être modifiée.
+    const salaryMin = dto.salaryMin ?? job.salaryMin;
+    const salaryMax = dto.salaryMax ?? job.salaryMax;
+    if (salaryMin > salaryMax) {
+      throw new DomainException('JOBS_SALARY_RANGE_INVALID', 'Le salaire minimum ne peut pas dépasser le maximum.', 400);
+    }
+
     return this.prisma.jobOffer.update({
       where: { id: jobId },
       data: {
-        ...(dto.title       && { title:       dto.title }),
-        ...(dto.description && { description: dto.description }),
-        ...(dto.country     && { country:     dto.country }),
-        ...(dto.type        && { type:        dto.type }),
-        ...(dto.mode        && { mode:        dto.mode }),
-        ...(dto.stack       && { stack:       dto.stack }),
+        ...(dto.title       !== undefined && { title:       dto.title }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.company     !== undefined && { company:     dto.company }),
+        ...(dto.country     !== undefined && { country:     dto.country }),
+        ...(dto.type        !== undefined && { type:        dto.type }),
+        ...(dto.mode        !== undefined && { mode:        dto.mode }),
+        ...(dto.stack       !== undefined && { stack:       dto.stack }),
+        ...(dto.currency    !== undefined && { currency:    dto.currency }),
+        ...(dto.salaryMin   !== undefined && { salaryMin:   dto.salaryMin }),
+        ...(dto.salaryMax   !== undefined && { salaryMax:   dto.salaryMax }),
       },
     });
   }

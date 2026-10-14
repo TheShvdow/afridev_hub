@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Patch,
   Post,
   Param,
   Body,
@@ -14,6 +15,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@ne
 import { JobMode, JobType } from '@prisma/client';
 import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
+import { UpdateJobDto } from './dto/update-job.dto';
 import { ApplyJobDto } from './dto/apply-job.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -57,6 +59,28 @@ export class JobsController {
     @Body() dto: CreateJobDto,
   ) {
     return this.jobsService.create(userId, dto);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Modifier une offre (auteur uniquement)' })
+  @ApiData({ type: JobDto, description: 'Offre mise à jour' })
+  update(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateJobDto,
+  ) {
+    return this.jobsService.update(id, userId, dto);
+  }
+
+  @Patch(':id/close')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Fermer une offre (auteur uniquement)' })
+  @ApiData({ type: JobDto, description: 'Offre fermée' })
+  close(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.jobsService.close(id, userId);
   }
 
   @Post(':id/apply')

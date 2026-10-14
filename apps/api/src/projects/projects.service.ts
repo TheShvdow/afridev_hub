@@ -4,6 +4,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { resolveTagIds } from '../common/tags/resolve-tags';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
 import { Prisma } from '@prisma/client';
 import { DomainException } from '../common/errors/domain.exception';
 
@@ -108,7 +109,7 @@ export class ProjectsService {
     );
   }
 
-  async update(projectId: string, userId: string, dto: Partial<CreateProjectDto>) {
+  async update(projectId: string, userId: string, dto: UpdateProjectDto) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw new DomainException('PROJECTS_PROJECT_NOT_FOUND', 'Projet introuvable.', 404);
     if (project.userId !== userId) throw new DomainException('PROJECTS_FORBIDDEN', 'Non autorisé.', 403);
@@ -116,30 +117,13 @@ export class ProjectsService {
     return this.prisma.project.update({
       where: { id: projectId },
       data: {
-        ...(dto.name        && { name:        dto.name }),
-        ...(dto.description && { description: dto.description }),
-        ...(dto.repoUrl     && { repoUrl:     dto.repoUrl }),
-        ...(dto.demoUrl     && { demoUrl:     dto.demoUrl }),
+        ...(dto.name        !== undefined && { name:        dto.name }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.country     !== undefined && { country:     dto.country }),
+        ...(dto.repoUrl     !== undefined && { repoUrl:     dto.repoUrl }),
+        ...(dto.demoUrl     !== undefined && { demoUrl:     dto.demoUrl }),
       },
     });
-  }
-
-  // Même règle de slug que le forum (ForumService.createPost) : tags normalisés en slug.
-  private async upsertTags(names: string[]) {
-    return Promise.all(
-      names.map(async (tagName) => {
-        const slug = tagName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, '');
-        const tag = await this.prisma.tag.upsert({
-          where:  { slug },
-          update: { usageCount: { increment: 1 } },
-          create: { name: tagName, slug, usageCount: 1 },
-        });
-        return { tagId: tag.id };
-      }),
-    );
   }
 
   async delete(projectId: string, userId: string, userRole: string) {

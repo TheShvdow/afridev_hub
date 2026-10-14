@@ -158,8 +158,8 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 | E3 | Enveloppe AD-7 non implémentée. | intercepteur, filtre | **Résolu** : `ResponseInterceptor`, `AllExceptionsFilter`, codes typés. |
 | E4 | `GET /projects?category=` non appliqué. | `projects.service.ts` | **Résolu** : filtre `category.slug`. |
 | E5 | Le front envoie `POST /auth/refresh` avec `{}`. | `apps/web/.../auth.service.ts` | **Ouvert** — front hors périmètre pour l'instant (décision utilisateur). L'API exige `refreshToken`. |
-| E6 | `update`, `close`, `delete` présents dans les services, non exposés. | `jobs`, `projects` | Ouvert — hors contrat. |
-| E7 | `upsertTags` dupliqué entre forum et projets. | `forum.service.ts`, `projects.service.ts` | Ouvert — à extraire dans un `TagsService`. |
+| E6 | `update`, `close`, `delete` présents dans les services, non exposés. | `jobs`, `projects` | **Résolu** : `PATCH /jobs/:id`, `PATCH /jobs/:id/close`, `PATCH /projects/:id`, `DELETE /projects/:id` (auteur, ou modérateur et admin pour la suppression). |
+| E7 | `upsertTags` dupliqué entre forum et projets. | `forum.service.ts`, `projects.service.ts` | **Résolu** : helper commun `resolveTagIds` ; copie morte supprimée. |
 | E8 | `ModerationAction.entityType` est une `String` libre ; le service écrit `'USER'`. | schéma, `moderation.service.ts` | Ouvert — à trancher. |
 | E9 | `VotesService` écrivait la réputation. | `votes.service.ts` | **Résolu** : événement `votes.vote.changed`, écriture dans `gamification/`. |
 | E10 | Règle « l'auteur d'une question ne peut pas y répondre » non appliquée. | `forum.service.ts` | **Résolu** : contrôle `FORUM_SELF_ANSWER_FORBIDDEN`, couvert par un test. |
