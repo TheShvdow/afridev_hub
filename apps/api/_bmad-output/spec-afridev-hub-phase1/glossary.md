@@ -29,13 +29,13 @@ description: Termes métier canoniques d'AfriDev Hub Phase 1 — à lire pour le
 
 **Offre** — Publication dans le Job Board : titre, description Markdown, stack (1-5 tags), pays, mode (remote/onsite/hybride), salaire obligatoire (montant + devise locale). Expire à J60.
 
-**PaymentProvider** — Interface abstraite (`initiate`, `capture`, `refund`, `getStatus`) implémentée par Wave, Orange Money, Stripe. Résolution via `PaymentProviderFactory` dans `PaymentsModule`.
+**PaymentProvider** — Interface abstraite (`initiate`, `capture`, `refund`, `getStatus`) implémentée par l'agrégateur de paiement retenu : **Bictorys** (Décision 2026-10-14). Une seule implémentation en Phase 1, injectée dans `PaymentsModule`.
 
-**Wave** — Opérateur de paiement mobile (Sénégal, Côte d'Ivoire). Flow : `initiate` → lien Wave → paiement utilisateur → webhook → `capture`. Timeout : 15 min.
+**Bictorys** — Agrégateur de paiement retenu pour la Phase 1 (Décision 2026-10-14). Il regroupe les moyens de paiement, l'application ne dispatche plus par opérateur. Flow : `initiate` → paiement utilisateur → webhook → `capture`. Caractéristiques (signature des webhooks, pays, opérateurs, frais) à vérifier dans sa documentation.
 
-**Orange Money** — Opérateur de paiement mobile (Sénégal, Côte d'Ivoire, Mali). Flow identique à Wave. Phase 1 si sandbox confirmé avant S7.
+**Orange Money** — Retiré du périmètre Phase 1 (Décision 2026-10-14). Couvert, le cas échéant, par l'agrégateur.
 
-**Stripe** — Opérateur international (carte Visa/Mastercard). Fallback si opérateur mobile indisponible.
+**Stripe** — Retiré du périmètre Phase 1 (Décision 2026-10-14).
 
 **Webhook de paiement** — Notification HTTP émise par l'opérateur. Traitement idempotent obligatoire : idempotency key stockée en PostgreSQL ; doublon retourne HTTP 200 sans retraitement.
 

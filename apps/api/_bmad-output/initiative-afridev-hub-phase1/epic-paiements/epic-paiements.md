@@ -8,6 +8,8 @@ created: 2026-10-13
 
 # Paiements Africains
 
+> **Décision 2026-10-14 :** l'agrégateur de paiement retenu est **Bictorys**. Une interface `IPaymentProvider`, une implémentation. Wave, Orange Money, MTN MoMo et Stripe sont retirés de cet épic. Les critères Wave, Stripe et Orange ci-dessous sont à reformuler dans un `bmad-correct-course`.
+
 Livre la couche de paiement abstraite qui permet aux recruteurs de souscrire un plan premium via Wave (mobile money) ou Stripe (carte). Un `PaymentProviderFactory` délègue à des classes provider interchangeables ; ajouter un provider = ajouter une classe, sans modifier les modules métier. Les webhooks sont idempotents. Un reçu email est envoyé après chaque paiement réussi.
 
 ## Outcome

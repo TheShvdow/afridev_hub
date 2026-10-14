@@ -37,7 +37,7 @@ Les enums des niveaux 2 à 4 sont **identiques** : les DTO importent les enums d
 | `JobStatus` | ACTIVE, EXPIRED, CLOSED | — | `JobStatus` |
 | `ApplicationStatus` | PENDING, REVIEWED, ACCEPTED, REJECTED | — | `ApplicationStatus` |
 | `PlanType` | FREE, PREMIUM | — | `PlanType` |
-| `PaymentProvider` | WAVE, ORANGE_MONEY, MTN_MOMO, STRIPE | `InitiatePaymentDto.provider` | `PaymentProvider` |
+| `PaymentProvider` | WAVE, ORANGE_MONEY, MTN_MOMO, STRIPE — **valeurs obsolètes** : Décision 2026-10-14 retient Bictorys ; enum à remplacer par migration | `InitiatePaymentDto.provider` | `PaymentProvider` |
 | `PaymentStatus` | PENDING, AUTHORIZED, CAPTURED, FAILED, REFUNDED | — | `PaymentStatus` |
 | `PaymentEntityType` | MENTOR_SESSION, RECRUITER_PLAN, COURSE_ENROLLMENT | `InitiatePaymentDto.entityType` | `PaymentEntityType` |
 | `RefundStatus` | PENDING, PROCESSED, REJECTED | — | `RefundStatus` |
@@ -146,6 +146,7 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 - (decision) **Voter exige une réputation ≥ 10** (glossaire), contrôlé dans `VotesService` (`VOTES_REPUTATION_TOO_LOW`).
 - (decision) **Enveloppe AD-7 implémentée** : succès `{ data }` (les listes gardent `{ data, meta }`), erreur `{ error: { code, message, details? } }`. Codes au format `DOMAINE_ENTITE_RAISON`, listés dans `libs/shared-types`. Erreur non prévue : `COMMON_INTERNAL_ERROR`, détail journalisé, jamais renvoyé au client.
 - (decision) **Migrations Prisma avec historique** (remplace `db push`, décision 2026-10-14). Dossier `prisma/migrations/`, verrou `migration_lock.toml`. Baseline `20261014120000_init` (schéma initial), puis `20261014120100_job_type_project_country`. La base dev, créée sans historique, a été marquée à jour avec `migrate resolve --applied`. Règle : aucun `db push` sur une base partagée ; tout changement de schéma passe par `prisma migrate dev` puis commit du dossier de migration.
+- (decision) **Agrégateur de paiement : Bictorys** (Décision 2026-10-14). Une interface `IPaymentProvider`, une implémentation. Wave, Orange Money, MTN MoMo et Stripe sortent du périmètre Phase 1. Le schéma garde encore les anciennes valeurs de `PaymentProvider` : leur remplacement passe par une migration, à faire quand l'intégration Bictorys démarre.
 - (decision) **Build API : `rootDir` = racine du monorepo** (`apps/api/project.json`), pour que l'API puisse importer `libs/shared-types`. `outputFileName` fixé pour que `nx serve` retrouve `main.js`.
 
 ## 6. Écarts connus
@@ -163,6 +164,7 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 | E9 | `VotesService` écrivait la réputation. | `votes.service.ts` | **Résolu** : événement `votes.vote.changed`, écriture dans `gamification/`. |
 | E10 | Règle « l'auteur d'une question ne peut pas y répondre » non vérifiée. | `forum.service.ts` | Ouvert. |
 | E11 | Le paquet `@nestjs/testing` installé n'avait pas ses fichiers `.d.ts`. | `node_modules` | **Résolu** : installation complète constatée ; `nx test api` passe (10 tests, Postgres et Redis démarrés). |
+| E12 | Enum `PaymentProvider`, webhooks et `PaymentsService` encore écrits pour Wave, Orange Money, MTN MoMo et Stripe. | `schema.prisma`, `payments/` | **Ouvert** : à remplacer par l'intégration Bictorys (signature des webhooks à vérifier dans sa documentation). |
 
 ## 7. Vérification (2026-10-14)
 

@@ -68,7 +68,7 @@ graph TD
 
 - **Binds:** FR-35 à FR-40
 - **Prevents:** routing provider dans le controller ; couplage controller/implémentation concrète
-- **Rule:** `PaymentsController` reçoit uniquement `dto.provider`. `PaymentsService` résout via `PaymentProviderFactory` → `IPaymentProvider` (Wave | OrangeMoney | Stripe). Les trois providers sont actifs Phase 1. Ajout d'un provider = nouvelle class + enregistrement en factory, zéro changement controller ni service.
+- **Rule:** Décision 2026-10-14 : un seul agrégateur de paiement, **Bictorys**, derrière l'interface `IPaymentProvider` (`initiate`, `capture`, `refund`, `getStatus`). Wave, Orange Money, MTN MoMo et Stripe sortent du périmètre Phase 1. `PaymentsService` appelle l'interface ; le controller ne voit aucun fournisseur. Un autre agrégateur, s'il est un jour retenu, = une nouvelle implémentation de l'interface.
 
 ### AD-5 — Responsabilités des stores
 
@@ -188,7 +188,7 @@ apps/api/src/
   moderation/                 # queue signalements — implémente IModerationService
   projects/                   # vitrine, import GitHub — implémente IProjectsService
   jobs/                       # offres, candidatures, alertes — implémente IJobsService
-  payments/                   # PaymentProviderFactory, Wave/OM/Stripe — implémente IPaymentsService
+  payments/                   # IPaymentProvider (Bictorys) — implémente IPaymentsService
   gamification/               # score réputation — implémente IGamificationService
   notifications/              # NotificationsGateway (Socket.io), NotificationsService (AD-8)
   prisma/                     # PrismaModule — infrastructure
