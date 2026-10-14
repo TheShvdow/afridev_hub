@@ -19,7 +19,6 @@ export class JobsService {
   ) {
     const skip = (page - 1) * limit;
     const where: Prisma.JobOfferWhereInput = {
-    const where: Prisma.JobOfferWhereInput = {
       status: 'ACTIVE',
     };
 

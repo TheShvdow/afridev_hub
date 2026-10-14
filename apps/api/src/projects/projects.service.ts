@@ -15,7 +15,6 @@ export class ProjectsService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProjectWhereInput = {
-    const where: Prisma.ProjectWhereInput = {
       isApproved: true,
     };
 
