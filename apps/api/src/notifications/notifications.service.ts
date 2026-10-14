@@ -44,6 +44,11 @@ export class NotificationsService {
     return notification;
   }
 
+  // API publique exportée (story E2-6) : les autres modules notifient via cette méthode.
+  async notify(userId: string, payload: Omit<CreateNotificationInput, 'userId'>) {
+    return this.create({ userId, ...payload });
+  }
+
   async list(userId: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
 

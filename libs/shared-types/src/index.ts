@@ -350,6 +350,13 @@ export interface ForumAnswerAcceptedEvent {
   postId:         string;
 }
 
+export interface GamificationReputationUpdatedEvent {
+  userId:     string;
+  reputation: number;
+  delta:      number;
+  reason:     string;
+}
+
 export interface VotesVoteChangedEvent {
   targetOwnerId: string;
   entityType:    VoteEntityType;

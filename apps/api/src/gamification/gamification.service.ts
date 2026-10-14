@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import type { GamificationReputationUpdatedEvent } from '@afridev/shared-types';
 
 interface ReputationEvent {
   userId:    string;
@@ -12,7 +14,10 @@ interface ReputationEvent {
 export class GamificationService {
   private readonly logger = new Logger(GamificationService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly events: EventEmitter2,
+  ) {}
 
   // ── Réputation ───────────────────────────────────────────────────────
 
@@ -36,7 +41,21 @@ export class GamificationService {
     // Vérifier les seuils de badges
     await this.checkBadgeMilestones(event.userId, user.reputation);
 
+    // Temps réel : la passerelle notifications relaie le nouveau score au client.
+    const payload: GamificationReputationUpdatedEvent = {
+      userId:     event.userId,
+      reputation: user.reputation,
+      delta:      event.delta,
+      reason:     event.reason,
+    };
+    this.events.emit('gamification.reputation.updated', payload);
+
     return user;
+  }
+
+  // API publique exportée (story E2-5) : seul point d'écriture de la réputation.
+  async addPoints(userId: string, delta: number, reason: string, entityId?: string) {
+    return this.addReputation({ userId, delta, reason, entityId });
   }
 
   async getLeaderboard(page = 1, limit = 50) {

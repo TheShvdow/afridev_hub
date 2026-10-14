@@ -11,6 +11,8 @@ import { Server, Socket } from 'socket.io';
 import { Logger, UseGuards } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { OnEvent } from '@nestjs/event-emitter';
+import type { GamificationReputationUpdatedEvent } from '@afridev/shared-types';
 
 @WebSocketGateway({
   cors: {
@@ -75,6 +77,12 @@ export class NotificationsGateway
   }
 
   // Envoyer une notification à un utilisateur spécifique
+  // Score de réputation en direct : les modules émettent, seule la passerelle pousse au client.
+  @OnEvent('gamification.reputation.updated')
+  onReputationUpdated(payload: GamificationReputationUpdatedEvent) {
+    this.sendToUser(payload.userId, 'reputation', { reputation: payload.reputation, delta: payload.delta, reason: payload.reason });
+  }
+
   sendToUser(userId: string, event: string, data: unknown) {
     this.server.to(`user:${userId}`).emit(event, data);
   }
