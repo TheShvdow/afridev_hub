@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreateAnswerDto } from './dto/create-answer.dto';
 import { ListPostsDto } from './dto/list-posts.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ForumService {
@@ -19,7 +20,7 @@ export class ForumService {
     const limit = dto.limit ?? 20;
     const skip  = (page - 1) * limit;
 
-    const where: Parameters<typeof this.prisma.post.findMany>[0]['where'] = {};
+    const where: Prisma.PostWhereInput = {};
 
     if (dto.tag) {
       where.postTags = { some: { tag: { name: dto.tag } } };
@@ -37,8 +38,7 @@ export class ForumService {
     }
 
     // No voteScore or lastActivityAt fields — always sort by createdAt
-    const orderBy: Parameters<typeof this.prisma.post.findMany>[0]['orderBy'] =
-      { createdAt: 'desc' };
+    const orderBy: Prisma.PostOrderByWithRelationInput = { createdAt: 'desc' };
 
     const [posts, total] = await Promise.all([
       this.prisma.post.findMany({

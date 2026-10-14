@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProjectsService {
@@ -14,7 +15,7 @@ export class ProjectsService {
   async list(page = 1, limit = 20, search?: string) {
     const skip = (page - 1) * limit;
 
-    const where: Parameters<typeof this.prisma.project.findMany>[0]['where'] = {
+    const where: Prisma.ProjectWhereInput = {
       isApproved: true,
     };
 
@@ -80,7 +81,7 @@ export class ProjectsService {
       data: {
         name:        dto.title,      // DTO uses "title", DB uses "name"
         description: dto.description,
-        repoUrl:     dto.repoUrl,
+        repoUrl:     dto.repoUrl ?? '',
         demoUrl:     dto.demoUrl,
         userId,
         isApproved:  false,          // Requires admin approval

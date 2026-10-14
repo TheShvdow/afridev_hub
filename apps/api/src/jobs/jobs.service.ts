@@ -4,7 +4,7 @@ import {
   ForbiddenException,
   ConflictException,
 } from '@nestjs/common';
-import { JobMode } from '@prisma/client';
+import { JobMode, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateJobDto } from './dto/create-job.dto';
 
@@ -20,7 +20,7 @@ export class JobsService {
     search?:   string,
   ) {
     const skip = (page - 1) * limit;
-    const where: Parameters<typeof this.prisma.jobOffer.findMany>[0]['where'] = {
+    const where: Prisma.JobOfferWhereInput = {
       status: 'ACTIVE',
     };
 

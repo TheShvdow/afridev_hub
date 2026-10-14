@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { PaymentEntityType } from '@prisma/client';
+import { PaymentEntityType, Prisma } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 
 export type PaymentProvider = 'WAVE' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'STRIPE';
@@ -50,7 +50,7 @@ export class PaymentsService {
         entityId:    input.entityId,
         externalRef,
         status:      'PENDING',
-        metadata:    input.metadata ?? {},
+        metadata:    (input.metadata ?? {}) as Prisma.InputJsonObject,
       },
     });
 
@@ -143,7 +143,7 @@ export class PaymentsService {
           capturedAt:   success ? new Date().toISOString() : undefined,
           providerRef:  String(payload['transactionId'] ?? payload['id'] ?? ''),
           webhookData:  payload,
-        },
+        } as Prisma.InputJsonObject,
       },
     });
 
