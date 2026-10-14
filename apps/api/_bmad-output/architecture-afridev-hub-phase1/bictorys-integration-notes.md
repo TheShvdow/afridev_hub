@@ -3,11 +3,13 @@ name: bictorys-integration-notes
 description: Faits Bictorys retenus comme agrégateur de paiement (décision 2026-10-14) — ce qui est documenté, ce qui se contredit, ce qui reste à tester en sandbox.
 metadata:
   type: reference
-  status: draft
+  status: implemented
   updated: 2026-10-14
 ---
 
 # Bictorys — notes d'intégration
+
+> **Statut :** implémenté dans `apps/api/src/payments/` (commit `48a1f52`). La documentation Bictorys fait foi. Les choix faits là où elle est ambiguë sont listés en fin de document.
 
 Source : guide d'intégration collé par le mainteneur (« basé sur des tests réels, mars 2026 ») et index officiel `https://docs.bictorys.com/llms.txt`. Ces faits datent de mars 2026 : **à retester en sandbox avant toute implémentation.**
 
@@ -60,3 +62,13 @@ Le parseur ne doit pas être écrit avant de connaître le format réel reçu en
 3. **Mode test et production** : la configuration webhook est séparée par environnement. Les deux doivent être déclarées.
 4. **Périmètre de lancement** : Wave SN, Orange Money SN, carte SN, ou une autre combinaison.
 5. **Frais** : `merchantFees` vient du webhook. Les commissions `COMMISSION_*` restent-elles à nous en plus ?
+
+## Choix d'implémentation (2026-10-14)
+
+- **Webhook** : format du guide (objet plat, `status: "succeeded"`). Le format `{ event, data }` de la page « statuts » n'est pas implémenté : à confirmer en sandbox.
+- **Signature invalide** : `401`. Le guide donne `200` dans son code d'exemple ; nous retenons `401` pour ne pas masquer les tentatives forgées. Écart volontaire à valider avec Bictorys (relance en cas de non-200).
+- **Webhook authentifié, doublon ou montant incohérent** : `200` sans modification (doublon et montant incohérent sont journalisés).
+- **Remboursement** : `PUT /pay/v1/transactions/{id}/refund` avec `X-API-Key` (clé publique). Ambiguïté doc (`bearerAuth` vs `X-API-Key`) : à tester.
+- **Pays** : `SN, CI, BK, ML, TG, BJ` (table du guide). Les exemples du guide utilisent `BF` pour le Burkina : à trancher.
+- **Capture et payouts** : non implémentés. Aucun parcours Phase 1 ne les utilise encore.
+- **Activation après paiement** : les TODO `fulfillPayment` restent, par type d'entité.
