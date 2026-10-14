@@ -167,6 +167,10 @@ export class ForumService {
   async createAnswer(postId: string, userId: string, dto: CreateAnswerDto) {
     const post = await this.prisma.post.findUnique({ where: { id: postId } });
     if (!post) throw new DomainException('FORUM_QUESTION_NOT_FOUND', 'Question introuvable.', 404);
+    // Glossaire « Réponse » : l'auteur d'une question ne peut pas y répondre.
+    if (post.userId === userId) {
+      throw new DomainException('FORUM_SELF_ANSWER_FORBIDDEN', 'Vous ne pouvez pas répondre à votre propre question.', 403);
+    }
 
     const answer = await this.prisma.answer.create({
       data: { body: dto.body, postId, userId },

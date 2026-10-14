@@ -162,7 +162,7 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 | E7 | `upsertTags` dupliqué entre forum et projets. | `forum.service.ts`, `projects.service.ts` | Ouvert — à extraire dans un `TagsService`. |
 | E8 | `ModerationAction.entityType` est une `String` libre ; le service écrit `'USER'`. | schéma, `moderation.service.ts` | Ouvert — à trancher. |
 | E9 | `VotesService` écrivait la réputation. | `votes.service.ts` | **Résolu** : événement `votes.vote.changed`, écriture dans `gamification/`. |
-| E10 | Règle « l'auteur d'une question ne peut pas y répondre » non vérifiée. | `forum.service.ts` | Ouvert. |
+| E10 | Règle « l'auteur d'une question ne peut pas y répondre » non appliquée. | `forum.service.ts` | **Résolu** : contrôle `FORUM_SELF_ANSWER_FORBIDDEN`, couvert par un test. |
 | E11 | Le paquet `@nestjs/testing` installé n'avait pas ses fichiers `.d.ts`. | `node_modules` | **Résolu** : installation complète constatée ; `nx test api` passe (10 tests, Postgres et Redis démarrés). |
 | E12 | Enum `PaymentProvider`, webhooks et service étaient écrits pour Wave, Orange Money, MTN MoMo et Stripe. | `schema.prisma`, `payments/` | **Résolu** pour le code (48a1f52). **Reste ouvert** : format du webhook et auth du remboursement à valider en sandbox (voir `bictorys-integration-notes.md`). |
 
