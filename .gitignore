@@ -63,3 +63,6 @@ deploy_key
 
 # ── Generated Prisma client (generated at install) ────────────────────────────
 apps/api/node_modules/.prisma/
+
+
+request.http
