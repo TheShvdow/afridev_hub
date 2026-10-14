@@ -31,7 +31,7 @@ description: Termes métier canoniques d'AfriDev Hub Phase 1 — à lire pour le
 
 **PaymentProvider** — Interface abstraite (`initiate`, `capture`, `refund`, `getStatus`) implémentée par l'agrégateur de paiement retenu : **Bictorys** (Décision 2026-10-14). Une seule implémentation en Phase 1, injectée dans `PaymentsModule`.
 
-**Bictorys** — Agrégateur de paiement retenu pour la Phase 1 (Décision 2026-10-14). Il regroupe les moyens de paiement, l'application ne dispatche plus par opérateur. Flow : `initiate` → paiement utilisateur → webhook → `capture`. Caractéristiques (signature des webhooks, pays, opérateurs, frais) à vérifier dans sa documentation.
+**Bictorys** — Agrégateur de paiement retenu pour la Phase 1 (Décision 2026-10-14). Il regroupe les moyens de paiement, l'application ne dispatche plus par opérateur. Flow : `initiate` → paiement utilisateur → webhook → `capture`. Faits documentés, contradictions et points ouverts : `architecture-afridev-hub-phase1/bictorys-integration-notes.md`.
 
 **Orange Money** — Retiré du périmètre Phase 1 (Décision 2026-10-14). Couvert, le cas échéant, par l'agrégateur.
 
