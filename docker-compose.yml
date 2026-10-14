@@ -16,7 +16,8 @@ services:
       POSTGRES_DB: afridev_hub
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - '5432:5432'
+      # Port hôte réglable : 5433 si un PostgreSQL local occupe déjà 5432 (ex. Homebrew)
+      - '${POSTGRES_HOST_PORT:-5432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
