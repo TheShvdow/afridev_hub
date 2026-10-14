@@ -363,11 +363,19 @@ model Report {
   @@index([userId])
 }
 
+// Cible d'une action de modération : contenu signalé, ou utilisateur banni.
+enum ModerationTargetType {
+  POST
+  ANSWER
+  PROJECT
+  USER
+}
+
 model ModerationAction {
   id          String               @id @default(uuid())
   moderatorId String
   reportId    String?
-  entityType  String
+  entityType  ModerationTargetType
   entityId    String
   action      ModerationActionType
   note        String?

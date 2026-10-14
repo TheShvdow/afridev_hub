@@ -1,7 +1,7 @@
 import { Injectable, } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { DomainException } from '../common/errors/domain.exception';
-import { ReportEntityType, ReportStatus, ModerationActionType } from '@prisma/client'; // ReportType n'existe pas
+import { ReportEntityType, ReportStatus, ModerationActionType, ModerationTargetType } from '@prisma/client'; // ReportType n'existe pas
 
 @Injectable()
 export class ModerationService {
@@ -105,7 +105,7 @@ export class ModerationService {
     return this.prisma.moderationAction.create({
       data: {
         moderatorId,
-        entityType: 'USER',
+        entityType: ModerationTargetType.USER,
         entityId:   userId,
         action:     ModerationActionType.BAN,
         note:       reason,
@@ -118,7 +118,7 @@ export class ModerationService {
     return this.prisma.moderationAction.create({
       data: {
         moderatorId,
-        entityType: 'USER',
+        entityType: ModerationTargetType.USER,
         entityId:   userId,
         action:     ModerationActionType.RESTORED,
         note:       'Accès restauré (levée de ban)',

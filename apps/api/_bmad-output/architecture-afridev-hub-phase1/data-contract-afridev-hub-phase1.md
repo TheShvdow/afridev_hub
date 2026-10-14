@@ -160,7 +160,7 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 | E5 | Le front envoie `POST /auth/refresh` avec `{}`. | `apps/web/.../auth.service.ts` | **Ouvert** — front hors périmètre pour l'instant (décision utilisateur). L'API exige `refreshToken`. |
 | E6 | `update`, `close`, `delete` présents dans les services, non exposés. | `jobs`, `projects` | **Résolu** : `PATCH /jobs/:id`, `PATCH /jobs/:id/close`, `PATCH /projects/:id`, `DELETE /projects/:id` (auteur, ou modérateur et admin pour la suppression). |
 | E7 | `upsertTags` dupliqué entre forum et projets. | `forum.service.ts`, `projects.service.ts` | **Résolu** : helper commun `resolveTagIds` ; copie morte supprimée. |
-| E8 | `ModerationAction.entityType` est une `String` libre ; le service écrit `'USER'`. | schéma, `moderation.service.ts` | Ouvert — à trancher. |
+| E8 | `ModerationAction.entityType` était une chaîne libre. | schéma, `moderation.service.ts` | **Résolu** : enum `ModerationTargetType` (POST, ANSWER, PROJECT, USER), migration `20261014140000`. Table vide au moment du passage. |
 | E9 | `VotesService` écrivait la réputation. | `votes.service.ts` | **Résolu** : événement `votes.vote.changed`, écriture dans `gamification/`. |
 | E10 | Règle « l'auteur d'une question ne peut pas y répondre » non appliquée. | `forum.service.ts` | **Résolu** : contrôle `FORUM_SELF_ANSWER_FORBIDDEN`, couvert par un test. |
 | E11 | Le paquet `@nestjs/testing` installé n'avait pas ses fichiers `.d.ts`. | `node_modules` | **Résolu** : installation complète constatée ; `nx test api` passe (10 tests, Postgres et Redis démarrés). |
