@@ -10,7 +10,8 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { ApiData } from '../common/swagger/api-data.decorator';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -23,6 +24,7 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
+  @ApiData({ paginated: true, description: 'Notifications, les plus récentes d\'abord' })
   @ApiOperation({ summary: 'Mes notifications' })
   list(
     @CurrentUser('id') userId: string,
@@ -33,6 +35,7 @@ export class NotificationsController {
   }
 
   @Get('unread-count')
+  @ApiResponse({ status: 200, description: 'Nombre de notifications non lues', schema: { type: 'object', required: ['data'], properties: { data: { type: 'object', required: ['count'], properties: { count: { type: 'number', example: 3 } } } } } })
   @ApiOperation({ summary: 'Nombre de notifications non lues' })
   async unreadCount(@CurrentUser('id') userId: string) {
     const count = await this.notificationsService.getUnreadCount(userId);

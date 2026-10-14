@@ -12,7 +12,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -54,6 +54,8 @@ export class PaymentsController {
   // ── Webhooks (pas de guard — vérification par signature) ─────────────
 
   @Post('webhooks/wave')
+  @ApiOperation({ summary: 'Webhook Wave — confirmation de paiement (signature vérifiée côté service)' })
+  @ApiBody({ schema: { type: 'object', description: 'Payload brut du fournisseur (format propre à chaque opérateur)' } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Webhook Wave' })
   waveWebhook(
@@ -64,6 +66,8 @@ export class PaymentsController {
   }
 
   @Post('webhooks/orange')
+  @ApiOperation({ summary: 'Webhook Orange Money — confirmation de paiement (signature vérifiée côté service)' })
+  @ApiBody({ schema: { type: 'object', description: 'Payload brut du fournisseur (format propre à chaque opérateur)' } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Webhook Orange Money' })
   orangeWebhook(@Body() payload: Record<string, unknown>) {
@@ -71,6 +75,8 @@ export class PaymentsController {
   }
 
   @Post('webhooks/mtn')
+  @ApiOperation({ summary: 'Webhook MTN MoMo — confirmation de paiement (signature vérifiée côté service)' })
+  @ApiBody({ schema: { type: 'object', description: 'Payload brut du fournisseur (format propre à chaque opérateur)' } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Webhook MTN MoMo' })
   mtnWebhook(@Body() payload: Record<string, unknown>) {
@@ -78,6 +84,8 @@ export class PaymentsController {
   }
 
   @Post('webhooks/stripe')
+  @ApiOperation({ summary: 'Webhook Stripe — confirmation de paiement (signature vérifiée côté service)' })
+  @ApiBody({ schema: { type: 'object', description: 'Payload brut du fournisseur (format propre à chaque opérateur)' } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Webhook Stripe' })
   stripeWebhook(

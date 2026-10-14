@@ -16,6 +16,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ApiData } from '../common/swagger/api-data.decorator';
+import { ProjectDto } from '../common/swagger/models';
 
 @ApiTags('Projects')
 @Controller('projects')
@@ -24,6 +26,7 @@ export class ProjectsController {
 
   @Get()
   @ApiOperation({ summary: 'Lister les projets approuvés' })
+  @ApiData({ type: ProjectDto, paginated: true, description: 'Projets approuvés, paginés' })
   list(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
@@ -34,6 +37,7 @@ export class ProjectsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Détail d\'un projet' })
+  @ApiData({ type: ProjectDto })
   findOne(@Param('id') id: string) {
     return this.projectsService.findOne(id);
   }
@@ -42,6 +46,7 @@ export class ProjectsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Soumettre un projet' })
+  @ApiData({ type: ProjectDto, status: 201, description: 'Projet soumis (en attente de validation)' })
   create(
     @CurrentUser('id') userId: string,
     @Body() dto: CreateProjectDto,
@@ -65,6 +70,7 @@ export class ProjectsController {
   @Roles('MODERATOR', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Approuver un projet [MODERATOR]' })
+  @ApiData({ type: ProjectDto, description: 'Projet approuvé' })
   approve(
     @Param('id') id: string,
   ) {
@@ -76,6 +82,7 @@ export class ProjectsController {
   @Roles('MODERATOR', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Rejeter un projet [MODERATOR]' })
+  @ApiData({ type: ProjectDto, description: 'Projet rejeté' })
   reject(
     @Param('id') id: string,
   ) {

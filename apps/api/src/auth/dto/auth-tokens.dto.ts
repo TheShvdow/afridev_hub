@@ -8,11 +8,6 @@ export class AuthTokensDto {
   refreshToken!: string;
 }
 
-export class RefreshTokenDto {
-  @ApiProperty()
-  refreshToken!: string;
-}
-
 export class UserMeDto {
   @ApiProperty()
   id!: string;
@@ -37,4 +32,7 @@ export class UserMeDto {
 
   @ApiProperty()
   reputation!: number;
+
+  @ApiProperty({ format: 'date-time' })
+  createdAt!: string;
 }

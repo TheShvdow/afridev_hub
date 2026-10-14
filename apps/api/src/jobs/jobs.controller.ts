@@ -10,13 +10,15 @@ import {
   ParseEnumPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { JobMode, JobType } from '@prisma/client';
 import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { ApplyJobDto } from './dto/apply-job.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ApiData } from '../common/swagger/api-data.decorator';
+import { JobDto, JobApplicationDto } from '../common/swagger/models';
 
 @ApiTags('Jobs')
 @Controller('jobs')
@@ -25,6 +27,9 @@ export class JobsController {
 
   @Get()
   @ApiOperation({ summary: 'Lister les offres d\'emploi' })
+  @ApiQuery({ name: 'type', enum: JobType, required: false })
+  @ApiQuery({ name: 'mode', enum: JobMode, required: false })
+  @ApiData({ type: JobDto, paginated: true, description: 'Offres actives, paginées' })
   list(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
@@ -37,6 +42,7 @@ export class JobsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Détail d\'une offre' })
+  @ApiData({ type: JobDto })
   findOne(@Param('id') id: string) {
     return this.jobsService.findOne(id);
   }
@@ -45,6 +51,7 @@ export class JobsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Publier une offre d\'emploi' })
+  @ApiData({ type: JobDto, status: 201, description: 'Offre publiée' })
   create(
     @CurrentUser('id') userId: string,
     @Body() dto: CreateJobDto,
@@ -56,6 +63,8 @@ export class JobsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Postuler à une offre' })
+  @ApiData({ type: JobApplicationDto, status: 201, description: 'Candidature enregistrée' })
+  @ApiResponse({ status: 409, description: 'Déjà candidaté à cette offre' })
   apply(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -68,6 +77,7 @@ export class JobsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Voir les candidatures (recruteur uniquement)' })
+  @ApiData({ type: JobApplicationDto, array: true, description: 'Candidatures (auteur de l\'offre uniquement)' })
   getApplications(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,

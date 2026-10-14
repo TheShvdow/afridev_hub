@@ -11,6 +11,8 @@ import { VotesService } from './votes.service';
 import { VoteDto } from './dto/vote.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ApiData } from '../common/swagger/api-data.decorator';
+import { VoteResultDto } from '../common/swagger/models';
 
 // Le service travaille en +1 / −1 ; la conversion depuis l'enum Prisma se fait ici.
 const toScore = (value: VoteValue): 1 | -1 => (value === VoteValue.UP ? 1 : -1);
@@ -24,6 +26,7 @@ export class VotesController {
 
   @Post('posts/:id')
   @ApiOperation({ summary: 'Voter pour une question' })
+  @ApiData({ type: VoteResultDto, status: 201, description: 'Vote enregistré (ajouté, changé ou annulé)' })
   votePost(
     @CurrentUser('id') userId: string,
     @Param('id') postId: string,
@@ -34,6 +37,7 @@ export class VotesController {
 
   @Post('answers/:id')
   @ApiOperation({ summary: 'Voter pour une réponse' })
+  @ApiData({ type: VoteResultDto, status: 201, description: 'Vote enregistré (ajouté, changé ou annulé)' })
   voteAnswer(
     @CurrentUser('id') userId: string,
     @Param('id') answerId: string,

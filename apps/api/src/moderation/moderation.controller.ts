@@ -8,7 +8,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ReportStatus } from '@prisma/client';
 import { ModerationService } from './moderation.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { ResolveReportDto } from './dto/resolve-report.dto';
@@ -17,6 +18,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ApiData } from '../common/swagger/api-data.decorator';
+import { ReportDto } from '../common/swagger/models';
 
 @ApiTags('Moderation')
 @Controller('moderation')
@@ -27,6 +30,7 @@ export class ModerationController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Signaler un contenu' })
+  @ApiData({ type: ReportDto, status: 201, description: 'Signalement créé' })
   createReport(
     @CurrentUser('id') userId: string,
     @Body() dto: CreateReportDto,
@@ -42,6 +46,7 @@ export class ModerationController {
   @Roles('MODERATOR', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Lister les signalements [MODERATOR]' })
+  @ApiQuery({ name: 'status', enum: ReportStatus, required: false })
   listReports(
     @Query('status') status?: string,
     @Query('page') page?: string,
@@ -54,6 +59,7 @@ export class ModerationController {
   @Roles('MODERATOR', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Résoudre un signalement [MODERATOR]' })
+  @ApiData({ type: ReportDto, description: 'Signalement résolu' })
   resolveReport(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,

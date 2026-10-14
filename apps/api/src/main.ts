@@ -6,6 +6,7 @@ import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import * as compression from 'compression';
+import { applyEnvelopeToDocument } from './common/swagger/envelope.document';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -50,19 +51,23 @@ async function bootstrap() {
       .setDescription('API REST — Communauté des développeurs africains')
       .setVersion('1.0')
       .addBearerAuth()
-      .addTag('auth', 'Authentification')
-      .addTag('users', 'Profils utilisateurs')
-      .addTag('forum', 'Forum Q&A')
-      .addTag('projects', 'Vitrine projets')
-      .addTag('jobs', 'Job board')
-      .addTag('payments', 'Paiements')
-      .addTag('notifications', 'Notifications')
-      .addTag('moderation', 'Modération')
-      .addTag('gamification', 'Badges & Réputation')
-      .addTag('admin', 'Administration')
+      // Noms identiques aux @ApiTags des contrôleurs (sinon tags en double)
+      .addTag('Auth', 'Authentification')
+      .addTag('Users', 'Profils utilisateurs')
+      .addTag('Forum', 'Forum Q&A')
+      .addTag('Votes', 'Votes sur questions et réponses')
+      .addTag('Projects', 'Vitrine projets')
+      .addTag('Jobs', 'Job board')
+      .addTag('Payments', 'Paiements')
+      .addTag('Notifications', 'Notifications')
+      .addTag('Moderation', 'Modération')
+      .addTag('Gamification', 'Badges & Réputation')
+      .addTag('Admin', 'Administration')
+      .addTag('Health', 'Santé de l\'API')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
+    applyEnvelopeToDocument(document);
     SwaggerModule.setup('api/docs', app, document, {
       swaggerOptions: { persistAuthorization: true },
     });

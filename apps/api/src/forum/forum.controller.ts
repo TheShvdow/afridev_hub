@@ -19,6 +19,9 @@ import { CreateAnswerDto } from './dto/create-answer.dto';
 import { ListPostsDto } from './dto/list-posts.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ApiData } from '../common/swagger/api-data.decorator';
+import { PostDto, PostDetailDto, AnswerDto, SuccessDto } from '../common/swagger/models';
+import { UpdatePostDto } from './dto/update-post.dto';
 
 interface ReqUser { id: string; role: string; }
 
@@ -31,12 +34,14 @@ export class ForumController {
 
   @Get('posts')
   @ApiOperation({ summary: 'Lister les questions' })
+  @ApiData({ type: PostDto, paginated: true, description: 'Liste paginée des questions' })
   listPosts(@Query() query: ListPostsDto) {
     return this.forumService.listPosts(query);
   }
 
   @Get('posts/:id')
   @ApiOperation({ summary: 'Détail d\'une question' })
+  @ApiData({ type: PostDetailDto, description: 'Question avec ses réponses' })
   getPost(
     @Param('id') id: string,
     @Request() req: { user?: ReqUser },
@@ -48,6 +53,7 @@ export class ForumController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Poser une question' })
+  @ApiData({ type: PostDto, status: 201, description: 'Question créée' })
   createPost(
     @CurrentUser('id') userId: string,
     @Body() dto: CreatePostDto,
@@ -59,10 +65,11 @@ export class ForumController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Modifier une question' })
+  @ApiData({ type: PostDto, description: 'Question mise à jour' })
   updatePost(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
-    @Body() dto: Partial<CreatePostDto>,
+    @Body() dto: UpdatePostDto,
   ) {
     return this.forumService.updatePost(id, userId, dto);
   }
@@ -85,6 +92,7 @@ export class ForumController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Répondre à une question' })
+  @ApiData({ type: AnswerDto, status: 201, description: 'Réponse créée' })
   createAnswer(
     @Param('postId') postId: string,
     @CurrentUser('id') userId: string,
@@ -97,6 +105,7 @@ export class ForumController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Accepter une réponse' })
+  @ApiData({ type: SuccessDto, description: 'Réponse acceptée' })
   acceptAnswer(
     @Param('answerId') answerId: string,
     @CurrentUser('id') userId: string,

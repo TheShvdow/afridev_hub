@@ -12,12 +12,14 @@ import {
   FileTypeValidator,
   } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { DomainException } from '../common/errors/domain.exception';
+import { ApiData } from '../common/swagger/api-data.decorator';
+import { UserProfileDto } from '../common/swagger/models';
 
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5 MB
 
@@ -28,6 +30,7 @@ export class UsersController {
 
   @Get(':username')
   @ApiOperation({ summary: 'Profil public d\'un utilisateur' })
+  @ApiData({ type: UserProfileDto, description: 'Profil public' })
   async getProfile(@Param('username') username: string) {
     return this.usersService.findByUsername(username);
   }
@@ -48,6 +51,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Mettre à jour son profil' })
+  @ApiData({ type: UserProfileDto, description: 'Profil mis à jour' })
   async updateProfile(
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateUserDto,
@@ -59,8 +63,16 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['avatar'],
+      properties: { avatar: { type: 'string', format: 'binary', description: 'JPEG, PNG, WebP ou GIF (5 Mo max)' } },
+    },
+  })
   @ApiOperation({ summary: 'Changer son avatar' })
   @UseInterceptors(FileInterceptor('avatar'))
+  @ApiData({ type: UserProfileDto, description: 'Avatar mis à jour' })
   async uploadAvatar(
     @CurrentUser('id') userId: string,
     @UploadedFile(
