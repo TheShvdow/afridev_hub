@@ -31,7 +31,7 @@ NestJS 10 REST + WebSocket API for AfriDev Hub. TypeScript, Prisma 5, PostgreSQL
 - Seed: `npm run prisma:seed`. Idempotent upserts.
 - Build: `nx build api`. Its `rootDir` is the monorepo root so `libs/shared-types` resolves; do not change it.
 - Type check: `npx tsc --noEmit -p apps/api/tsconfig.app.json`.
-- `nx test api` fails before any test runs: the installed `@nestjs/testing` lacks its `.d.ts` files. This is an install problem, not a code failure.
+- `nx test api` runs the unit and smoke specs: 10 tests, all passing with Postgres and Redis up.
 
 ## Conventions that differ from defaults
 
@@ -48,7 +48,7 @@ NestJS 10 REST + WebSocket API for AfriDev Hub. TypeScript, Prisma 5, PostgreSQL
 
 - `nx serve api` fails with "Failed to process project graph": run `npx nx reset`, then retry.
 - Never stop a process with `pkill -f "nx serve api"`: it also kills the maintainer's dev server. Stop your own process by PID.
-- `smoke.spec.ts` needs Postgres and Redis up (`npm run docker:dev`); the other specs mock them. Checked by reading the specs, not by running them: `nx test api` cannot run yet.
+- `smoke.spec.ts` needs Postgres and Redis up (`npm run docker:dev`); the other specs mock them. Checked by reading the specs; the suite passes with the services up.
 - `nx serve` watches and hot-reloads. A plain `node dist/...` run does not pick up changes.
 - The Prisma client regenerates on `npm install` (`prepare` script). After a schema change, run `npm run prisma:generate` explicitly.
 

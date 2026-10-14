@@ -98,7 +98,6 @@ npm run docker:reset        # repart de zéro (supprime les volumes)
 
 ## Problèmes connus
 
-- `nx test api` : le paquet `@nestjs/testing` installé ne contient pas ses fichiers `.d.ts` (sauf `index.d.ts`), les suites de test échouent avant d'exécuter du code. Réinstallation complète de `node_modules` à tenter (`npm ci`).
 - Front : des erreurs de compilation sans rapport avec l'API subsistent (composants non générés, `@angular/platform-server`).
 - Front : `AuthService.refreshToken()` envoie un corps vide, alors que l'API exige `refreshToken` (voir l'écart E5 du contrat de données).
 

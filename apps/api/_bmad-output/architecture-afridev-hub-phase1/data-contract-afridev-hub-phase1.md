@@ -162,7 +162,7 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 | E8 | `ModerationAction.entityType` est une `String` libre ; le service écrit `'USER'`. | schéma, `moderation.service.ts` | Ouvert — à trancher. |
 | E9 | `VotesService` écrivait la réputation. | `votes.service.ts` | **Résolu** : événement `votes.vote.changed`, écriture dans `gamification/`. |
 | E10 | Règle « l'auteur d'une question ne peut pas y répondre » non vérifiée. | `forum.service.ts` | Ouvert. |
-| E11 | Le paquet `@nestjs/testing` installé n'a pas ses fichiers `.d.ts` (sauf `index.d.ts`), alors que le tarball les contient. | `node_modules` | Ouvert — la réinstallation (`npm install @nestjs/testing@10.4.22`) a été faite, le problème persiste. Cause non identifiée. |
+| E11 | Le paquet `@nestjs/testing` installé n'avait pas ses fichiers `.d.ts`. | `node_modules` | **Résolu** : installation complète constatée ; `nx test api` passe (10 tests, Postgres et Redis démarrés). |
 
 ## 7. Vérification (2026-10-14)
 
@@ -171,4 +171,4 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 - **Migrations** : `prisma migrate status` → « Database schema is up to date » (2 migrations). Non vérifié : rejeu de la baseline sur une base vierge (shadow DB), à faire avant le premier déploiement.
 - **Enveloppe AD-7** (instance locale) : succès `{ data }` ; erreur métier `AUTH_INVALID_CREDENTIALS` ; 404 de route `COMMON_NOT_FOUND` ; validation `COMMON_VALIDATION_FAILED` avec `details`.
 - **Réputation** (scénario complet, historique vérifié) : question +5, réponse +10, vote reçu +10 annulé −10, vote négatif −2, acceptation +15 ; vote refusé à 5 points (403 `VOTES_REPUTATION_TOO_LOW`) ; auto-vote refusé. Solde final : auteur 3, répondant 25.
-- **Tests unitaires** : non exécutés (E11).
+- **Tests unitaires** : `nx test api` → 2 suites, 10 tests, tous passent (Postgres et Redis démarrés).
