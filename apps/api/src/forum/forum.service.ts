@@ -80,7 +80,7 @@ export class ForumService {
     };
   }
 
-  async getPost(id: string, viewerId?: string) {
+  async getPost(id: string, _viewerId?: string) {
     const post = await this.prisma.post.findUnique({
       where: { id },
       include: {

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { JobMode, JobStatus, JobType, PaymentProvider, PaymentStatus, ApplicationStatus, ReportEntityType, ReportStatus, UserRole, VoteValue } from '@prisma/client';
+import { JobMode, JobStatus, JobType, PaymentProvider, PaymentStatus, ApplicationStatus, ReportEntityType, ReportStatus, UserRole } from '@prisma/client';
 
 // Modèles de réponse pour la documentation Swagger. Chaque champ reprend le `select` du service
 // correspondant : ces classes ne sont jamais utilisées pour valider une entrée.

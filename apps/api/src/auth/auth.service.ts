@@ -19,7 +19,6 @@ import type { User } from '@prisma/client';
 import { DomainException } from '../common/errors/domain.exception';
 
 const BCRYPT_ROUNDS = 12;
-const ACCESS_TTL_MS  = 15 * 60 * 1000;           // 15 min
 const REFRESH_TTL_S  = 7 * 24 * 60 * 60;         // 7 jours en secondes
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;  // lien de vérification : 24 h
 
