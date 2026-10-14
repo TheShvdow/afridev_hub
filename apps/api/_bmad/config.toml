@@ -1,0 +1,3 @@
+[core]
+project_name = "afridev-hub-api"
+output_folder = "apps/api/_bmad-output"

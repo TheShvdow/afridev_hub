@@ -1,0 +1,201 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+
+jobs:
+  # ── Setup ───────────────────────────────────────────────────────────────────
+  setup:
+    name: Setup & Cache
+    runs-on: ubuntu-latest
+    outputs:
+      affected-apps: ${{ steps.nx-affected.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Derive affected projects
+        id: nx-affected
+        run: |
+          BASE=${{ github.event.pull_request.base.sha || 'HEAD~1' }}
+          APPS=$(npx nx affected --target=build --base=$BASE --head=HEAD --plain 2>/dev/null || echo "")
+          echo "apps=$APPS" >> $GITHUB_OUTPUT
+
+  # ── Lint ────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Lint affected
+        run: npx nx affected --target=lint --base=${{ github.event.pull_request.base.sha || 'HEAD~1' }} --parallel=3
+
+  # ── Type check ──────────────────────────────────────────────────────────────
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: TypeScript check — shared-types
+        run: npx tsc -p libs/shared-types/tsconfig.lib.json --noEmit
+
+      - name: TypeScript check — API
+        run: npx tsc -p apps/api/tsconfig.app.json --noEmit
+
+  # ── Tests ───────────────────────────────────────────────────────────────────
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: setup
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: afridev
+          POSTGRES_PASSWORD: afridev_test
+          POSTGRES_DB: afridev_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql://afridev:afridev_test@localhost:5432/afridev_test
+
+      - name: Run migrations
+        run: npx prisma migrate deploy
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql://afridev:afridev_test@localhost:5432/afridev_test
+
+      - name: Test affected
+        run: npx nx affected --target=test --base=${{ github.event.pull_request.base.sha || 'HEAD~1' }} --parallel=2 --ci --coverage
+        env:
+          DATABASE_URL: postgresql://afridev:afridev_test@localhost:5432/afridev_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: ci_test_secret_not_used_in_prod
+          JWT_REFRESH_SECRET: ci_test_refresh_secret
+          NODE_ENV: test
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: unit
+
+  # ── Build ───────────────────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+        working-directory: apps/api
+
+      - name: Build affected
+        run: npx nx affected --target=build --base=${{ github.event.pull_request.base.sha || 'HEAD~1' }} --parallel=2 --configuration=production
+
+      - name: Upload API build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-dist
+          path: dist/apps/api
+          retention-days: 1
+
+      - name: Upload Web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist/apps/web
+          retention-days: 1

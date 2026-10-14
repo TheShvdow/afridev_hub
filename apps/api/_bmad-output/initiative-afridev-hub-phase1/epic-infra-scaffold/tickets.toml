@@ -1,0 +1,92 @@
+# tickets.toml — epic-infra-scaffold (E1)
+# Infrastructure & Design System — 7 entrées en build order.
+# Tracer bullet : entrée 1 (health check)  prouve NestJS + Prisma + Redis bout en bout.
+# Deux pistes parallèles après le tracer bullet :
+#   - Piste API  : 1 → 2 → 3 → 4
+#   - Piste Web  : 1 → 5
+# Fermeture : 6 (refactor sweep, attend pistes 2-5) → 7 (smoke test E2E).
+#
+# Note Systalink : le host de production n'est pas encore disponible.
+# Le critère « déployé sur Systalink staging » du Done when de l'épic est en standby.
+# Les stories 1-7 peuvent être mergées sur main ; le déploiement sera déclenché
+# lorsque les secrets SSH/VPS seront configurés dans les GitHub environments.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Health check — probe DB & Redis"
+description = "Remplace le handler Express inline de /health par un HealthModule NestJS qui exécute SELECT 1 via Prisma et PING via Redis. Renvoie { status, db, redis, uptime } HTTP 200 ; HTTP 503 si l'un des checks échoue. C'est le tracer bullet qui prouve les trois couches câblées."
+verify = "GET /health retourne 200 avec db: 'ok' et redis: 'ok' quand docker:dev est up ; retourne 503 si le conteneur Redis est arrêté (test avec mock Prisma + mock RedisService)."
+covers = ["CAP-1"]
+after = []
+hitl = true
+risk = "medium"
+notes = ["Lancer docker:dev avant de démarrer cette story (npm run docker:dev depuis la racine). Le /health inline dans main.ts est remplacé, pas étendu."]
+
+[[entry]]
+id = 2
+type = "story"
+title = "Structured logging — nestjs-pino"
+description = "Installe nestjs-pino + pino-http + pino-pretty. Remplace le logger par défaut de NestFactory.create() par LoggerModule.forRoot(). Supprime les deux console.log de main.ts. JSON en production, pino-pretty en développement. Tous les modules existants (PrismaService, RedisService) utilisent l'InjectableLogger."
+verify = "En mode dev, les logs sont lisibles (pino-pretty) ; en mode production (NODE_ENV=production), chaque ligne est un JSON valide avec level, msg, time, pid. Aucun console.log ne subsiste dans src/."
+covers = ["CAP-1"]
+after = [1]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Config validation — Joi schema"
+description = "Crée src/config/config.schema.ts avec un schéma Joi qui valide DATABASE_URL, REDIS_URL, JWT_SECRET (min 32 chars), JWT_REFRESH_SECRET (min 32 chars), PORT (default 3000), NODE_ENV (enum), WEB_URL, et marque RESEND_API_KEY, WAVE_API_KEY, STRIPE_SECRET_KEY, R2_* comme optionnels. AppModule passe le schéma à ConfigModule.forRoot({ validationSchema }). Le processus crashe au démarrage avec un message explicite si une variable requise est absente."
+verify = "Démarrer l'API sans DATABASE_URL → l'app crash immédiatement avec le nom de la variable manquante dans le message d'erreur. Avec toutes les variables requises → l'app démarre normalement."
+covers = ["CAP-1"]
+after = [2]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 4
+type = "story"
+title = "MailModule — Resend adapter"
+description = "Crée src/mail/mail.module.ts et mail.service.ts. MailService expose send(to: string, subject: string, html: string): Promise<void>. RESEND_API_KEY + MAIL_FROM_ADDRESS injectés via ConfigService. En sandbox (NODE_ENV !== 'production'), la méthode logue l'email au lieu d'appeler Resend. MailModule est @Global() pour que les modules de domaine puissent l'injecter sans import répété. AppModule importe MailModule."
+verify = "En mode sandbox (NODE_ENV=test), appeler mail.service.send() produit un log structuré avec destinataire + sujet, sans appel réseau. Un test d'intégration mocke Resend et vérifie que le bon payload est construit."
+covers = ["CAP-1"]
+after = [3]
+hitl = false
+risk = "medium"
+notes = ["RESEND_API_KEY est déjà défini dans deploy.yml. En CI, NODE_ENV=test donc sandbox mode est actif — pas de vraie clé requise en CI."]
+
+[[entry]]
+id = 5
+type = "story"
+title = "Storybook — design system libs/ui"
+description = "Initialise Storybook 8+ pour @angular dans libs/ui. Importe apps/web/src/styles.scss pour les design tokens CSS. Corrige les classes Tailwind hardcodées dans ButtonComponent (orange-500 → primary mappé aux tokens verts --color-primary-*) et InputComponent (focus:ring-orange-500 → focus:ring-[var(--color-primary-500)]). Écrit les stories : Button (5 variants × 4 sizes), Input (default, error, disabled, prefixIcon, suffixIcon), Card (default, with-footer). Ajoute les nx targets ui:storybook et ui:build-storybook."
+verify = "nx run ui:storybook démarre sans erreur et affiche les composants avec le fond sombre (#121212) et la couleur primaire verte (#4CAF50). nx run ui:build-storybook produit un répertoire dist/storybook/ui."
+covers = ["CAP-1"]
+after = [1]
+hitl = false
+risk = "low"
+notes = ["User : couleur primaire = vert #4CAF50 (--color-primary-500 dans styles.scss). Pas d'orange. Les tokens sont déjà dans styles.scss — les importer dans .storybook/preview.ts suffit pour les rendre disponibles dans Tailwind + CSS custom properties."]
+
+[[entry]]
+id = 6
+type = "story"
+title = "Refactor sweep — E1"
+description = "Passe en revue les findings reportés dans les plans des entrées 2-5 et les applique : nommage, imports inutiles, types any résiduels, cohérence des guards/decorators. Aucun nouveau comportement. Scope défini au démarrage de la story à partir des plans et des review findings."
+verify = "nx lint api et nx lint ui passent sans warning. nx build api et nx build web ne produisent pas d'erreur TypeScript. Les tests existants sont tous verts."
+covers = ["CAP-1"]
+after = [2, 3, 4, 5]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 7
+type = "story"
+title = "Integration smoke test — stack complète E1"
+description = "Écrit une suite de tests d'intégration (Jest + supertest) qui démarre l'application NestJS complète (TestingModule avec vrais ConfigModule/PrismaModule/RedisModule/MailModule/HealthModule) et vérifie l'ensemble E1 : GET /health retourne 200, les logs sont structurés (intercepteur pino actif), ConfigModule injecte correctement les variables, MailService est injectable et passe en sandbox. Utilise les containers Postgres + Redis déjà actifs en CI."
+verify = "nx test api --testPathPattern=smoke passe au vert en CI avec les service containers Postgres et Redis. Les assertions couvrent le statut HTTP de /health, l'injectabilité de MailService, et la présence du LoggerModule dans le contexte."
+covers = ["CAP-1"]
+after = [6]
+hitl = false
+risk = "low"

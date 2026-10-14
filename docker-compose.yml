@@ -1,0 +1,87 @@
+version: '3.9'
+
+# ─────────────────────────────────────────────────────────────────
+# AfriDev Hub — Docker Compose DEV
+# Usage: docker-compose up -d
+# ─────────────────────────────────────────────────────────────────
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: afridev_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: afridev
+      POSTGRES_PASSWORD: afridev_secret
+      POSTGRES_DB: afridev_hub
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U afridev -d afridev_hub']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: afridev_redis
+    restart: unless-stopped
+    command: redis-server --requirepass afridev_redis_secret --appendonly yes
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--auth', 'afridev_redis_secret', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optionnel : pgAdmin pour explorer la DB en développement
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: afridev_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@afridevhub.com
+      PGADMIN_DEFAULT_PASSWORD: pgadmin_secret
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - '5050:80'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - tools
+
+  # Redis Commander (UI Redis)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: afridev_redis_ui
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: 'local:redis:6379:0:afridev_redis_secret'
+    ports:
+      - '8081:8081'
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  default:
+    name: afridev_network

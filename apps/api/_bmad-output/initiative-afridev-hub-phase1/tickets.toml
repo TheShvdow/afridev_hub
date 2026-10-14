@@ -1,0 +1,44 @@
+# tickets.toml — AfriDev Hub Phase 1
+# Initiative breakdown : 6 épics en build order.
+# E3, E4, E5 sont techniquement parallèles après E2 ; ordre ici = ordre recommandé d'exécution solo.
+
+[[epic]]
+id = 1
+slug = "epic-infra-scaffold"
+title = "Infrastructure & Design System"
+covers = ["CAP-1"]
+
+[[epic]]
+id = 2
+slug = "epic-auth-profiles"
+title = "Authentification & Profils"
+covers = ["CAP-2"]
+after = [{ epic = 1, needs = "CI, infra modules (Prisma/Redis/Mail/Config), design tokens, Docker services opérationnels" }]
+
+[[epic]]
+id = 3
+slug = "epic-forum-qa"
+title = "Forum Q&A"
+covers = ["CAP-3"]
+after = [{ epic = 2, needs = "User entity + JWT guards + GamificationModule scaffold + NotificationsModule scaffold" }]
+
+[[epic]]
+id = 4
+slug = "epic-vitrine-projets"
+title = "Vitrine Projets"
+covers = ["CAP-4"]
+after = [{ epic = 2, needs = "User entity + badge vérifié + JWT guards" }]
+
+[[epic]]
+id = 5
+slug = "epic-job-board"
+title = "Job Board"
+covers = ["CAP-5"]
+after = [{ epic = 2, needs = "User entity + rôle RECRUITER + UploadModule R2 scaffold" }]
+
+[[epic]]
+id = 6
+slug = "epic-paiements"
+title = "Paiements Africains"
+covers = ["CAP-6"]
+after = [{ epic = 5, needs = "entité Job + rôle RECRUITER + plan premium trigger (FR-34)" }]

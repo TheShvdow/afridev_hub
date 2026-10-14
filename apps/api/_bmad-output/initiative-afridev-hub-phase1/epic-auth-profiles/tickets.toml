@@ -1,0 +1,493 @@
+# tickets.toml — epic-auth-profiles (E2)
+# Authentification & Profils — 11 stories en build order.
+# Tracer bullet : inscription → login → GET /users/:username retourne profil public
+#                 avec reputation: 0 — prouve JWT, Prisma User, OG meta bout en bout.
+#
+# Contraintes héritées (AGENTS.md) :
+#   - Toutes les commandes depuis la racine monorepo, jamais depuis apps/api/
+#   - prisma:generate doit être exécuté localement (proxy sandbox bloque binaries.prisma.sh)
+#   - Montants monétaires en centimes entiers, jamais float
+#   - JWT access 15 min / refresh 7j stocké Redis whitelist
+#   - bcrypt rounds = 12
+#   - Monetary amounts: integer cents — never float
+#
+# Pré-requis E2 :
+#   - E1 terminé (CI, PrismaModule, RedisModule, MailModule, Config, Docker services)
+#   - Migration Neon principale appliquée (27 tables présentes)
+#   - @prisma/client non encore régénéré localement (bloqué sandbox)
+#
+# Build order :
+#   - Piste principale  : 1 → 2 → 3 → 4
+#   - Piste modules     : 1 → 5 → 6 (gamification puis notifications)
+#   - Piste upload      : 3 → 7
+#   - Piste badge       : 5 → 8
+#   - Piste OG          : 6 + 7 + 8 → 9 (profil public complet)
+#   - Fermeture         : 9 → 10 (refactor) → 11 (smoke test)
+
+[[entry]]
+id = 1
+type = "story"
+title = "Schema alignment + tracer bullet"
+description = """
+Aligne le schéma Prisma avec le code scaffoldé E1, applique la migration via Neon MCP, \
+puis vérifie le tracer bullet E2 bout en bout.
+
+CHANGEMENTS SCHÉMA (schema.prisma) :
+  User  → ajouter : displayName String?, location String?, githubUsername String?, \
+          linkedinUsername String?, twitterUsername String?, lastSeenAt DateTime? ; \
+          renommer relation : userBadges → receivedBadges (nom Prisma seulement, \
+          pas de DDL — ajouter @relation("ReceivedBadges") sur User et UserBadge)
+  Badge → ajouter : slug String @unique, category String?, requiredPoints Int @default(0)
+  Notification → renommer colonnes : entityType → targetType, entityId → targetId ; \
+                 ajouter : title String?, actorId String?, readAt DateTime? ; \
+                 ajouter relation : actor User? @relation("NotificationActor", ...)
+  User  → ajouter relation NotificationsSent Notification[] @relation("NotificationActor")
+  NotificationType enum → ajouter valeur : BADGE_AWARDED
+
+CORRECTIONS CODE (sans DDL supplémentaire) :
+  gamification.service.ts : remplacer sourceId par entityId dans l'interface \
+    ReputationEvent et dans prisma.reputationEvent.create()
+  notifications.service.ts : changer UPVOTE → VOTE_RECEIVED dans notifyUpvote()
+  auth.service.ts : retirer l'update lastSeenAt (champ existera après migration, \
+    mais la ligne try/catch est déjà présente — laisser tel quel, ça fonctionnera \
+    après prisma:generate)
+
+MIGRATION NEON MCP :
+  Utiliser prepare_database_migration puis complete_database_migration pour appliquer \
+  le DDL ALTER TABLE sur la branche main (br-steep-recipe-b92702cz).
+
+HITL après migration :
+  L'utilisateur doit exécuter localement : npm run prisma:generate
+  Puis tester : npm run start:api et appeler les 3 endpoints du tracer bullet.
+"""
+verify = """
+POST /auth/register { email, username, password } → 201 { accessToken, refreshToken }.
+POST /auth/login    { email, password }            → 200 { accessToken, refreshToken }.
+GET  /users/:username (avec token Authorization)   → 200 { id, username, reputation: 0, ... }.
+nx build api passe sans erreur TypeScript (après prisma:generate local).
+nx lint api passe sans warning sur les fichiers modifiés.
+"""
+covers = ["CAP-2"]
+after = []
+hitl = true
+risk = "high"
+notes = [
+  "prisma:generate est bloqué dans le sandbox — l'utilisateur doit l'exécuter localement après la migration.",
+  "La relation receivedBadges sur User est un renommage Prisma uniquement (pas de DDL) : utiliser @relation(name: 'ReceivedBadges') sur User.receivedBadges et UserBadge.user.",
+  "La relation actor sur Notification nécessite @relation(name: 'NotificationActor') sur Notification.actor et User.notificationsSent.",
+  "Pour la migration Neon : project_id = rapid-feather-21577696, branche main br-steep-recipe-b92702cz.",
+]
+
+[[entry]]
+id = 2
+type = "story"
+title = "Vérification email — VerificationToken flow"
+description = """
+Ajoute la confirmation d'email à l'inscription : le token est créé en DB, \
+l'email est envoyé via MailService, et un endpoint permet de valider ou de renvoyer.
+
+SCOPE :
+  AuthService.sendVerificationEmail(userId, email) :
+    - génère token = uuid() + expiry = now + 24h
+    - insère dans VerificationToken { identifier: email, token, expires }
+    - appelle mailService.send() avec lien /auth/verify-email?token=<tok>
+  POST /auth/verify-email?token= :
+    - cherche VerificationToken by token, vérifie expires > now
+    - met isVerified = true sur User (email = identifier)
+    - supprime le token utilisé
+    - retourne { message: 'Email vérifié.' }
+  POST /auth/resend-verification (guard JwtAuthGuard) :
+    - supprime les anciens tokens de cet email
+    - appelle sendVerificationEmail
+    - retourne { message: 'Email de vérification renvoyé.' }
+  AuthService.register() : appelle sendVerificationEmail après création user.
+  Login ne bloque PAS si !isVerified (soft gate Phase 1).
+"""
+verify = """
+POST /auth/register → email de vérification loggué en console (sandbox mode).
+POST /auth/verify-email?token=<valid> → 200 { message } ; User.isVerified = true en DB.
+POST /auth/verify-email?token=<expired> → 400.
+POST /auth/resend-verification (token valide) → 200 { message }.
+nx test api --testPathPattern=auth passe (unit test mock MailService).
+"""
+covers = ["CAP-2"]
+after = [1]
+hitl = false
+risk = "medium"
+notes = [
+  "VerificationToken.identifier = email (pas userId), conforme au modèle NextAuth hérité.",
+  "En sandbox (NODE_ENV != production), MailService.send() logue au lieu d'appeler Resend — aucune clé API requise.",
+]
+
+[[entry]]
+id = 3
+type = "story"
+title = "OAuth GitHub (fix Account model) + Google"
+description = """
+Corrige l'implémentation GitHub (qui posait githubId directement sur User) pour \
+utiliser le modèle Account (provider/providerAccountId), et ajoute Google OAuth \
+avec le même pattern.
+
+GITHUB FIX :
+  findOrCreateGithubUser(input) : remplacer la recherche par githubId sur User \
+    par une recherche Account{ provider:'github', providerAccountId: input.githubId } \
+    → User via account.userId ; si absent, créer User + Account en transaction.
+  GithubStrategy : adapter le callback pour passer githubId, email, username, \
+    displayName, avatarUrl.
+
+GOOGLE OAUTH :
+  Installer : npm install --save passport-google-oauth20 @types/passport-google-oauth20
+  Ajouter GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET à config.schema.ts (optionnels).
+  GoogleStrategy : étend PassportStrategy(Strategy, 'google'), scopes: email profile.
+  GoogleAuthGuard : extends AuthGuard('google').
+  AuthService.findOrCreateGoogleUser(input) : même pattern Account que GitHub.
+  AuthController : GET /auth/google, GET /auth/google/callback (redirect WEB_URL?tokens=).
+
+RETRAIT :
+  Supprimer le champ githubId: String? du schéma Prisma (ajouté par erreur dans le \
+  scaffold E1 — ce champ n'a jamais été en DB, donc pas de migration DROP nécessaire).
+"""
+verify = """
+GET /auth/github redirige vers GitHub (302).
+GET /auth/google redirige vers Google (302).
+Simuler le callback avec un mock Passport : AuthService.findOrCreateGithubUser() \
+  crée un User + Account en DB, retourne un token pair.
+AuthService.findOrCreateGoogleUser() : même assertion.
+nx build api sans erreur TypeScript.
+"""
+covers = ["CAP-2"]
+after = [1]
+hitl = false
+risk = "medium"
+notes = [
+  "GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET sont optionnels dans le schéma Joi (pas de crash au démarrage si absents).",
+  "Le callback redirect vers WEB_URL?accessToken=…&refreshToken=… est identique au pattern GitHub déjà en place.",
+]
+
+[[entry]]
+id = 4
+type = "story"
+title = "Onboarding profil — 3 étapes"
+description = """
+Endpoint PATCH /users/me/onboarding pour compléter les 3 champs d'onboarding \
+(location, stack, level). Si un champ est déjà renseigné, il est ignoré (skip).
+
+SCOPE :
+  DTO OnboardingDto : location?: string (max 100), stack?: string[] (max 10 items), \
+    level?: 'JUNIOR' | 'MID' | 'SENIOR' | 'LEAD'.
+  UsersService.updateOnboarding(userId, dto) :
+    - récupère User actuel
+    - ne met à jour que les champs non encore renseignés (skip if filled)
+    - sauvegarde via prisma.user.update
+  UsersController.onboarding : PATCH /users/me/onboarding (JwtAuthGuard)
+  Ajouter les champs stack String[] et level String? au modèle User dans schema.prisma.
+  Appliquer la migration Neon (ALTER TABLE User ADD COLUMN stack TEXT[], level TEXT).
+  hitl = true car nécessite prisma:generate.
+
+SKIP LOGIC :
+  if (dto.location && !user.location) updateData.location = dto.location
+  idem pour stack et level
+"""
+verify = """
+PATCH /users/me/onboarding { location: 'Dakar', stack: ['TypeScript'], level: 'SENIOR' }
+  → 200 { location: 'Dakar', stack: [...], level: 'SENIOR' }.
+Deuxième appel avec location différente → location inchangée (skip).
+nx test api --testPathPattern=users passe.
+"""
+covers = ["CAP-2"]
+after = [1]
+hitl = true
+risk = "low"
+notes = [
+  "stack est stocké en TEXT[] (PostgreSQL array). Prisma supporte les tableaux PostgreSQL nativement.",
+  "level peut être une enum UserLevel (JUNIOR/MID/SENIOR/LEAD) — préférable pour la lisibilité, mais String? est acceptable Phase 1.",
+  "Nécessite prisma:generate après ajout des colonnes stack et level.",
+]
+
+[[entry]]
+id = 5
+type = "story"
+title = "GamificationModule — addPoints exporté + EventEmitter2"
+description = """
+Expose l'interface contractuelle GamificationModule pour les autres modules (E3, E5) : \
+addPoints(userId, delta, reason) comme seul writer de reputationScore. \
+Wire EventEmitter2 pour les side-effects (WebSocket push + badge check).
+
+SCOPE :
+  Installer : npm install --save @nestjs/event-emitter
+  AppModule : importer EventEmitterModule.forRoot()
+  GamificationService.addPoints(userId, delta, reason, entityId?, entityType?) :
+    - renommage public de addReputation (garder addReputation comme alias privé)
+    - après update reputation : émettre eventEmitter.emit('reputation.updated', { userId, reputation })
+  NotificationsGateway : @OnEvent('reputation.updated') → sendToUser(userId, 'reputation', { score })
+  GamificationModule : exporter GamificationService (déjà fait) ; importer EventEmitter dans le module
+  Publier l'interface dans libs/shared-types : interface GamificationInterface { addPoints(...) }
+
+RÈGLES RÉPUTATION PHASE 1 (exhaustives d'après spec) :
+  +5 vote reçu, +10 réponse postée, +10 réponse acceptée, −2 vote négatif reçu, +15 question posée.
+  Constantes dans un fichier src/gamification/reputation.constants.ts.
+"""
+verify = """
+GamificationService.addPoints('userId', 10, 'answer_posted') : \
+  User.reputation incrémenté de 10 en DB, event 'reputation.updated' émis.
+NotificationsGateway reçoit l'event et appelle sendToUser (mock socket.io).
+GamificationModule est importable et GamificationService injectable dans AuthModule (test d'intégration).
+nx build api sans erreur.
+"""
+covers = ["CAP-2"]
+after = [1]
+hitl = false
+risk = "low"
+notes = [
+  "@nestjs/event-emitter est un wrapper de eventemitter2 maintenu par NestJS.",
+  "Le WebSocket push reputation.updated est reçu par NotificationsGateway via @OnEvent — le gateway doit importer EventEmitterModule ou écouter via injection.",
+  "Constantes reputation.constants.ts utilisées dans E3 (votes/réponses) — ne pas coder les deltas en dur dans les handlers.",
+]
+
+[[entry]]
+id = 6
+type = "story"
+title = "NotificationsModule — notify() exporté + store in-app"
+description = """
+Expose l'interface contractuelle NotificationsModule : notify(userId, payload) \
+comme unique point d'entrée pour tous les modules. Vérifie que le store in-app \
+(list, markAsRead, markAllAsRead, unreadCount) est opérationnel.
+
+SCOPE :
+  NotificationsService.notify(userId, payload) : alias public de create(), \
+    exposant un contrat simplifié : { type, title, message, targetType?, targetId?, actorId? }.
+  Corriger la discordance Notification schema (story 1 a appliqué le DDL) :
+    - vérifier que le select include { actor } fonctionne après prisma:generate
+  Controller endpoints (tous JwtAuthGuard) :
+    GET  /notifications              → list(userId, page, limit)
+    POST /notifications/:id/read     → markAsRead(id, userId)
+    POST /notifications/read-all     → markAllAsRead(userId)
+    GET  /notifications/unread-count → getUnreadCount(userId)
+  NotificationsModule : exporter NotificationsService
+
+CONTRAT exporté pour E3/E5 :
+  interface NotifyPayload { type: NotificationType; title: string; message: string;
+    targetType?: string; targetId?: string; actorId?: string }
+  Publier dans libs/shared-types.
+"""
+verify = """
+NotificationsService.notify(userId, { type: 'SYSTEM', title: 'Test', message: 'Hello' }) :
+  entrée créée en DB, sendToUser() appelé sur le gateway.
+GET /notifications (token valide) → 200 { data: [], meta: { unreadCount: 0 } }.
+POST /notifications/:id/read → 200, isRead = true en DB.
+nx build api sans erreur.
+"""
+covers = ["CAP-2"]
+after = [1]
+hitl = false
+risk = "low"
+notes = [
+  "notify() est le seul point d'entrée public — create() reste utilisable en interne mais n'est pas exporté.",
+  "Le gateway sendToUser() est déclenché dans notify(), pas via EventEmitter (direct call est suffisant Phase 1).",
+]
+
+[[entry]]
+id = 7
+type = "story"
+title = "UploadModule — presigned URL R2 pour avatars"
+description = """
+Crée UploadModule avec un endpoint qui génère une presigned URL Cloudflare R2 \
+pour upload direct client→R2. Le serveur NestJS ne proxie pas les bytes.
+
+SCOPE :
+  Installer : npm install --save @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+  Env vars (optionnels dans Joi, process crashe uniquement si module utilisé) :
+    R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_URL
+  UploadService.getAvatarPresignedUrl(userId, mimeType, fileSizeBytes) :
+    - valider MIME : image/jpeg | image/png | image/webp | image/gif
+    - valider taille : ≤ 5 MB
+    - générer objectKey = avatars/{userId}/{uuid}.{ext}
+    - créer S3Client avec endpoint https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com
+    - signer PutObjectCommand (expiry 5 min, ContentType, ContentLength)
+    - retourner { uploadUrl, publicUrl: R2_PUBLIC_URL + '/' + objectKey }
+  Controller : POST /upload/avatar-presign (JwtAuthGuard)
+    body: { mimeType: string, fileSizeBytes: number }
+    réponse: { uploadUrl, publicUrl }
+  PATCH /users/me/avatar : changer le TODO placeholder pour appeler \
+    UsersService.updateAvatar(userId, publicUrl) directement (le client a \
+    déjà uploadé vers R2 et envoie l'URL publique).
+  UploadModule : @Global() non — importé uniquement dans UsersModule et JobsModule (E5).
+
+FALLBACK sandbox :
+  Si R2_ACCOUNT_ID est absent, retourner { uploadUrl: 'https://placeholder.upload/', \
+  publicUrl: 'https://placeholder.r2.dev/...', warning: 'R2 not configured' }.
+"""
+verify = """
+POST /upload/avatar-presign { mimeType: 'image/jpeg', fileSizeBytes: 100000 } :
+  → 200 { uploadUrl: string, publicUrl: string }.
+mimeType: 'application/pdf' → 400 Bad Request.
+fileSizeBytes: 6000000 → 400 Bad Request.
+nx build api sans erreur.
+"""
+covers = ["CAP-2"]
+after = [3]
+hitl = false
+risk = "medium"
+notes = [
+  "R2 est compatible AWS S3 SDK — utiliser l'endpoint R2 comme baseEndpoint dans S3Client.",
+  "En sandbox sans R2_ACCOUNT_ID, le fallback retourne un warning sans crasher.",
+  "PATCH /users/me/avatar reçoit une publicUrl dans le body (pas le fichier brut) — le client upload directement vers R2 puis notifie le serveur.",
+]
+
+[[entry]]
+id = 8
+type = "story"
+title = "Badge dev-vérifié — 5 critères auto-assign/revoke"
+description = """
+Crée le badge 'dev-verifie' en DB (seed), puis implémente la logique \
+auto-assign/revoke basée sur 5 critères via EventEmitter2.
+
+CRITÈRES (les 5) :
+  1. isVerified = true (email confirmé)
+  2. avatarUrl non null
+  3. bio non null et bio.length >= 20
+  4. location non null
+  5. reputation >= 50
+
+SCOPE :
+  Seed : insérer Badge { slug: 'dev-verifie', name: 'Dev Vérifié', \
+    description: 'Profil complet et email confirmé', icon: '✅', \
+    category: 'profile', requiredPoints: 0 } si absent.
+  GamificationService.checkVerifiedBadge(userId) : Promise<void>
+    - charge User { isVerified, avatarUrl, bio, location, reputation }
+    - évalue les 5 critères
+    - si tous remplis : appelle awardBadge(userId, 'dev-verifie')
+    - si badge existant mais critère perdu : révoque (supprimer UserBadge)
+  EventEmitter listeners dans GamificationService :
+    @OnEvent('user.updated')   → checkVerifiedBadge(userId)
+    @OnEvent('user.verified')  → checkVerifiedBadge(userId)
+    @OnEvent('reputation.updated') → checkVerifiedBadge(userId) [pour critère 5]
+  AuthService.verifyEmail() : émettre eventEmitter.emit('user.verified', { userId })
+  UsersService.update() : émettre eventEmitter.emit('user.updated', { userId })
+  Prisma seed script (prisma/seed.ts) : ajouter l'upsert du badge 'dev-verifie'.
+"""
+verify = """
+Seed exécuté : Badge { slug: 'dev-verifie' } présent en DB.
+User avec les 5 critères remplis → checkVerifiedBadge() crée UserBadge.
+User perd l'avatar → checkVerifiedBadge() révoque UserBadge.
+nx test api --testPathPattern=gamification passe (unit tests mock Prisma).
+"""
+covers = ["CAP-2"]
+after = [5]
+hitl = false
+risk = "low"
+notes = [
+  "La révocation (suppression UserBadge) est spécifique au badge 'dev-verifie' — les autres badges ne sont pas révocables Phase 1.",
+  "prisma/seed.ts existe déjà ou doit être créé ; ajouter le badge en upsert pour idempotence.",
+  "npm run prisma:seed depuis la racine monorepo pour tester localement.",
+]
+
+[[entry]]
+id = 9
+type = "story"
+title = "Profil public OG meta — endpoint + Angular SSR"
+description = """
+Complète le profil public GET /users/:username avec les métadonnées Open Graph \
+nécessaires au crawl SEO/social, et intègre les meta tags dans la page Angular /@username.
+
+SCOPE BACKEND :
+  UsersService.findByUsername() : ajouter ogMeta dans la réponse :
+    { ogTitle: user.displayName ?? user.username,
+      ogDescription: user.bio ?? 'Développeur sur AfriDev Hub',
+      ogImage: user.avatarUrl ?? 'https://<R2_PUBLIC_URL>/default-avatar.png',
+      ogUrl: WEB_URL + '/@' + user.username }
+  Pas de nouvel endpoint — les données sont dans la réponse existante.
+
+SCOPE FRONTEND (apps/web) :
+  Route /@:username → composant UserProfileComponent.
+  Injecter Meta + Title de @angular/platform-browser.
+  onInit() : appeler le GET /users/:username et setter les meta tags :
+    og:title, og:description, og:image, og:url, og:type='profile'.
+  Si Angular Universal (SSR) est configuré dans le projet : les meta tags sont \
+    rendus côté serveur — vérifier apps/web/server.ts. Sinon, les setter \
+    côté client (suffisant Phase 1 pour les crawlers qui exécutent JS).
+
+REDIRECTION :
+  Route /users/:username → /@:username (redirect 301 côté Angular router).
+"""
+verify = """
+GET /users/:username → 200 { ..., ogMeta: { ogTitle, ogDescription, ogImage, ogUrl } }.
+Navigation vers /@username dans le navigateur : <meta property='og:title'> présent dans le DOM.
+nx build web sans erreur TypeScript.
+"""
+covers = ["CAP-2"]
+after = [6, 7, 8]
+hitl = false
+risk = "low"
+notes = [
+  "OG meta côté client (angular Meta service) est suffisant pour les crawlers modernes (Twitter, LinkedIn, Slack exécutent JS).",
+  "Si SSR n'est pas encore configuré dans apps/web, ne pas l'initialiser dans cette story — laisser en TODO commenté.",
+  "ogImage fallback = default-avatar.png stocké dans R2 (à uploader manuellement ou skip si R2 non configuré).",
+]
+
+[[entry]]
+id = 10
+type = "story"
+title = "Refactor sweep — E2"
+description = """
+Passe en revue les findings accumulés pendant E2 et les applique. \
+Aucun nouveau comportement.
+
+SCOPE :
+  - Supprimer les TODO / @ts-ignore / any résiduels dans auth, users, \
+    gamification, notifications, upload.
+  - Harmoniser les noms de méthodes entre les services et leurs interfaces partagées.
+  - Vérifier la cohérence des types DTO (class-validator) avec le schéma Prisma.
+  - S'assurer que tous les endpoints E2 ont les guards et décorateurs Swagger corrects.
+  - Vérifier que EventEmitter2 ne crée pas de circular dependency.
+  - Nettoyer les imports inutilisés détectés par nx lint api.
+  - Vérifier que GamificationModule et NotificationsModule exportent leurs interfaces \
+    publiques vers libs/shared-types pour E3.
+"""
+verify = """
+nx lint api passe sans warning sur tout le scope E2.
+nx build api sans erreur TypeScript (filtre TS5101|TS5107|TS2688 autorisés).
+nx test api passe (tous les tests existants verts).
+"""
+covers = ["CAP-2"]
+after = [9]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 11
+type = "story"
+title = "Integration smoke test — E2 complet"
+description = """
+Suite de tests d'intégration Jest + Supertest qui couvre le flow E2 de bout en bout : \
+inscription → vérification email → login → profil → réputation WebSocket.
+
+SCOPE :
+  Fichier : apps/api/src/auth/auth.e2e.spec.ts (ou test/auth.e2e-spec.ts)
+  Tests (avec vrais PrismaModule + RedisModule + TestingModule) :
+    1. POST /auth/register → 201, tokens présents, email de vérif loggué.
+    2. POST /auth/login (même user) → 200, tokens présents.
+    3. GET /users/:username (header Authorization) → 200, reputation = 0.
+    4. POST /auth/refresh → 200, nouveaux tokens, ancien JTI révoqué Redis.
+    5. POST /auth/logout → 204, JTI révoqué.
+    6. POST /auth/logout avec JTI révoqué → 401.
+    7. GET /auth/me (token valide) → 200, champs attendus.
+  Optionnel (si DB test disponible) :
+    8. PATCH /users/me/onboarding → profil mis à jour, champs skip si remplis.
+
+  Test runner : nx test api --testPathPattern=e2e (ou --testPathPattern=auth.e2e)
+  Containers Postgres + Redis requis (service containers CI déjà configurés en E1).
+"""
+verify = """
+nx test api --testPathPattern=auth.e2e passe au vert avec les services Docker démarrés.
+Aucun test flaky (timeouts Redis explicites, cleanup afterEach).
+"""
+covers = ["CAP-2"]
+after = [10]
+hitl = false
+risk = "low"
+notes = [
+  "Utiliser createTestingModule avec les vrais modules (pas de mocks Prisma) pour un vrai test d'intégration.",
+  "Lancer docker:dev avant d'exécuter les tests : npm run docker:dev depuis la racine.",
+  "Le test WebSocket (reputation push) est optionnel Phase 1 — marqué TODO si socket.io-client crée des problèmes de timeout.",
+]

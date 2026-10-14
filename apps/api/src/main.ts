@@ -1,0 +1,79 @@
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { Logger } from 'nestjs-pino';
+import { AppModule } from './app.module';
+import helmet from 'helmet';
+import compression from 'compression';
+
+async function bootstrap() {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
+  app.useLogger(app.get(Logger));
+
+  // ── Sécurité ─────────────────────────────────────────────────────
+  app.use(helmet());
+  app.use(compression());
+
+  // CORS — autoriser le front Angular
+  app.enableCors({
+    origin: process.env['WEB_URL'] ?? 'http://localhost:4200',
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
+  // ── Versioning API ───────────────────────────────────────────────
+  app.enableVersioning({ type: VersioningType.URI });
+
+  // ── Préfixe global ────────────────────────────────────────────────
+  app.setGlobalPrefix('api', { exclude: ['health'] });
+
+  // ── Validation globale ────────────────────────────────────────────
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,       // Supprimer champs non décorés
+      forbidNonWhitelisted: true,
+      transform: true,       // Auto-transformer les types primitifs
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    })
+  );
+
+  // ── Swagger (désactivé en production) ────────────────────────────
+  if (process.env['NODE_ENV'] !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('AfriDev Hub API')
+      .setDescription('API REST — Communauté des développeurs africains')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .addTag('auth', 'Authentification')
+      .addTag('users', 'Profils utilisateurs')
+      .addTag('forum', 'Forum Q&A')
+      .addTag('projects', 'Vitrine projets')
+      .addTag('jobs', 'Job board')
+      .addTag('payments', 'Paiements')
+      .addTag('notifications', 'Notifications')
+      .addTag('moderation', 'Modération')
+      .addTag('gamification', 'Badges & Réputation')
+      .addTag('admin', 'Administration')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document, {
+      swaggerOptions: { persistAuthorization: true },
+    });
+  }
+
+  const port = process.env['PORT'] ?? 3000;
+  await app.listen(port);
+
+  const logger = app.get(Logger);
+  logger.log({ port }, '🚀 AfriDev Hub API ready');
+  logger.log({ url: `http://localhost:${port}/api/docs` }, '📚 Swagger docs');
+}
+
+bootstrap();

@@ -1,0 +1,84 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+  DefaultValuePipe,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ProjectsService } from './projects.service';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+
+@ApiTags('Projects')
+@Controller('projects')
+export class ProjectsController {
+  constructor(private readonly projectsService: ProjectsService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Lister les projets approuvés' })
+  list(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('category') category?: string,
+  ) {
+    return this.projectsService.list(page, limit, category);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Détail d\'un projet' })
+  findOne(@Param('id') id: string) {
+    return this.projectsService.findOne(id);
+  }
+
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Soumettre un projet' })
+  create(
+    @CurrentUser('id') userId: string,
+    @Body() dto: CreateProjectDto,
+  ) {
+    return this.projectsService.create(userId, dto);
+  }
+
+  @Post(':id/star')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Starrer / déstarrer un projet' })
+  star(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.projectsService.star(id, userId);
+  }
+
+  @Post(':id/approve')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('MODERATOR', 'ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Approuver un projet [MODERATOR]' })
+  approve(
+    @Param('id') id: string,
+  ) {
+    return this.projectsService.approve(id);
+  }
+
+  @Post(':id/reject')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('MODERATOR', 'ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Rejeter un projet [MODERATOR]' })
+  reject(
+    @Param('id') id: string,
+  ) {
+    return this.projectsService.reject(id);
+  }
+}

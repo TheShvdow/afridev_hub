@@ -1,0 +1,619 @@
+// ─────────────────────────────────────────────────────────────────
+// AfriDev Hub — Prisma Schema
+// Phase 1 — MVP (32 entités)
+//
+// Conventions :
+//   - IDs     : cuid()
+//   - Dates   : DateTime, stockées en UTC
+//   - Montants: Int en centimes (XOF/NGN → unité de base)
+//   - Vote    : polymorphique via entityType + entityId (enum strict)
+//   - Tag     : polymorphique via PostTag + ProjectTag (FK valides)
+// ─────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  MEMBER
+  MODERATOR
+  ADMIN
+}
+
+enum VoteEntityType {
+  POST
+  ANSWER
+}
+
+enum VoteValue {
+  UP
+  DOWN
+}
+
+enum ReportEntityType {
+  POST
+  ANSWER
+  PROJECT
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+enum ModerationActionType {
+  HIDDEN
+  RESTORED
+  WARNING
+  BAN
+}
+
+enum JobMode {
+  REMOTE
+  ONSITE
+  HYBRID
+}
+
+enum JobStatus {
+  ACTIVE
+  EXPIRED
+  CLOSED
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  ACCEPTED
+  REJECTED
+}
+
+enum PlanType {
+  FREE
+  PREMIUM
+}
+
+enum PaymentProvider {
+  WAVE
+  ORANGE_MONEY
+  MTN_MOMO
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentEntityType {
+  MENTOR_SESSION
+  RECRUITER_PLAN
+  COURSE_ENROLLMENT
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSED
+  REJECTED
+}
+
+enum NotificationType {
+  NEW_ANSWER
+  ANSWER_ACCEPTED
+  VOTE_RECEIVED
+  MENTION
+  REPORT_RESOLVED
+  JOB_ALERT
+  SYSTEM
+  BADGE_AWARDED
+}
+
+// ─────────────────────────────────────────────────────────────────
+// AUTH & USER
+// ─────────────────────────────────────────────────────────────────
+
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  username         String   @unique
+  passwordHash     String?
+  name             String?
+  displayName      String?
+  avatarUrl        String?
+  bio              String?  @db.Text
+  location         String?
+  githubUrl        String?
+  linkedinUrl      String?
+  websiteUrl       String?
+  githubUsername   String?
+  linkedinUsername String?
+  twitterUsername  String?
+  reputation       Int      @default(0)
+  isVerified       Boolean  @default(false)
+  role             UserRole @default(MEMBER)
+  lastSeenAt       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  accounts          Account[]
+  posts             Post[]
+  answers           Answer[]
+  votes             Vote[]
+  reports           Report[]
+  moderationActions ModerationAction[] @relation("ModeratorActions")
+  receivedBadges    UserBadge[]        @relation("ReceivedBadges")
+  reputationEvents  ReputationEvent[]
+  projects          Project[]
+  projectStars      ProjectStar[]
+  jobOffers         JobOffer[]
+  jobApplications   JobApplication[]
+  jobAlerts         JobAlert[]
+  recruiterPlan     RecruiterPlan?
+  payments          Payment[]
+  refunds           Refund[]           @relation("AdminRefunds")
+  notifications     Notification[]
+  notificationsSent Notification[]     @relation("NotificationActor")
+  auditLogs         AuditLog[]
+
+  @@index([email])
+  @@index([username])
+  @@index([reputation])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  accessToken       String? @db.Text
+  refreshToken      String? @db.Text
+  expiresAt         Int?
+  tokenType         String?
+  scope             String?
+  idToken           String? @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// BADGES & RÉPUTATION
+// ─────────────────────────────────────────────────────────────────
+
+model Badge {
+  id             String  @id @default(cuid())
+  name           String  @unique
+  description    String
+  icon           String
+  condition      String
+  slug           String? @unique
+  category       String?
+  requiredPoints Int     @default(0)
+
+  userBadges UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  awardedAt DateTime @default(now())
+
+  user  User  @relation("ReceivedBadges", fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+model ReputationEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  delta      Int
+  reason     String
+  entityType String?
+  entityId   String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// TAG — polymorphique via tables de jonction PostTag + ProjectTag
+// (FK valides dans les deux sens)
+// ─────────────────────────────────────────────────────────────────
+
+model Tag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  postTags    PostTag[]
+  projectTags ProjectTag[]
+
+  @@index([usageCount])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// FORUM Q&A
+// ─────────────────────────────────────────────────────────────────
+
+model Post {
+  id         String   @id @default(cuid())
+  title      String
+  body       String   @db.Text
+  userId     String
+  isResolved Boolean  @default(false)
+  viewCount  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers  Answer[]
+  postTags PostTag[]
+
+  @@index([userId])
+  @@index([isResolved])
+  @@index([createdAt])
+}
+
+model PostTag {
+  postId String
+  tagId  String
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  body       String   @db.Text
+  postId     String
+  userId     String
+  isAccepted Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+  @@index([isAccepted])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// VOTE — polymorphique
+// entityType ∈ { POST, ANSWER } (enum strict)
+// Intégrité référentielle gérée par le service NestJS (pas de FK DB)
+// Contrainte d'unicité : un user ne vote qu'une fois par entité
+// ─────────────────────────────────────────────────────────────────
+
+model Vote {
+  id         String         @id @default(cuid())
+  userId     String
+  entityType VoteEntityType
+  entityId   String
+  value      VoteValue
+  createdAt  DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entityType, entityId])
+  @@index([entityType, entityId])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// MODÉRATION
+// ─────────────────────────────────────────────────────────────────
+
+model Report {
+  id         String           @id @default(cuid())
+  userId     String
+  entityType ReportEntityType
+  entityId   String
+  reason     String
+  status     ReportStatus     @default(PENDING)
+  createdAt  DateTime         @default(now())
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moderationActions ModerationAction[]
+
+  @@index([status])
+  @@index([entityType, entityId])
+  @@index([userId])
+}
+
+model ModerationAction {
+  id          String               @id @default(cuid())
+  moderatorId String
+  reportId    String?
+  entityType  String
+  entityId    String
+  action      ModerationActionType
+  note        String?
+  createdAt   DateTime             @default(now())
+
+  moderator User    @relation("ModeratorActions", fields: [moderatorId], references: [id])
+  report    Report? @relation(fields: [reportId], references: [id])
+
+  @@index([moderatorId])
+  @@index([entityType, entityId])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// VITRINE PROJETS
+// ─────────────────────────────────────────────────────────────────
+
+model ProjectCategory {
+  id       String @id @default(cuid())
+  name     String @unique
+  slug     String @unique
+  icon     String?
+
+  projects Project[]
+}
+
+model Project {
+  id             String    @id @default(cuid())
+  name           String
+  description    String    @db.Text
+  repoUrl        String
+  demoUrl        String?
+  userId         String
+  categoryId     String?
+  isApproved     Boolean   @default(false)
+  githubStars    Int       @default(0)
+  githubLanguage String?
+  githubLastPush DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    ProjectCategory? @relation(fields: [categoryId], references: [id])
+  stars       ProjectStar[]
+  projectTags ProjectTag[]
+
+  @@index([userId])
+  @@index([isApproved])
+  @@index([createdAt])
+}
+
+model ProjectStar {
+  userId    String
+  projectId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+  @@index([projectId])
+}
+
+model ProjectTag {
+  projectId String
+  tagId     String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, tagId])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// JOB BOARD
+// ─────────────────────────────────────────────────────────────────
+
+model JobCategory {
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
+
+  jobOffers JobOffer[]
+}
+
+model JobOffer {
+  id          String    @id @default(cuid())
+  title       String
+  description String    @db.Text
+  company     String
+  recruiterId String
+  country     String
+  mode        JobMode
+  currency    String
+  salaryMin   Int
+  salaryMax   Int
+  stack       String[]
+  categoryId  String?
+  status      JobStatus @default(ACTIVE)
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  recruiter    User             @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+  category     JobCategory?     @relation(fields: [categoryId], references: [id])
+  applications JobApplication[]
+
+  @@index([recruiterId])
+  @@index([status])
+  @@index([country, mode])
+  @@index([expiresAt])
+}
+
+model JobApplication {
+  id        String            @id @default(cuid())
+  jobId     String
+  userId    String
+  message   String            @db.Text
+  cvUrl     String?
+  status    ApplicationStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+
+  job  JobOffer @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, userId])
+  @@index([userId])
+  @@index([status])
+}
+
+model JobAlert {
+  id        String   @id @default(cuid())
+  userId    String
+  country   String?
+  mode      JobMode?
+  stack     String[]
+  currency  String?
+  salaryMin Int?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
+}
+
+model RecruiterPlan {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  planType  PlanType  @default(FREE)
+  startedAt DateTime  @default(now())
+  expiresAt DateTime?
+  isActive  Boolean   @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────────
+// PAIEMENTS
+// ─────────────────────────────────────────────────────────────────
+
+model Payment {
+  id          String            @id @default(cuid())
+  userId      String
+  provider    PaymentProvider
+  externalRef String?
+  amount      Int               // En unités de base (XOF, NGN, KES…)
+  currency    String            // ISO 4217 : "XOF", "NGN", "KES", "USD"
+  status      PaymentStatus     @default(PENDING)
+  entityType  PaymentEntityType
+  entityId    String
+  metadata    Json?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id])
+  commission Commission?
+  refunds    Refund[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([entityType, entityId])
+  @@index([externalRef])
+}
+
+model Commission {
+  id        String   @id @default(cuid())
+  paymentId String   @unique
+  amount    Int      // Montant prélevé en unités de base
+  rate      Float    // Ex: 0.12 pour 12%
+  createdAt DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+}
+
+model Refund {
+  id        String       @id @default(cuid())
+  paymentId String
+  amount    Int
+  reason    String
+  status    RefundStatus @default(PENDING)
+  adminId   String?
+  createdAt DateTime     @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+  admin   User?   @relation("AdminRefunds", fields: [adminId], references: [id])
+
+  @@index([paymentId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────────
+
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  type       NotificationType
+  title      String?
+  message    String
+  targetType String?
+  targetId   String?
+  actorId    String?
+  isRead     Boolean          @default(false)
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actor User? @relation("NotificationActor", fields: [actorId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String?
+  entityId   String?
+  ip         String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
