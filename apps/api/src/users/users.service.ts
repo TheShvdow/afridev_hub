@@ -4,10 +4,16 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { DomainException } from '../common/errors/domain.exception';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { OnboardingDto } from './dto/onboarding.dto';
+import type { UsersProfileUpdatedEvent } from '@afridev/shared-types';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly events: EventEmitter2,
+  ) {}
 
   async findByUsername(username: string) {
     const user = await this.prisma.user.findUnique({
@@ -68,7 +74,7 @@ export class UsersService {
   }
 
   async update(userId: string, dto: UpdateUserDto) {
-    return this.prisma.user.update({
+    const user = await this.prisma.user.update({
       where: { id: userId },
       data: { ...dto },
       select: {
@@ -78,6 +84,8 @@ export class UsersService {
         bio:             true,
         avatarUrl:       true,
         location:        true,
+        country:         true,
+        stack:           true,
         websiteUrl:      true,
         githubUsername:  true,
         linkedinUsername:true,
@@ -87,6 +95,37 @@ export class UsersService {
         isVerified:      true,
       },
     });
+
+    this.emitProfileUpdated(userId);
+    return user;
+  }
+
+  // Onboarding (E2-4) : un champ déjà renseigné n'est jamais écrasé.
+  async completeOnboarding(userId: string, dto: OnboardingDto) {
+    const current = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { location: true, country: true, stack: true },
+    });
+    if (!current) throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
+
+    const data = {
+      ...(!current.location && dto.location && { location: dto.location }),
+      ...(!current.country && dto.country && { country: dto.country }),
+      ...(current.stack.length === 0 && dto.stack?.length && { stack: dto.stack }),
+    };
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+      select: { id: true, username: true, location: true, country: true, stack: true },
+    });
+    this.emitProfileUpdated(userId);
+    return user;
+  }
+
+  private emitProfileUpdated(userId: string) {
+    const payload: UsersProfileUpdatedEvent = { userId };
+    this.events.emit('users.profile.updated', payload);
   }
 
   async updateAvatar(userId: string, avatarUrl: string) {

@@ -45,6 +45,25 @@ export class GamificationListener {
     return this.apply(event.answerAuthorId, REPUTATION_RULES.ANSWER_ACCEPTED, 'answer_accepted', event.answerId);
   }
 
+  // Badge « dev vérifié » : réévalué à chaque changement de profil ou de vérification email.
+  @OnEvent('users.profile.updated')
+  onProfileUpdated(event: { userId: string }) {
+    return this.syncBadge(event.userId);
+  }
+
+  @OnEvent('auth.email.verified')
+  onEmailVerified(event: { userId: string }) {
+    return this.syncBadge(event.userId);
+  }
+
+  private async syncBadge(userId: string) {
+    try {
+      await this.gamification.syncVerifiedBadge(userId);
+    } catch (error) {
+      this.logger.error(`Badge vérifié non synchronisé (user ${userId})`, error instanceof Error ? error.stack : String(error));
+    }
+  }
+
   // Le delta est calculé à partir de l'état avant/après : couvre ajout, changement et annulation.
   @OnEvent('votes.vote.changed')
   onVoteChanged(event: VotesVoteChangedEvent) {

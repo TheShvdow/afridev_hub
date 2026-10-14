@@ -32,6 +32,9 @@ const BADGES = [
   { slug: 'popular-project', name: 'Popular Project', description: 'Projet avec 50+ étoiles',          icon: '🌟', category: 'ACTIVITY' },
   { slug: 'recruiter',       name: 'Recruiter',       description: 'Première offre d\'emploi publiée', icon: '💼', category: 'ACTIVITY' },
 
+  // Vérification
+  { slug: 'dev-verifie', name: 'Dev vérifié', description: 'Profil complet et vérifié', icon: '✅', category: 'VERIFICATION' },
+
   // Special badges
   { slug: 'early-adopter', name: 'Early Adopter', description: 'Parmi les 100 premiers inscrits', icon: '🦅', category: 'SPECIAL' },
   { slug: 'beta-tester',   name: 'Beta Tester',   description: 'A participé à la bêta',           icon: '🧪', category: 'SPECIAL' },

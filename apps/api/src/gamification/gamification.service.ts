@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { GamificationReputationUpdatedEvent } from '@afridev/shared-types';
+import { isVerifiedProfile, VERIFIED_BADGE_SLUG } from './verified-badge';
 
 interface ReputationEvent {
   userId:    string;
@@ -122,6 +123,33 @@ export class GamificationService {
     return this.prisma.badge.findMany({
       orderBy: [{ category: 'asc' }, { requiredPoints: 'asc' }],
     });
+  }
+
+  // Attribue ou retire le badge « dev vérifié » selon l'état actuel du profil.
+  async syncVerifiedBadge(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where:  { id: userId },
+      select: { isVerified: true, country: true, stack: true, bio: true, githubUsername: true, linkedinUsername: true, twitterUsername: true, websiteUrl: true },
+    });
+    if (!user) return;
+
+    const badge = await this.prisma.badge.findUnique({ where: { slug: VERIFIED_BADGE_SLUG } });
+    if (!badge) {
+      this.logger.warn(`Badge ${VERIFIED_BADGE_SLUG} absent : lancer le seed`);
+      return;
+    }
+
+    const key = { userId_badgeId: { userId, badgeId: badge.id } };
+    const earned = await this.prisma.userBadge.findUnique({ where: key });
+    const qualifies = isVerifiedProfile(user);
+
+    if (qualifies && !earned) {
+      await this.prisma.userBadge.create({ data: { userId, badgeId: badge.id } });
+      this.logger.log(`Badge ${VERIFIED_BADGE_SLUG} attribué à userId=${userId}`);
+    } else if (!qualifies && earned) {
+      await this.prisma.userBadge.delete({ where: key });
+      this.logger.log(`Badge ${VERIFIED_BADGE_SLUG} retiré à userId=${userId}`);
+    }
   }
 
   // ── Privé ────────────────────────────────────────────────────────────

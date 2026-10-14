@@ -15,6 +15,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { OnboardingDto } from './dto/onboarding.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { DomainException } from '../common/errors/domain.exception';
@@ -57,6 +58,14 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
   ) {
     return this.usersService.update(userId, dto);
+  }
+
+  @Patch('me/onboarding')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Compléter son profil à l\'onboarding (champs vides uniquement)' })
+  completeOnboarding(@CurrentUser('id') userId: string, @Body() dto: OnboardingDto) {
+    return this.usersService.completeOnboarding(userId, dto);
   }
 
   @Patch('me/avatar')

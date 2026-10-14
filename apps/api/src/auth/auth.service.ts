@@ -8,6 +8,8 @@ import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { randomBytes } from 'crypto';
 import { MailService } from '../mail/mail.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import type { AuthEmailVerifiedEvent } from '@afridev/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { LoginDto } from './dto/login.dto';
@@ -41,6 +43,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
+    private readonly events: EventEmitter2,
   ) {}
 
   // ── Inscription ─────────────────────────────────────────────────────
@@ -87,6 +90,9 @@ export class AuthService {
       this.prisma.user.update({ where: { id: record.identifier }, data: { isVerified: true } }),
       this.prisma.verificationToken.deleteMany({ where: { identifier: record.identifier } }),
     ]);
+
+    const payload: AuthEmailVerifiedEvent = { userId: record.identifier };
+    this.events.emit('auth.email.verified', payload);
 
     return { message: 'Email vérifié.' };
   }

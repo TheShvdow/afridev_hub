@@ -29,8 +29,9 @@ function build(opts: { user?: Record<string, unknown> | null; token?: Record<str
       ? jest.fn().mockRejectedValue(new Error('resend down'))
       : jest.fn().mockResolvedValue(undefined),
   };
-  const service = new AuthService(prisma as never, redis as never, jwt as never, config as never, mail as never);
-  return { service, prisma, mail };
+  const events = { emit: jest.fn() };
+  const service = new AuthService(prisma as never, redis as never, jwt as never, config as never, mail as never, events as never);
+  return { service, prisma, mail, events };
 }
 
 const dto = { username: 'amadou', email: 'a@b.sn', password: 'Secret123!' };
@@ -56,6 +57,12 @@ describe('AuthService — vérification email', () => {
     await expect(service.verifyEmail('t')).resolves.toEqual({ message: 'Email vérifié.' });
     expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { isVerified: true } });
     expect(prisma.$transaction).toHaveBeenCalled();
+  });
+
+  it('emits auth.email.verified so the verified badge is re-evaluated', async () => {
+    const { service, events } = build({ token: { identifier: 'u1', token: 't', expires: new Date(Date.now() + 60_000) } });
+    await service.verifyEmail('t');
+    expect(events.emit).toHaveBeenCalledWith('auth.email.verified', { userId: 'u1' });
   });
 
   it('rejects an unknown token', async () => {

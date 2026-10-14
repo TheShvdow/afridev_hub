@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MaxLength, IsUrl } from 'class-validator';
+import { IsString, IsOptional, MaxLength, IsUrl, Matches, IsArray, ArrayMaxSize, MinLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateUserDto {
@@ -19,6 +19,20 @@ export class UpdateUserDto {
   @IsString()
   @MaxLength(100)
   location?: string;
+
+  @ApiPropertyOptional({ example: 'SN', description: 'Code pays ISO 3166-1 alpha-2' })
+  @IsOptional()
+  @Matches(/^[A-Z]{2}$/, { message: 'Le pays doit être un code ISO 3166-1 alpha-2 (ex. SN).' })
+  country?: string;
+
+  @ApiPropertyOptional({ example: ['TypeScript', 'NestJS'], description: 'Technologies déclarées (max 10)' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  @MinLength(1, { each: true })
+  @MaxLength(30, { each: true })
+  stack?: string[];
 
   @ApiPropertyOptional({ example: 'https://idrissawade.dev' })
   @IsOptional()

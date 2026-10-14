@@ -350,6 +350,14 @@ export interface ForumAnswerAcceptedEvent {
   postId:         string;
 }
 
+export interface UsersProfileUpdatedEvent {
+  userId: string;
+}
+
+export interface AuthEmailVerifiedEvent {
+  userId: string;
+}
+
 export interface GamificationReputationUpdatedEvent {
   userId:     string;
   reputation: number;
