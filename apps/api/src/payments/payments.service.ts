@@ -1,15 +1,15 @@
 import {
   Injectable,
-  BadRequestException,
   Logger,
-  NotFoundException,
-} from '@nestjs/common';
+  } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentEntityType, Prisma } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 
-export type PaymentProvider = 'WAVE' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'STRIPE';
+export type { PaymentProvider } from '@prisma/client';
+import type { PaymentProvider } from '@prisma/client';
+import { DomainException } from '../common/errors/domain.exception';
 
 interface InitiatePaymentInput {
   userId:      string;
@@ -100,7 +100,7 @@ export class PaymentsService {
     });
 
     if (!payment || payment.userId !== userId) {
-      throw new NotFoundException('Paiement introuvable.');
+      throw new DomainException('PAYMENTS_PAYMENT_NOT_FOUND', 'Paiement introuvable.', 404);
     }
 
     return payment;

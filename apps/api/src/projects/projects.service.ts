@@ -1,29 +1,25 @@
 import {
   Injectable,
-  NotFoundException,
-  ForbiddenException,
-  ConflictException,
-} from '@nestjs/common';
+  } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { Prisma } from '@prisma/client';
+import { DomainException } from '../common/errors/domain.exception';
 
 @Injectable()
 export class ProjectsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(page = 1, limit = 20, search?: string) {
+  async list(page = 1, limit = 20, categorySlug?: string) {
     const skip = (page - 1) * limit;
 
+    const where: Prisma.ProjectWhereInput = {
     const where: Prisma.ProjectWhereInput = {
       isApproved: true,
     };
 
-    if (search) {
-      where.OR = [
-        { name:        { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
+    if (categorySlug) {
+      where.category = { slug: categorySlug };
     }
 
     const [projects, total] = await Promise.all([
@@ -36,6 +32,7 @@ export class ProjectsService {
           id:          true,
           name:        true,
           description: true,
+          country:     true,
           repoUrl:     true,
           demoUrl:     true,
           isApproved:  true,
@@ -70,39 +67,50 @@ export class ProjectsService {
       },
     });
 
-    if (!project) throw new NotFoundException('Projet introuvable.');
-    if (!project.isApproved) throw new NotFoundException('Projet introuvable.');
+    if (!project) throw new DomainException('PROJECTS_PROJECT_NOT_FOUND', 'Projet introuvable.', 404);
+    if (!project.isApproved) throw new DomainException('PROJECTS_PROJECT_NOT_FOUND', 'Projet introuvable.', 404);
 
     return project;
   }
 
   async create(userId: string, dto: CreateProjectDto) {
+    const category = dto.categorySlug
+      ? await this.prisma.projectCategory.findUnique({ where: { slug: dto.categorySlug } })
+      : null;
+    if (dto.categorySlug && !category) {
+      throw new DomainException('PROJECTS_CATEGORY_NOT_FOUND', 'Catégorie introuvable.', 400);
+    }
+
     return this.prisma.project.create({
       data: {
-        name:        dto.title,      // DTO uses "title", DB uses "name"
+        name:        dto.name,
         description: dto.description,
-        repoUrl:     dto.repoUrl ?? '',
+        country:     dto.country,
+        repoUrl:     dto.repoUrl,
         demoUrl:     dto.demoUrl,
         userId,
+        categoryId:  category?.id,
         isApproved:  false,          // Requires admin approval
+        projectTags: { create: await this.upsertTags(dto.tags) },
       },
       include: {
         user: {
           select: { id: true, username: true, displayName: true, avatarUrl: true },
         },
+        projectTags: { include: { tag: true } },
       },
     });
   }
 
   async update(projectId: string, userId: string, dto: Partial<CreateProjectDto>) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException('Projet introuvable.');
-    if (project.userId !== userId) throw new ForbiddenException('Non autorisé.');
+    if (!project) throw new DomainException('PROJECTS_PROJECT_NOT_FOUND', 'Projet introuvable.', 404);
+    if (project.userId !== userId) throw new DomainException('PROJECTS_FORBIDDEN', 'Non autorisé.', 403);
 
     return this.prisma.project.update({
       where: { id: projectId },
       data: {
-        ...(dto.title       && { name:        dto.title }),
+        ...(dto.name        && { name:        dto.name }),
         ...(dto.description && { description: dto.description }),
         ...(dto.repoUrl     && { repoUrl:     dto.repoUrl }),
         ...(dto.demoUrl     && { demoUrl:     dto.demoUrl }),
@@ -110,12 +118,30 @@ export class ProjectsService {
     });
   }
 
+  // Même règle de slug que le forum (ForumService.createPost) : tags normalisés en slug.
+  private async upsertTags(names: string[]) {
+    return Promise.all(
+      names.map(async (tagName) => {
+        const slug = tagName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
+        const tag = await this.prisma.tag.upsert({
+          where:  { slug },
+          update: { usageCount: { increment: 1 } },
+          create: { name: tagName, slug, usageCount: 1 },
+        });
+        return { tagId: tag.id };
+      }),
+    );
+  }
+
   async delete(projectId: string, userId: string, userRole: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException('Projet introuvable.');
+    if (!project) throw new DomainException('PROJECTS_PROJECT_NOT_FOUND', 'Projet introuvable.', 404);
 
     if (project.userId !== userId && !['ADMIN', 'MODERATOR'].includes(userRole)) {
-      throw new ForbiddenException('Non autorisé.');
+      throw new DomainException('PROJECTS_FORBIDDEN', 'Non autorisé.', 403);
     }
 
     await this.prisma.project.delete({ where: { id: projectId } });
@@ -123,7 +149,7 @@ export class ProjectsService {
 
   async star(projectId: string, userId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException('Projet introuvable.');
+    if (!project) throw new DomainException('PROJECTS_PROJECT_NOT_FOUND', 'Projet introuvable.', 404);
 
     const existing = await this.prisma.projectStar.findUnique({
       where: { userId_projectId: { userId, projectId } },
@@ -145,7 +171,7 @@ export class ProjectsService {
 
   async approve(projectId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException('Projet introuvable.');
+    if (!project) throw new DomainException('PROJECTS_PROJECT_NOT_FOUND', 'Projet introuvable.', 404);
 
     return this.prisma.project.update({
       where: { id: projectId },
@@ -155,7 +181,7 @@ export class ProjectsService {
 
   async reject(projectId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException('Projet introuvable.');
+    if (!project) throw new DomainException('PROJECTS_PROJECT_NOT_FOUND', 'Projet introuvable.', 404);
 
     return this.prisma.project.update({
       where: { id: projectId },

@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import type {
   LoginDto,
   RegisterDto,
-  AuthTokensDto,
+  AuthTokens,
   UserMe,
 } from '@afridev/shared-types';
 
@@ -14,16 +14,16 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/auth`;
 
-  login(dto: LoginDto): Observable<AuthTokensDto> {
-    return this.http.post<AuthTokensDto>(`${this.base}/login`, dto);
+  login(dto: LoginDto): Observable<AuthTokens> {
+    return this.http.post<AuthTokens>(`${this.base}/login`, dto);
   }
 
-  register(dto: RegisterDto): Observable<AuthTokensDto> {
-    return this.http.post<AuthTokensDto>(`${this.base}/register`, dto);
+  register(dto: RegisterDto): Observable<AuthTokens> {
+    return this.http.post<AuthTokens>(`${this.base}/register`, dto);
   }
 
-  refreshToken(): Observable<AuthTokensDto> {
-    return this.http.post<AuthTokensDto>(`${this.base}/refresh`, {});
+  refreshToken(): Observable<AuthTokens> {
+    return this.http.post<AuthTokens>(`${this.base}/refresh`, {});
   }
 
   logout(): Observable<void> {

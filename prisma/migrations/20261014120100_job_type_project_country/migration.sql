@@ -1,0 +1,9 @@
+-- CreateEnum
+CREATE TYPE "JobType" AS ENUM ('FULL_TIME', 'PART_TIME', 'CONTRACT', 'FREELANCE', 'INTERNSHIP');
+
+-- AlterTable
+ALTER TABLE "Project" ADD COLUMN     "country" TEXT NOT NULL DEFAULT 'SN';
+
+-- AlterTable
+ALTER TABLE "JobOffer" ADD COLUMN     "type" "JobType" NOT NULL DEFAULT 'FULL_TIME';
+

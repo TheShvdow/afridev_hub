@@ -27,7 +27,7 @@ Répertoire public de projets open-source africains avec stats GitHub live, page
 
 **In scope :** soumission projet (URL GitHub, description, tags techno), import stats GitHub (stars, forks, langue, last push via GitHub API public), page projet publique, liste projets avec filtres/tri, OG meta, badge vérifié requis pour soumettre.
 
-**Out of scope :** étoiles internes (votes sur projets) Phase 1 — n'affectent pas `reputationScore` ; import d'autres forges (GitLab, Bitbucket) Phase 2 ; co-auteurs multiples Phase 2 ; commentaires sur projets Phase 2.
+**Out of scope :** étoiles internes (votes sur projets) Phase 1 — n'affectent pas `reputation` ; import d'autres forges (GitLab, Bitbucket) Phase 2 ; co-auteurs multiples Phase 2 ; commentaires sur projets Phase 2.
 
 **Touch points consommés :**
 - `JWT guards` + `User entity` + badge vérifié (E2) — condition de soumission
@@ -39,7 +39,7 @@ Répertoire public de projets open-source africains avec stats GitHub live, page
 
 **Tracer bullet :** soumettre un projet GitHub → stats importées → `GET /projects/:slug` retourne la page avec stars/forks/langue — prouve l'appel GitHub API, le stockage Prisma et le rendu public en une session.
 
-**Décision :** Les étoiles internes de projet N'alimentent PAS `reputationScore` en Phase 1 (glossaire exhaustif des règles réputation). E4 peut donc tourner en parallèle avec E3 sans collision sur GamificationModule. Cette décision doit être confirmée avant l'inception E4 si la spec évolue.
+**Décision :** Les étoiles internes de projet N'alimentent PAS `reputation` en Phase 1 (glossaire exhaustif des règles réputation). E4 peut donc tourner en parallèle avec E3 sans collision sur GamificationModule. Cette décision doit être confirmée avant l'inception E4 si la spec évolue.
 
 **Open question :** Fréquence de rafraîchissement des stats GitHub — à la demande (bouton) ou job schedulé ? `@nestjs/schedule` est premier consommateur dans E5 ; si E4 en a besoin avant E5, activer le module dans E4.
 

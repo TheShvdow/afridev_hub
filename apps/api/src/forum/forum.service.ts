@@ -1,17 +1,21 @@
 import {
   Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+  } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import type { ForumQuestionCreatedEvent, ForumAnswerCreatedEvent, ForumAnswerAcceptedEvent } from '@afridev/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreateAnswerDto } from './dto/create-answer.dto';
 import { ListPostsDto } from './dto/list-posts.dto';
 import { Prisma } from '@prisma/client';
+import { DomainException } from '../common/errors/domain.exception';
 
 @Injectable()
 export class ForumService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly events: EventEmitter2,
+  ) {}
 
   // ── Posts ────────────────────────────────────────────────────────────
 
@@ -94,7 +98,7 @@ export class ForumService {
       },
     });
 
-    if (!post) throw new NotFoundException('Question introuvable.');
+    if (!post) throw new DomainException('FORUM_QUESTION_NOT_FOUND', 'Question introuvable.', 404);
 
     // Incrémenter les vues (fire and forget)
     this.prisma.post
@@ -137,13 +141,16 @@ export class ForumService {
       },
     });
 
+    const questionEvent: ForumQuestionCreatedEvent = { authorId: userId, postId: post.id };
+    this.events.emit('forum.question.created', questionEvent);
+
     return post;
   }
 
   async updatePost(postId: string, userId: string, dto: Partial<CreatePostDto>) {
     const post = await this.prisma.post.findUnique({ where: { id: postId } });
-    if (!post) throw new NotFoundException('Question introuvable.');
-    if (post.userId !== userId) throw new ForbiddenException('Non autorisé.');
+    if (!post) throw new DomainException('FORUM_QUESTION_NOT_FOUND', 'Question introuvable.', 404);
+    if (post.userId !== userId) throw new DomainException('FORUM_FORBIDDEN', 'Non autorisé.', 403);
 
     return this.prisma.post.update({
       where: { id: postId },
@@ -156,10 +163,10 @@ export class ForumService {
 
   async deletePost(postId: string, userId: string, userRole: string) {
     const post = await this.prisma.post.findUnique({ where: { id: postId } });
-    if (!post) throw new NotFoundException('Question introuvable.');
+    if (!post) throw new DomainException('FORUM_QUESTION_NOT_FOUND', 'Question introuvable.', 404);
 
     if (post.userId !== userId && !['ADMIN', 'MODERATOR'].includes(userRole)) {
-      throw new ForbiddenException('Non autorisé.');
+      throw new DomainException('FORUM_FORBIDDEN', 'Non autorisé.', 403);
     }
 
     await this.prisma.post.delete({ where: { id: postId } });
@@ -169,7 +176,7 @@ export class ForumService {
 
   async createAnswer(postId: string, userId: string, dto: CreateAnswerDto) {
     const post = await this.prisma.post.findUnique({ where: { id: postId } });
-    if (!post) throw new NotFoundException('Question introuvable.');
+    if (!post) throw new DomainException('FORUM_QUESTION_NOT_FOUND', 'Question introuvable.', 404);
 
     const answer = await this.prisma.answer.create({
       data: { body: dto.body, postId, userId },
@@ -180,6 +187,9 @@ export class ForumService {
       },
     });
 
+    const answerEvent: ForumAnswerCreatedEvent = { authorId: userId, answerId: answer.id, postId };
+    this.events.emit('forum.answer.created', answerEvent);
+
     return answer;
   }
 
@@ -189,9 +199,9 @@ export class ForumService {
       include: { post: true },
     });
 
-    if (!answer) throw new NotFoundException('Réponse introuvable.');
+    if (!answer) throw new DomainException('FORUM_ANSWER_NOT_FOUND', 'Réponse introuvable.', 404);
     if (answer.post.userId !== userId) {
-      throw new ForbiddenException('Seul l\'auteur peut accepter une réponse.');
+      throw new DomainException('FORUM_ANSWER_ACCEPT_FORBIDDEN', 'Seul l\'auteur peut accepter une réponse.', 403);
     }
 
     await this.prisma.$transaction([
@@ -210,15 +220,22 @@ export class ForumService {
       }),
     ]);
 
+    const acceptedEvent: ForumAnswerAcceptedEvent = {
+      answerAuthorId: answer.userId,
+      answerId,
+      postId: answer.postId,
+    };
+    this.events.emit('forum.answer.accepted', acceptedEvent);
+
     return { success: true };
   }
 
   async deleteAnswer(answerId: string, userId: string, userRole: string) {
     const answer = await this.prisma.answer.findUnique({ where: { id: answerId } });
-    if (!answer) throw new NotFoundException('Réponse introuvable.');
+    if (!answer) throw new DomainException('FORUM_ANSWER_NOT_FOUND', 'Réponse introuvable.', 404);
 
     if (answer.userId !== userId && !['ADMIN', 'MODERATOR'].includes(userRole)) {
-      throw new ForbiddenException('Non autorisé.');
+      throw new DomainException('FORUM_FORBIDDEN', 'Non autorisé.', 403);
     }
 
     await this.prisma.answer.delete({ where: { id: answerId } });

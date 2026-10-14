@@ -1,33 +1,33 @@
 import {
   Injectable,
-  NotFoundException,
-  ForbiddenException,
-  ConflictException,
-} from '@nestjs/common';
-import { JobMode, Prisma } from '@prisma/client';
+  } from '@nestjs/common';
+import { JobMode, JobType, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateJobDto } from './dto/create-job.dto';
+import { DomainException } from '../common/errors/domain.exception';
 
 @Injectable()
 export class JobsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list(
-    page      = 1,
-    limit     = 20,
-    type?:    string,      // kept for controller compat but unused (no type field in schema)
-    workMode?: string,
-    search?:   string,
+    page   = 1,
+    limit  = 20,
+    type?:  JobType,
+    mode?:  JobMode,
+    search?: string,
   ) {
     const skip = (page - 1) * limit;
+    const where: Prisma.JobOfferWhereInput = {
     const where: Prisma.JobOfferWhereInput = {
       status: 'ACTIVE',
     };
 
-    // Note: `type` has no equivalent field in the schema — ignored intentionally
-
-    if (workMode) {
-      where.mode = workMode as JobMode;
+    if (type) {
+      where.type = type;
+    }
+    if (mode) {
+      where.mode = mode;
     }
 
     if (search) {
@@ -49,6 +49,7 @@ export class JobsService {
           title:       true,
           company:     true,
           country:     true,
+          type:        true,
           mode:        true,
           stack:       true,
           status:      true,
@@ -81,30 +82,34 @@ export class JobsService {
       },
     });
 
-    if (!job) throw new NotFoundException('Offre introuvable.');
+    if (!job) throw new DomainException('JOBS_OFFER_NOT_FOUND', 'Offre introuvable.', 404);
     if (job.status === 'CLOSED' || job.status === 'EXPIRED') {
-      throw new NotFoundException('Offre introuvable.');
+      throw new DomainException('JOBS_OFFER_NOT_FOUND', 'Offre introuvable.', 404);
     }
 
     return job;
   }
 
   async create(recruiterId: string, dto: CreateJobDto) {
+    if (dto.salaryMin > dto.salaryMax) {
+      throw new DomainException('JOBS_SALARY_RANGE_INVALID', 'Le salaire minimum ne peut pas dépasser le maximum.', 400);
+    }
+
     return this.prisma.jobOffer.create({
       data: {
         title:       dto.title,
         description: dto.description,
         company:     dto.company,
         recruiterId,
-        country:     dto.location   ?? '',
-        mode:        dto.workMode   as JobMode,
-        currency:    dto.currency   ?? 'XOF',
-        salaryMin:   dto.salaryMin  ?? 0,
-        salaryMax:   dto.salaryMax  ?? 0,
-        stack:       dto.techStack  ?? [],
+        country:     dto.country,
+        type:        dto.type,
+        mode:        dto.mode,
+        currency:    dto.currency,
+        salaryMin:   dto.salaryMin,
+        salaryMax:   dto.salaryMax,
+        stack:       dto.stack,
         status:      'ACTIVE',
-        expiresAt:   new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        // Omitted: type (no such field), slug (no such field), publishedAt (no such field)
+        expiresAt:   new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // Expiration J60 (glossaire)
       },
       include: {
         recruiter: {
@@ -116,25 +121,26 @@ export class JobsService {
 
   async update(jobId: string, userId: string, dto: Partial<CreateJobDto>) {
     const job = await this.prisma.jobOffer.findUnique({ where: { id: jobId } });
-    if (!job) throw new NotFoundException('Offre introuvable.');
-    if (job.recruiterId !== userId) throw new ForbiddenException('Non autorisé.');
+    if (!job) throw new DomainException('JOBS_OFFER_NOT_FOUND', 'Offre introuvable.', 404);
+    if (job.recruiterId !== userId) throw new DomainException('JOBS_FORBIDDEN', 'Non autorisé.', 403);
 
     return this.prisma.jobOffer.update({
       where: { id: jobId },
       data: {
         ...(dto.title       && { title:       dto.title }),
         ...(dto.description && { description: dto.description }),
-        ...(dto.location    && { country:     dto.location }),
-        ...(dto.workMode    && { mode:        dto.workMode as JobMode }),
-        ...(dto.techStack   && { stack:       dto.techStack }),
+        ...(dto.country     && { country:     dto.country }),
+        ...(dto.type        && { type:        dto.type }),
+        ...(dto.mode        && { mode:        dto.mode }),
+        ...(dto.stack       && { stack:       dto.stack }),
       },
     });
   }
 
   async close(jobId: string, userId: string) {
     const job = await this.prisma.jobOffer.findUnique({ where: { id: jobId } });
-    if (!job) throw new NotFoundException('Offre introuvable.');
-    if (job.recruiterId !== userId) throw new ForbiddenException('Non autorisé.');
+    if (!job) throw new DomainException('JOBS_OFFER_NOT_FOUND', 'Offre introuvable.', 404);
+    if (job.recruiterId !== userId) throw new DomainException('JOBS_FORBIDDEN', 'Non autorisé.', 403);
 
     return this.prisma.jobOffer.update({
       where: { id: jobId },
@@ -144,13 +150,13 @@ export class JobsService {
 
   async apply(jobId: string, userId: string, message: string, cvUrl?: string) {
     const job = await this.prisma.jobOffer.findUnique({ where: { id: jobId } });
-    if (!job) throw new NotFoundException('Offre introuvable.');
-    if (job.status !== 'ACTIVE') throw new ForbiddenException('Cette offre est fermée.');
+    if (!job) throw new DomainException('JOBS_OFFER_NOT_FOUND', 'Offre introuvable.', 404);
+    if (job.status !== 'ACTIVE') throw new DomainException('JOBS_OFFER_CLOSED', 'Cette offre est fermée.', 403);
 
     const existing = await this.prisma.jobApplication.findUnique({
       where: { jobId_userId: { jobId, userId } },
     });
-    if (existing) throw new ConflictException('Vous avez déjà postulé à cette offre.');
+    if (existing) throw new DomainException('JOBS_ALREADY_APPLIED', 'Vous avez déjà postulé à cette offre.', 409);
 
     return this.prisma.jobApplication.create({
       data: {
@@ -164,8 +170,8 @@ export class JobsService {
 
   async getApplications(jobId: string, userId: string) {
     const job = await this.prisma.jobOffer.findUnique({ where: { id: jobId } });
-    if (!job) throw new NotFoundException('Offre introuvable.');
-    if (job.recruiterId !== userId) throw new ForbiddenException('Non autorisé.');
+    if (!job) throw new DomainException('JOBS_OFFER_NOT_FOUND', 'Offre introuvable.', 404);
+    if (job.recruiterId !== userId) throw new DomainException('JOBS_FORBIDDEN', 'Non autorisé.', 403);
 
     return this.prisma.jobApplication.findMany({
       where:   { jobId },

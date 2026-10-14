@@ -10,14 +10,14 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
-  BadRequestException,
-} from '@nestjs/common';
+  } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { DomainException } from '../common/errors/domain.exception';
 
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5 MB
 
@@ -73,7 +73,7 @@ export class UsersController {
     )
     file: Express.Multer.File,
   ) {
-    if (!file) throw new BadRequestException('Aucun fichier fourni.');
+    if (!file) throw new DomainException('USERS_FILE_MISSING', 'Aucun fichier fourni.', 400);
     // TODO: Upload vers Cloudflare R2 et retourner l'URL publique
     const avatarUrl = `https://placeholder.r2.dev/${userId}-${Date.now()}.${file.mimetype.split('/')[1]}`;
     return this.usersService.updateAvatar(userId, avatarUrl);

@@ -9,32 +9,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { IsString, IsOptional } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ModerationActionType } from '@prisma/client';
 import { ModerationService } from './moderation.service';
+import { CreateReportDto } from './dto/create-report.dto';
+import { ResolveReportDto } from './dto/resolve-report.dto';
+import { BanUserDto } from './dto/ban-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-
-class CreateReportDto {
-  @ApiProperty({ example: 'POST' }) @IsString() entityType!: string;   // was targetType
-  @ApiProperty()                    @IsString() entityId!: string;      // was targetId
-  @ApiProperty()                    @IsString() reason!: string;
-  // description removed — Report model has no such field
-}
-
-class ResolveReportDto {
-  @ApiProperty({ enum: Object.values(ModerationActionType) }) @IsString() action!: string;
-  @ApiPropertyOptional() @IsOptional() @IsString() note?: string;
-}
-
-class BanUserDto {
-  @ApiProperty() @IsString() userId!: string;
-  @ApiProperty() @IsString() reason!: string;
-  // `until` removed — no bannedUntil field on User; ban logic uses ModerationAction
-}
 
 @ApiTags('Moderation')
 @Controller('moderation')
@@ -77,7 +59,7 @@ export class ModerationController {
     @CurrentUser('id') userId: string,
     @Body() dto: ResolveReportDto,
   ) {
-    return this.moderationService.resolveReport(id, userId, dto.action as ModerationActionType, dto.note);
+    return this.moderationService.resolveReport(id, userId, dto.action, dto.note);
   }
 
   @Post('users/ban')

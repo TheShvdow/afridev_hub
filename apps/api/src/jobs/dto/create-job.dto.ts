@@ -1,30 +1,21 @@
 import {
   IsString,
   IsEnum,
-  IsOptional,
-  IsArray,
-  IsNumber,
+  IsInt,
   IsPositive,
+  IsArray,
+  Matches,
   MinLength,
   MaxLength,
+  ArrayMinSize,
   ArrayMaxSize,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
+import { JobMode, JobType } from '@prisma/client';
 
-export enum JobType {
-  FULL_TIME  = 'FULL_TIME',
-  PART_TIME  = 'PART_TIME',
-  CONTRACT   = 'CONTRACT',
-  FREELANCE  = 'FREELANCE',
-  INTERNSHIP = 'INTERNSHIP',
-}
-
-export enum WorkMode {
-  REMOTE  = 'REMOTE',
-  ONSITE  = 'ONSITE',
-  HYBRID  = 'HYBRID',
-}
-
+// Règles : BMAD glossaire « Offre » — stack 1 à 5 tags, pays, mode, salaire obligatoire
+// (montant + devise), expiration à J60. Type de contrat conservé (décision 2026-10-14).
+// Champs alignés sur le modèle Prisma JobOffer : country, mode, stack, currency, salaryMin/Max.
 export class CreateJobDto {
   @ApiProperty({ example: 'Développeur Angular Senior' })
   @IsString()
@@ -32,7 +23,7 @@ export class CreateJobDto {
   @MaxLength(120)
   title!: string;
 
-  @ApiProperty({ example: 'Nous recherchons un développeur Angular senior...' })
+  @ApiProperty({ example: 'Nous recherchons un développeur Angular senior pour…' })
   @IsString()
   @MinLength(100)
   @MaxLength(20000)
@@ -43,41 +34,36 @@ export class CreateJobDto {
   @MaxLength(100)
   company!: string;
 
-  @ApiPropertyOptional({ example: 'Dakar, Sénégal' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  location?: string;
+  @ApiProperty({ example: 'SN', description: 'Code pays ISO 3166-1 alpha-2' })
+  @Matches(/^[A-Z]{2}$/, { message: 'Le pays doit être un code ISO 3166-1 alpha-2 (ex. SN).' })
+  country!: string;
 
-  @ApiProperty({ enum: JobType })
+  @ApiProperty({ enum: JobType, example: JobType.FULL_TIME })
   @IsEnum(JobType)
   type!: JobType;
 
-  @ApiProperty({ enum: WorkMode })
-  @IsEnum(WorkMode)
-  workMode!: WorkMode;
+  @ApiProperty({ enum: JobMode, example: JobMode.REMOTE })
+  @IsEnum(JobMode)
+  mode!: JobMode;
 
-  @ApiPropertyOptional({ example: 800000 })
-  @IsOptional()
-  @IsNumber()
+  @ApiProperty({ example: 500000, description: 'Montant minimum, en unités de base (entier)' })
+  @IsInt()
   @IsPositive()
-  salaryMin?: number;
+  salaryMin!: number;
 
-  @ApiPropertyOptional({ example: 1500000 })
-  @IsOptional()
-  @IsNumber()
+  @ApiProperty({ example: 800000, description: 'Montant maximum, en unités de base (entier)' })
+  @IsInt()
   @IsPositive()
-  salaryMax?: number;
+  salaryMax!: number;
 
-  @ApiPropertyOptional({ example: 'XOF' })
-  @IsOptional()
-  @IsString()
-  currency?: string;
+  @ApiProperty({ example: 'XOF', description: 'Code devise ISO 4217' })
+  @Matches(/^[A-Z]{3}$/, { message: 'La devise doit être un code ISO 4217 (ex. XOF).' })
+  currency!: string;
 
-  @ApiPropertyOptional({ example: ['angular', 'typescript', 'ngrx'] })
-  @IsOptional()
+  @ApiProperty({ example: ['angular', 'typescript', 'ngrx'], minItems: 1, maxItems: 5 })
   @IsArray()
+  @ArrayMinSize(1, { message: 'Au moins 1 technologie est requise.' })
+  @ArrayMaxSize(5, { message: 'Maximum 5 technologies par offre.' })
   @IsString({ each: true })
-  @ArrayMaxSize(10)
-  techStack?: string[];
+  stack!: string[];
 }

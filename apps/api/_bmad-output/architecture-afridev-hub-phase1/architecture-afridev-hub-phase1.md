@@ -56,7 +56,7 @@ graph TD
 
 - **Binds:** tous les modules domaine, tout accès Prisma
 - **Prevents:** N+1 sur les lectures cross-module ; mutation non-contrôlée d'entités appartenant à un autre module
-- **Rule:** lectures cross-module → joins Prisma sur champs publics uniquement. Mutations d'une entité → module owner exclusivement. Exemple : `ForumModule` lit `User.username` via join Prisma ; il ne mutate jamais la table `User`. **Cas explicite** : `GamificationModule` est le seul module autorisé à écrire le champ `User.reputationScore` ; tous les autres modules (forum, votes, users) le lisent uniquement en lecture via join Prisma.
+- **Rule:** lectures cross-module → joins Prisma sur champs publics uniquement. Mutations d'une entité → module owner exclusivement. Exemple : `ForumModule` lit `User.username` via join Prisma ; il ne mutate jamais la table `User`. **Cas explicite** : `GamificationModule` est le seul module autorisé à écrire le champ `User.reputation` ; tous les autres modules (forum, votes, users) le lisent uniquement en lecture via join Prisma.
 
 ### AD-3 — Autorisation [ADOPTED]
 
@@ -132,6 +132,7 @@ graph TD
 | Variables d'env | Déclarées dans le schéma Joi de `AppModule` ; injectées via `ConfigService` |
 | Payloads événements EventEmitter2 | Interfaces TypeScript typées déclarées dans `libs/shared-types` — jamais `any` ni objet littéral non typé |
 | Checks conditionnels données (ex. réputation ≥ 10) | Dans le service uniquement — jamais exprimés en Guard ou décorateur |
+| Contrat de données (schéma ↔ DTO ↔ types partagés) | Schéma Prisma = source des champs et enums ; voir `data-contract-afridev-hub-phase1.md` |
 
 ## Stack
 

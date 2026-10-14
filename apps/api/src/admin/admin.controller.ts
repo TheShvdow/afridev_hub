@@ -8,18 +8,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
+import { UpdateRoleDto } from './dto/update-role.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-
-class UpdateRoleDto {
-  @ApiProperty({ enum: ['USER', 'MODERATOR', 'ADMIN'] })
-  @IsString()
-  role!: string;
-}
 
 @ApiTags('Admin')
 @Controller('admin')

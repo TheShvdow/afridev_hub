@@ -13,36 +13,11 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { IsEnum, IsString, IsNumber, IsPositive } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-import { PaymentEntityType } from '@prisma/client';
-import { PaymentsService, PaymentProvider } from './payments.service';
+import { PaymentsService } from './payments.service';
+import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
-class InitiatePaymentDto {
-  @ApiProperty({ example: 10000 })
-  @IsNumber()
-  @IsPositive()
-  amount!: number;
-
-  @ApiProperty({ example: 'XOF' })
-  @IsString()
-  currency!: string;
-
-  @ApiProperty({ enum: ['WAVE', 'ORANGE_MONEY', 'MTN_MOMO', 'STRIPE'] })
-  @IsEnum(['WAVE', 'ORANGE_MONEY', 'MTN_MOMO', 'STRIPE'])
-  provider!: PaymentProvider;
-
-  // was `purpose: string` — Payment model requires entityType (enum) + entityId
-  @ApiProperty({ enum: Object.values(PaymentEntityType) })
-  @IsEnum(PaymentEntityType)
-  entityType!: PaymentEntityType;
-
-  @ApiProperty({ example: 'job-offer-id-here' })
-  @IsString()
-  entityId!: string;
-}
 
 @ApiTags('Payments')
 @Controller('payments')

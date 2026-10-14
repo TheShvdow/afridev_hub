@@ -1,10 +1,11 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { RedisService } from '../../redis/redis.service';
 import { JwtPayload } from './jwt.strategy';
+import { DomainException } from '../../common/errors/domain.exception';
 
 @Injectable()
 export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
@@ -24,16 +25,16 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
     const refreshToken = req.body?.refreshToken as string | undefined;
 
     if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token manquant.');
+      throw new DomainException('AUTH_REFRESH_TOKEN_MISSING', 'Refresh token manquant.', 401);
     }
 
     if (!payload.jti) {
-      throw new UnauthorizedException('Token invalide (pas de JTI).');
+      throw new DomainException('AUTH_TOKEN_INVALID', 'Token invalide (pas de JTI).', 401);
     }
 
     const isValid = await this.redis.isRefreshTokenValid(payload.sub, payload.jti);
     if (!isValid) {
-      throw new UnauthorizedException('Refresh token révoqué ou expiré.');
+      throw new DomainException('AUTH_REFRESH_TOKEN_REVOKED', 'Refresh token révoqué ou expiré.', 401);
     }
 
     return { ...payload, refreshToken };

@@ -7,27 +7,16 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
+  ParseEnumPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { IsString, IsOptional } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { JobMode, JobType } from '@prisma/client';
 import { JobsService } from './jobs.service';
 import { CreateJobDto } from './dto/create-job.dto';
+import { ApplyJobDto } from './dto/apply-job.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-
-class ApplyDto {
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  message?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  cvUrl?: string;
-}
 
 @ApiTags('Jobs')
 @Controller('jobs')
@@ -39,11 +28,11 @@ export class JobsController {
   list(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
-    @Query('type') type?: string,
-    @Query('workMode') workMode?: string,
+    @Query('type', new ParseEnumPipe(JobType, { optional: true })) type?: JobType,
+    @Query('mode', new ParseEnumPipe(JobMode, { optional: true })) mode?: JobMode,
     @Query('search') search?: string,
   ) {
-    return this.jobsService.list(page, limit, type, workMode, search);
+    return this.jobsService.list(page, limit, type, mode, search);
   }
 
   @Get(':id')
@@ -70,9 +59,9 @@ export class JobsController {
   apply(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
-    @Body() dto: ApplyDto,
+    @Body() dto: ApplyJobDto,
   ) {
-    return this.jobsService.apply(id, userId, dto.message ?? '', dto.cvUrl);
+    return this.jobsService.apply(id, userId, dto.message, dto.cvUrl);
   }
 
   @Get(':id/applications')

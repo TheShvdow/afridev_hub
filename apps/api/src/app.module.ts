@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { configValidationSchema } from './config/config.schema';
@@ -18,6 +20,8 @@ import { GamificationModule } from './gamification/gamification.module';
 import { AdminModule } from './admin/admin.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 @Module({
   imports: [
@@ -28,6 +32,9 @@ import { MailModule } from './mail/mail.module';
       cache: true,
       validationSchema: configValidationSchema,
     }),
+
+    // ── Événements de domaine (AD-1 / AD-8) ───────────────────────
+    EventEmitterModule.forRoot(),
 
     // ── Rate limiting ─────────────────────────────────────────────
     ThrottlerModule.forRoot([
@@ -65,6 +72,11 @@ import { MailModule } from './mail/mail.module';
     ModerationModule,
     GamificationModule,
     AdminModule,
+  ],
+  providers: [
+    // Enveloppe AD-7 : succès { data }, erreur { error: { code, message } }
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
   ],
 })
 export class AppModule {}

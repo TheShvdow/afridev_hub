@@ -16,7 +16,7 @@ Forum Q&A pleinement fonctionnel en production : questions techniques posées et
 
 ## Done when
 
-- Un membre peut poser une question, répondre, voter (+/−) et accepter une réponse ; chaque action met à jour `reputationScore` en temps réel via WebSocket.
+- Un membre peut poser une question, répondre, voter (+/−) et accepter une réponse ; chaque action met à jour `reputation` en temps réel via WebSocket.
 - File de modération accessible aux MODERATOR : signalements visibles, contenu masquable (FR-20/FR-21 — seuil d'auto-masquage à définir avant S7).
 - Notifications in-app délivrées pour : nouvelle réponse à ma question, commentaire sur ma réponse (via `NotificationsModule`).
 - SM-2 mesurable : structure permettant de vérifier 100+ questions avec ≥ 1 réponse dans les 30 jours post-bêta.
@@ -36,12 +36,12 @@ Forum Q&A pleinement fonctionnel en production : questions techniques posées et
 
 ## Notes
 
-**Tracer bullet :** question postée → réponse postée → vote sur réponse → `reputationScore` de l'auteur de la réponse incrémenté en temps réel via WebSocket — chemin complet du tracer path initiative (E1 → E2 → E3).
+**Tracer bullet :** question postée → réponse postée → vote sur réponse → `reputation` de l'auteur de la réponse incrémenté en temps réel via WebSocket — chemin complet du tracer path initiative (E1 → E2 → E3).
 
 **Open question critique :** Seuil d'auto-masquage signalements (FR-20/FR-21) — doit être défini avant Sprint 7. Ajouter comme `unknown` sur la story de modération.
 
 **Décisions :**
-- `GamificationModule` reste le seul writer de `reputationScore` ; E3 y ajoute des handlers via `EventEmitter2`, pas d'import direct depuis ForumModule (AD-3, AD-5).
+- `GamificationModule` reste le seul writer de `reputation` ; E3 y ajoute des handlers via `EventEmitter2`, pas d'import direct depuis ForumModule (AD-3, AD-5).
 - `NotificationsModule` reste le seul consommateur Socket.io ; ForumModule émet des events, ne push pas directement (AD-7).
 
 ## References

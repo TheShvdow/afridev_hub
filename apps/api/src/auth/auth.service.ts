@@ -1,7 +1,5 @@
 import {
   Injectable,
-  UnauthorizedException,
-  ConflictException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -14,6 +12,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 import type { User } from '@prisma/client';
+import { DomainException } from '../common/errors/domain.exception';
 
 const BCRYPT_ROUNDS = 12;
 const ACCESS_TTL_MS  = 15 * 60 * 1000;           // 15 min
@@ -49,9 +48,9 @@ export class AuthService {
 
     if (existing) {
       if (existing.email === dto.email) {
-        throw new ConflictException('Cet email est déjà utilisé.');
+        throw new DomainException('AUTH_EMAIL_TAKEN', 'Cet email est déjà utilisé.', 409);
       }
-      throw new ConflictException('Ce nom d\'utilisateur est déjà pris.');
+      throw new DomainException('AUTH_USERNAME_TAKEN', 'Ce nom d\'utilisateur est déjà pris.', 409);
     }
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
@@ -73,12 +72,12 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
 
     if (!user || !user.passwordHash) {
-      throw new UnauthorizedException('Email ou mot de passe incorrect.');
+      throw new DomainException('AUTH_INVALID_CREDENTIALS', 'Email ou mot de passe incorrect.', 401);
     }
 
     const isMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!isMatch) {
-      throw new UnauthorizedException('Email ou mot de passe incorrect.');
+      throw new DomainException('AUTH_INVALID_CREDENTIALS', 'Email ou mot de passe incorrect.', 401);
     }
 
     return this.generateTokenPair(user);
@@ -152,7 +151,7 @@ export class AuthService {
 
   async refresh(userId: string, oldJti: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new UnauthorizedException('Utilisateur introuvable.');
+    if (!user) throw new DomainException('AUTH_USER_NOT_FOUND', 'Utilisateur introuvable.', 401);
 
     // Révoquer l'ancien refresh token (rotation)
     await this.redis.revokeRefreshToken(userId, oldJti);
@@ -188,7 +187,7 @@ export class AuthService {
       },
     });
 
-    if (!user) throw new UnauthorizedException('Utilisateur introuvable.');
+    if (!user) throw new DomainException('AUTH_USER_NOT_FOUND', 'Utilisateur introuvable.', 401);
     return user;
   }
 
@@ -196,7 +195,7 @@ export class AuthService {
 
   async generateTokensForOAuthUser(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new UnauthorizedException('Utilisateur introuvable.');
+    if (!user) throw new DomainException('AUTH_USER_NOT_FOUND', 'Utilisateur introuvable.', 401);
     return this.generateTokenPair(user);
   }
 

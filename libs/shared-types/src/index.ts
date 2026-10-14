@@ -1,3 +1,40 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Types partagés API ↔ front (miroir du contrat BMAD : data-contract-afridev-hub-phase1.md)
+//
+// Règles :
+//   - Enums : valeurs identiques à `prisma/schema.prisma` (source de vérité).
+//   - Champs : noms identiques aux champs Prisma ; relations nommées comme dans Prisma
+//     (`user`, `postTags`, `projectTags`, `recruiter`, `actor`).
+//   - Ne pas ajouter de champ ici sans l'ajouter au schéma (ou documenter le mapping).
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Enums (miroir Prisma) ────────────────────────────────────────────────────
+
+export type UserRole = 'MEMBER' | 'MODERATOR' | 'ADMIN';
+export type VoteEntityType = 'POST' | 'ANSWER';
+export type VoteValue = 'UP' | 'DOWN';
+export type ReportEntityType = 'POST' | 'ANSWER' | 'PROJECT';
+export type ReportStatus = 'PENDING' | 'REVIEWED' | 'RESOLVED' | 'DISMISSED';
+export type ModerationActionType = 'HIDDEN' | 'RESTORED' | 'WARNING' | 'BAN';
+export type JobType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'FREELANCE' | 'INTERNSHIP';
+export type JobMode = 'REMOTE' | 'ONSITE' | 'HYBRID';
+export type JobStatus = 'ACTIVE' | 'EXPIRED' | 'CLOSED';
+export type ApplicationStatus = 'PENDING' | 'REVIEWED' | 'ACCEPTED' | 'REJECTED';
+export type PlanType = 'FREE' | 'PREMIUM';
+export type PaymentProvider = 'WAVE' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'STRIPE';
+export type PaymentStatus = 'PENDING' | 'AUTHORIZED' | 'CAPTURED' | 'FAILED' | 'REFUNDED';
+export type PaymentEntityType = 'MENTOR_SESSION' | 'RECRUITER_PLAN' | 'COURSE_ENROLLMENT';
+export type RefundStatus = 'PENDING' | 'PROCESSED' | 'REJECTED';
+export type NotificationType =
+  | 'NEW_ANSWER'
+  | 'ANSWER_ACCEPTED'
+  | 'VOTE_RECEIVED'
+  | 'MENTION'
+  | 'REPORT_RESOLVED'
+  | 'JOB_ALERT'
+  | 'SYSTEM'
+  | 'BADGE_AWARDED';
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
 export interface LoginDto {
@@ -18,7 +55,14 @@ export interface AuthTokens {
 
 // ── User ──────────────────────────────────────────────────────────────────────
 
-export type UserRole = 'USER' | 'MODERATOR' | 'ADMIN';
+/** Sous-ensemble public d'un utilisateur, utilisé dans les relations (`user`, `recruiter`, `actor`…). */
+export interface UserSummary {
+  id:          string;
+  username:    string;
+  displayName: string | null;
+  avatarUrl:   string | null;
+  reputation:  number;
+}
 
 export interface UserMe {
   id:          string;
@@ -57,34 +101,32 @@ export interface UserProfile {
 
 // ── Forum ─────────────────────────────────────────────────────────────────────
 
-export type PostStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'DELETED';
+export interface TagSummary {
+  name: string;
+  slug: string;
+}
 
-export interface PostTag {
-  tag: { name: string; slug: string };
+export interface PostTagItem {
+  tag: TagSummary;
 }
 
 export interface PostListItem {
-  id:          string;
-  title:       string;
-  slug:        string;
-  excerpt:     string | null;
-  voteScore:   number;
-  answerCount: number;
-  viewCount:   number;
-  isSolved:    boolean;
-  createdAt:   string;
-  lastActivityAt: string;
-  author:      Pick<UserProfile, 'id' | 'username' | 'displayName' | 'avatarUrl' | 'reputation'>;
-  tags:        PostTag[];
+  id:         string;
+  title:      string;
+  viewCount:  number;
+  isResolved: boolean;
+  createdAt:  string;
+  user:       UserSummary;
+  postTags:   PostTagItem[];
+  _count:     { answers: number };
 }
 
 export interface AnswerItem {
   id:         string;
   body:       string;
-  voteScore:  number;
   isAccepted: boolean;
   createdAt:  string;
-  author:     Pick<UserProfile, 'id' | 'username' | 'displayName' | 'avatarUrl' | 'reputation'>;
+  user:       UserSummary;
 }
 
 export interface PostDetail extends PostListItem {
@@ -92,91 +134,221 @@ export interface PostDetail extends PostListItem {
   answers: AnswerItem[];
 }
 
+// ── Votes ─────────────────────────────────────────────────────────────────────
+
+export interface VoteDto {
+  value: VoteValue;
+}
+
 // ── Projects ──────────────────────────────────────────────────────────────────
 
-export type ProjectStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ARCHIVED';
+export interface ProjectCategorySummary {
+  name: string;
+  slug: string;
+}
+
+export interface ProjectTagItem {
+  tag: TagSummary;
+}
 
 export interface ProjectListItem {
   id:          string;
-  title:       string;
-  slug:        string;
+  name:        string;
   description: string;
-  repoUrl:     string | null;
+  country:     string;
+  repoUrl:     string;
   demoUrl:     string | null;
-  techStack:   string[];
-  starCount:   number;
-  viewCount:   number;
-  status:      ProjectStatus;
+  isApproved:  boolean;
   createdAt:   string;
-  author:      Pick<UserProfile, 'id' | 'username' | 'displayName' | 'avatarUrl'>;
-  category:    { name: string; slug: string } | null;
+  user:        UserSummary;
+  projectTags: ProjectTagItem[];
+  _count:      { stars: number };
+}
+
+export interface CreateProjectDto {
+  name:          string;
+  description:   string;
+  country:       string;
+  repoUrl:       string;
+  demoUrl?:      string;
+  tags:          string[];
+  categorySlug?: string;
 }
 
 // ── Jobs ──────────────────────────────────────────────────────────────────────
 
-export type JobType     = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'FREELANCE' | 'INTERNSHIP';
-export type WorkMode    = 'REMOTE' | 'ONSITE' | 'HYBRID';
-export type JobStatus   = 'ACTIVE' | 'EXPIRED' | 'FILLED' | 'DELETED';
-
 export interface JobListItem {
-  id:          string;
+  id:        string;
+  title:     string;
+  company:   string;
+  country:   string;
+  type:      JobType;
+  mode:      JobMode;
+  stack:     string[];
+  status:    JobStatus;
+  salaryMin: number;
+  salaryMax: number;
+  currency:  string;
+  expiresAt: string;
+  createdAt: string;
+  recruiter: UserSummary;
+}
+
+export interface CreateJobDto {
   title:       string;
-  slug:        string;
+  description: string;
   company:     string;
-  location:    string | null;
+  country:     string;
   type:        JobType;
-  workMode:    WorkMode;
-  salaryMin:   number | null;
-  salaryMax:   number | null;
-  currency:    string | null;
-  techStack:   string[];
-  isPremium:   boolean;
-  viewCount:   number;
-  status:      JobStatus;
-  publishedAt: string;
-  expiresAt:   string | null;
-  poster:      Pick<UserProfile, 'id' | 'username' | 'displayName' | 'avatarUrl'>;
+  mode:        JobMode;
+  salaryMin:   number;
+  salaryMax:   number;
+  currency:    string;
+  stack:       string[];
+}
+
+export interface ApplyJobDto {
+  message: string;
+  cvUrl?:  string;
+}
+
+export interface JobApplicationItem {
+  id:        string;
+  message:   string;
+  cvUrl:     string | null;
+  status:    ApplicationStatus;
+  createdAt: string;
+  user:      UserSummary;
 }
 
 // ── Payments ──────────────────────────────────────────────────────────────────
 
-export type PaymentProvider = 'WAVE' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'STRIPE';
-export type PaymentStatus   = 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
-
 export interface PaymentItem {
-  id:         string;
+  id:          string;
+  amount:      number;
+  currency:    string;
+  provider:    PaymentProvider;
+  status:      PaymentStatus;
+  entityType:  PaymentEntityType;
+  entityId:    string;
+  externalRef: string | null;
+  createdAt:   string;
+  updatedAt:   string;
+}
+
+export interface InitiatePaymentDto {
   amount:     number;
   currency:   string;
   provider:   PaymentProvider;
-  purpose:    string;
-  status:     PaymentStatus;
-  reference:  string;
-  createdAt:  string;
-  paidAt:     string | null;
+  entityType: PaymentEntityType;
+  entityId:   string;
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
 
-export type NotificationType =
-  | 'NEW_ANSWER'
-  | 'ANSWER_ACCEPTED'
-  | 'UPVOTE'
-  | 'MENTION'
-  | 'BADGE_EARNED'
-  | 'PROJECT_APPROVED'
-  | 'JOB_APPLICATION'
-  | 'SYSTEM';
-
 export interface NotificationItem {
   id:         string;
   type:       NotificationType;
-  title:      string;
+  title:      string | null;
   message:    string;
   targetType: string | null;
   targetId:   string | null;
   isRead:     boolean;
   createdAt:  string;
-  actor:      Pick<UserProfile, 'id' | 'username' | 'displayName' | 'avatarUrl'> | null;
+  actor:      UserSummary | null;
+}
+
+// ── Enveloppe de réponse (AD-7) ──────────────────────────────────────────────
+
+/** Succès : toute réponse est enveloppée dans `data` ; les listes ajoutent `meta`. */
+export interface ApiSuccess<T> {
+  data: T;
+}
+
+/** Erreur : `code` au format DOMAINE_ENTITE_RAISON ; `details` seulement pour la validation. */
+export interface ApiErrorEnvelope {
+  error: {
+    code:     ErrorCode;
+    message:  string;
+    details?: string[];
+  };
+}
+
+// ── Codes d'erreur métier (AD-7) ─────────────────────────────────────────────
+
+export type ErrorCode =
+  // Génériques (exceptions framework)
+  | 'COMMON_BAD_REQUEST'
+  | 'COMMON_VALIDATION_FAILED'
+  | 'COMMON_UNAUTHORIZED'
+  | 'COMMON_FORBIDDEN'
+  | 'COMMON_NOT_FOUND'
+  | 'COMMON_CONFLICT'
+  | 'COMMON_TOO_MANY_REQUESTS'
+  | 'COMMON_SERVICE_UNAVAILABLE'
+  | 'COMMON_INTERNAL_ERROR'
+  // Auth
+  | 'AUTH_EMAIL_TAKEN'
+  | 'AUTH_USERNAME_TAKEN'
+  | 'AUTH_INVALID_CREDENTIALS'
+  | 'AUTH_USER_NOT_FOUND'
+  | 'AUTH_TOKEN_INVALID'
+  | 'AUTH_REFRESH_TOKEN_MISSING'
+  | 'AUTH_REFRESH_TOKEN_REVOKED'
+  | 'AUTH_ROLE_FORBIDDEN'
+  // Utilisateurs
+  | 'USERS_USER_NOT_FOUND'
+  | 'USERS_FILE_MISSING'
+  // Forum
+  | 'FORUM_QUESTION_NOT_FOUND'
+  | 'FORUM_ANSWER_NOT_FOUND'
+  | 'FORUM_FORBIDDEN'
+  | 'FORUM_ANSWER_ACCEPT_FORBIDDEN'
+  // Votes
+  | 'VOTES_TARGET_NOT_FOUND'
+  | 'VOTES_SELF_VOTE_FORBIDDEN'
+  | 'VOTES_REPUTATION_TOO_LOW'
+  // Projets
+  | 'PROJECTS_PROJECT_NOT_FOUND'
+  | 'PROJECTS_CATEGORY_NOT_FOUND'
+  | 'PROJECTS_FORBIDDEN'
+  // Offres
+  | 'JOBS_OFFER_NOT_FOUND'
+  | 'JOBS_OFFER_CLOSED'
+  | 'JOBS_FORBIDDEN'
+  | 'JOBS_ALREADY_APPLIED'
+  | 'JOBS_SALARY_RANGE_INVALID'
+  // Modération
+  | 'MODERATION_REPORT_NOT_FOUND'
+  // Paiements
+  | 'PAYMENTS_PAYMENT_NOT_FOUND';
+
+// ── Événements de domaine (EventEmitter2, AD-1 / AD-8) ───────────────────────
+// Nommage : <module>.<entité>.<action>. Payloads typés ici, jamais `any`.
+
+export interface ForumQuestionCreatedEvent {
+  authorId: string;
+  postId:   string;
+}
+
+export interface ForumAnswerCreatedEvent {
+  authorId: string;
+  answerId: string;
+  postId:   string;
+}
+
+export interface ForumAnswerAcceptedEvent {
+  answerAuthorId: string;
+  answerId:       string;
+  postId:         string;
+}
+
+export interface VotesVoteChangedEvent {
+  targetOwnerId: string;
+  entityType:    VoteEntityType;
+  entityId:      string;
+  previous:      VoteValue | null;
+  next:          VoteValue | null;
 }
 
 // ── Pagination ────────────────────────────────────────────────────────────────
@@ -193,6 +365,8 @@ export interface PaginatedResponse<T> {
 
 // ── API Error ─────────────────────────────────────────────────────────────────
 
+// Forme des erreurs d'exception framework (Nest). Les erreurs de l'API suivent l'enveloppe AD-7
+// `ApiErrorEnvelope` ; ce type ne sert qu'aux réponses non enveloppées.
 export interface ApiError {
   statusCode: number;
   message:    string | string[];

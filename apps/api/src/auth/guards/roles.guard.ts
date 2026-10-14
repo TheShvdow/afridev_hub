@@ -2,10 +2,10 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
-  ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
+import { DomainException } from '../../common/errors/domain.exception';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -24,8 +24,10 @@ export class RolesGuard implements CanActivate {
     const { user } = context.switchToHttp().getRequest<{ user?: { role?: string } }>();
 
     if (!user?.role || !requiredRoles.includes(user.role)) {
-      throw new ForbiddenException(
+      throw new DomainException(
+        'AUTH_ROLE_FORBIDDEN',
         'Vous n\'avez pas les droits nécessaires pour cette action.',
+        403,
       );
     }
 

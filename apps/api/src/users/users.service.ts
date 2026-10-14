@@ -1,10 +1,9 @@
 import {
   Injectable,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+  } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { DomainException } from '../common/errors/domain.exception';
 
 @Injectable()
 export class UsersService {
@@ -39,7 +38,7 @@ export class UsersService {
       },
     });
 
-    if (!user) throw new NotFoundException('Utilisateur introuvable.');
+    if (!user) throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
     return user;
   }
 
@@ -64,7 +63,7 @@ export class UsersService {
       },
     });
 
-    if (!user) throw new NotFoundException('Utilisateur introuvable.');
+    if (!user) throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
     return user;
   }
 
@@ -100,7 +99,7 @@ export class UsersService {
 
   async getActivity(username: string) {
     const user = await this.prisma.user.findUnique({ where: { username } });
-    if (!user) throw new NotFoundException('Utilisateur introuvable.');
+    if (!user) throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
 
     const [recentPosts, recentAnswers, recentProjects] = await Promise.all([
       this.prisma.post.findMany({
@@ -131,7 +130,7 @@ export class UsersService {
 
   async getBadges(username: string) {
     const user = await this.prisma.user.findUnique({ where: { username } });
-    if (!user) throw new NotFoundException('Utilisateur introuvable.');
+    if (!user) throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
 
     return this.prisma.userBadge.findMany({
       where:   { userId: user.id },

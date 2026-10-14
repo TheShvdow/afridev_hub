@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { DomainException } from '../common/errors/domain.exception';
 import { ReportEntityType, ReportStatus, ModerationActionType } from '@prisma/client'; // ReportType n'existe pas
 
 @Injectable()
@@ -53,7 +54,7 @@ export class ModerationService {
     note?: string,
   ) {
     const report = await this.prisma.report.findUnique({ where: { id: reportId } });
-    if (!report) throw new NotFoundException('Signalement introuvable.');
+    if (!report) throw new DomainException('MODERATION_REPORT_NOT_FOUND', 'Signalement introuvable.', 404);
 
     // Report has no resolvedBy/resolvedAt/resolution/moderatorNote fields — must use ModerationAction
     await this.prisma.$transaction([
@@ -78,7 +79,7 @@ export class ModerationService {
 
   async dismissReport(reportId: string, moderatorId: string) {
     const report = await this.prisma.report.findUnique({ where: { id: reportId } });
-    if (!report) throw new NotFoundException('Signalement introuvable.');
+    if (!report) throw new DomainException('MODERATION_REPORT_NOT_FOUND', 'Signalement introuvable.', 404);
 
     await this.prisma.$transaction([
       this.prisma.report.update({

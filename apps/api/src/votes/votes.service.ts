@@ -1,16 +1,21 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { VoteValue, VoteEntityType } from '@prisma/client';
+import type { VotesVoteChangedEvent } from '@afridev/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
+import { DomainException } from '../common/errors/domain.exception';
 
 type VotableType = 'POST' | 'ANSWER';
 
+// Glossaire « Vote » : voter est réservé aux membres avec réputation ≥ 10.
+const MIN_REPUTATION_TO_VOTE = 10;
+
 @Injectable()
 export class VotesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly events: EventEmitter2,
+  ) {}
 
   async vote(
     userId: string,
@@ -18,61 +23,71 @@ export class VotesService {
     entityId: string,
     rawValue: 1 | -1,
   ) {
-    const ownerId = await this.getOwnerId(entityType, entityId);
-    if (!ownerId) throw new NotFoundException('Cible introuvable.');
-
-    if (ownerId === userId) {
-      throw new ForbiddenException(
-        'Vous ne pouvez pas voter pour votre propre contenu.',
+    const voter = await this.prisma.user.findUnique({
+      where:  { id: userId },
+      select: { reputation: true },
+    });
+    if (!voter) throw new DomainException('AUTH_USER_NOT_FOUND', 'Utilisateur introuvable.', 401);
+    if (voter.reputation < MIN_REPUTATION_TO_VOTE) {
+      throw new DomainException(
+        'VOTES_REPUTATION_TOO_LOW',
+        `Il faut au moins ${MIN_REPUTATION_TO_VOTE} points de réputation pour voter.`,
+        403,
       );
     }
 
-    const value: VoteValue = rawValue === 1 ? VoteValue.UP : VoteValue.DOWN;
-    const prismaEntityType = entityType as VoteEntityType;
+    const targetOwnerId = await this.getOwnerId(entityType, entityId);
+    if (!targetOwnerId) throw new DomainException('VOTES_TARGET_NOT_FOUND', 'Cible introuvable.', 404);
 
-    const existing = await this.prisma.vote.findUnique({
-      where: {
-        userId_entityType_entityId: { userId, entityType: prismaEntityType, entityId },
-      },
-    });
-
-    if (existing) {
-      if (existing.value === value) {
-        // Toggle off — annuler le vote
-        await this.prisma.vote.delete({
-          where: {
-            userId_entityType_entityId: { userId, entityType: prismaEntityType, entityId },
-          },
-        });
-        await this.updateReputation(ownerId, rawValue === 1, false);
-        return { action: 'removed', newScore: await this.getScore(entityType, entityId) };
-      } else {
-        // Changer de direction
-        await this.prisma.vote.update({
-          where: {
-            userId_entityType_entityId: { userId, entityType: prismaEntityType, entityId },
-          },
-          data: { value },
-        });
-        // Annuler l'ancien, appliquer le nouveau
-        const isNewUpvote = rawValue === 1;
-        await this.updateReputation(ownerId, !isNewUpvote, false); // annuler l'ancien
-        await this.updateReputation(ownerId, isNewUpvote, true);   // ajouter le nouveau
-        return { action: 'changed', newScore: await this.getScore(entityType, entityId) };
-      }
+    if (targetOwnerId === userId) {
+      throw new DomainException(
+        'VOTES_SELF_VOTE_FORBIDDEN',
+        'Vous ne pouvez pas voter pour votre propre contenu.',
+        403,
+      );
     }
 
-    // Nouveau vote
-    await this.prisma.vote.create({
-      data: {
-        userId,
-        entityType: prismaEntityType,
-        entityId,
-        value,
-      },
-    });
-    await this.updateReputation(ownerId, rawValue === 1, true);
-    return { action: 'added', newScore: await this.getScore(entityType, entityId) };
+    const next: VoteValue = rawValue === 1 ? VoteValue.UP : VoteValue.DOWN;
+    const prismaEntityType = entityType as VoteEntityType;
+    const uniqueKey = { userId_entityType_entityId: { userId, entityType: prismaEntityType, entityId } };
+
+    const existing = await this.prisma.vote.findUnique({ where: uniqueKey });
+
+    let action: 'added' | 'changed' | 'removed';
+    let previous: VoteValue | null;
+    let nextValue: VoteValue | null;
+
+    if (existing && existing.value === next) {
+      // Toggle off : même vote renvoyé → annulation
+      await this.prisma.vote.delete({ where: uniqueKey });
+      action = 'removed';
+      previous = existing.value;
+      nextValue = null;
+    } else if (existing) {
+      await this.prisma.vote.update({ where: uniqueKey, data: { value: next } });
+      action = 'changed';
+      previous = existing.value;
+      nextValue = next;
+    } else {
+      await this.prisma.vote.create({
+        data: { userId, entityType: prismaEntityType, entityId, value: next },
+      });
+      action = 'added';
+      previous = null;
+      nextValue = next;
+    }
+
+    // La réputation n'est pas écrite ici : GamificationModule réagit à l'événement (spine AD-2).
+    const payload: VotesVoteChangedEvent = {
+      targetOwnerId,
+      entityType: prismaEntityType,
+      entityId,
+      previous,
+      next: nextValue,
+    };
+    this.events.emit('votes.vote.changed', payload);
+
+    return { action, newScore: await this.getScore(entityType, entityId) };
   }
 
   private async getOwnerId(
@@ -85,13 +100,12 @@ export class VotesService {
         select: { userId: true },
       });
       return post?.userId ?? null;
-    } else {
-      const answer = await this.prisma.answer.findUnique({
-        where:  { id: entityId },
-        select: { userId: true },
-      });
-      return answer?.userId ?? null;
     }
+    const answer = await this.prisma.answer.findUnique({
+      where:  { id: entityId },
+      select: { userId: true },
+    });
+    return answer?.userId ?? null;
   }
 
   private async getScore(
@@ -108,20 +122,5 @@ export class VotesService {
       }),
     ]);
     return upCount - downCount;
-  }
-
-  private async updateReputation(
-    ownerId: string,
-    isUpvote: boolean,
-    isAdding: boolean,
-  ) {
-    const delta = isUpvote
-      ? isAdding ? 10 : -10
-      : isAdding ? -2 : 2;
-
-    await this.prisma.user.update({
-      where: { id: ownerId },
-      data:  { reputation: { increment: delta } },
-    });
   }
 }

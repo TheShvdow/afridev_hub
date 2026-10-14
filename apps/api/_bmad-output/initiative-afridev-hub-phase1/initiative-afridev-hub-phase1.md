@@ -33,7 +33,7 @@ Une plateforme en production où des développeurs africains peuvent poser des q
 
 | Unité | Epic owner | Étendu dans |
 |---|---|---|
-| `GamificationModule` (seul writer de `reputationScore`) | epic-auth-profiles | epic-forum-qa (handlers votes/réponses/acceptation) |
+| `GamificationModule` (seul writer de `reputation`) | epic-auth-profiles | epic-forum-qa (handlers votes/réponses/acceptation) |
 | `NotificationsModule` (gateway Socket.io + store in-app) | epic-auth-profiles | epic-forum-qa (events Q&A), epic-job-board (alertes job) |
 | `UploadModule` (presigned URL R2 — AD-6) | epic-auth-profiles (avatar) | epic-job-board (CV PDF, contraintes MIME/taille) |
 | `@nestjs/schedule` | epic-job-board (premier consommateur) | — |

@@ -20,8 +20,8 @@ Authentification complète (email + OAuth, JWT access/refresh), profil public av
 - OAuth GitHub et Google fonctionnels (redirect → création de compte ou liaison de compte existant).
 - Badge « dev vérifié » attribué automatiquement dès que les critères spec sont remplis, révoqué si perdus.
 - Page profil public renvoie les meta OG (og:title, og:image, og:description) consommables par les crawlers.
-- `reputationScore` mis à jour en temps réel via WebSocket sans rechargement de page côté client.
-- `GamificationModule.addPoints(userId, delta, reason)` exporté et opérationnel ; seul writer de `reputationScore` (AD-5).
+- `reputation` mis à jour en temps réel via WebSocket sans rechargement de page côté client.
+- `GamificationModule.addPoints(userId, delta, reason)` exporté et opérationnel ; seul writer de `reputation` (AD-5).
 - `NotificationsModule` : gateway Socket.io up, store in-app opérationnel, `notify(userId, payload)` exporté (AD-7).
 - `UploadModule` : endpoint presigned URL R2 fonctionnel pour avatars, contraintes MIME/taille appliquées (AD-6).
 - Déployé en production Systalink et accessible publiquement.
@@ -39,12 +39,12 @@ Authentification complète (email + OAuth, JWT access/refresh), profil public av
 
 ## Notes
 
-**Tracer bullet :** inscription → login → `GET /users/:username` retourne profil public avec `reputationScore: 0` — prouve JWT, Prisma User, OG meta et WebSocket score côté client en une seule session démo.
+**Tracer bullet :** inscription → login → `GET /users/:username` retourne profil public avec `reputation: 0` — prouve JWT, Prisma User, OG meta et WebSocket score côté client en une seule session démo.
 
 **Règles de réputation Phase 1 (glossaire, exhaustives) :** +5 vote reçu, +10 réponse postée, +10 réponse acceptée, −2 vote négatif reçu, +15 question posée. Le projet étoilé N'affecte PAS la réputation Phase 1 — E4 (Vitrine) ne touche donc pas GamificationModule, pas de collision quand E3/E4 tournent en parallèle.
 
 **Décisions cross-épics (spine) :**
-- `GamificationModule` seul writer de `reputationScore` ; les autres modules passent par `EventEmitter2` (AD-5).
+- `GamificationModule` seul writer de `reputation` ; les autres modules passent par `EventEmitter2` (AD-5).
 - `NotificationsGateway` seul consommateur Socket.io ; les autres modules passent par events (AD-7).
 - Upload R2 presigned URL côté serveur uniquement, jamais credentials exposés au client (AD-6).
 

@@ -15,7 +15,7 @@ description: Termes métier canoniques d'AfriDev Hub Phase 1 — à lire pour le
 
 **Réponse acceptée** — Réponse marquée par l'auteur de la Question comme résolvant son problème. Une seule par Question. L'auteur de la Réponse gagne +15 pts de Réputation.
 
-**Réputation** — Score numérique par Membre, calculé par GamificationModule (seul module autorisé à écrire `User.reputationScore`). Règles Phase 1 : question posée (+5), réponse donnée (+10), upvote reçu (+10), downvote reçu (−2), réponse acceptée (+15). Gouverne les privilèges (votes ≥ 10).
+**Réputation** — Score numérique par Membre, calculé par GamificationModule (seul module autorisé à écrire `User.reputation`). Règles Phase 1 : question posée (+5), réponse donnée (+10), upvote reçu (+10), downvote reçu (−2), réponse acceptée (+15). Gouverne les privilèges (votes ≥ 10).
 
 **Membre** — Utilisateur avec compte confirmé (email ou OAuth GitHub/Google). Rôles : MEMBER (défaut), MODERATOR, ADMIN.
 
@@ -47,7 +47,7 @@ description: Termes métier canoniques d'AfriDev Hub Phase 1 — à lire pour le
 
 **Systalink** — Plateforme de déploiement cible Phase 1. Backend NestJS déployé comme processus Node.js unique (PM2). Dépendances externes provisionnées séparément.
 
-**GamificationModule** — Module NestJS seul autorisé à écrire `User.reputationScore`. Les autres modules (forum, votes, users) lisent ce champ en lecture seule via join Prisma.
+**GamificationModule** — Module NestJS seul autorisé à écrire `User.reputation`. Les autres modules (forum, votes, users) lisent ce champ en lecture seule via join Prisma.
 
 **NotificationsGateway** — Gateway Socket.io maintenant un `Map<userId, Socket>` in-memory (Phase 1, mono-instance). Seul consommateur Socket.io ; les autres modules émettent via EventEmitter2.
 

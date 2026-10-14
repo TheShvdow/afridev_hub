@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { DomainException } from '../../common/errors/domain.exception';
 
 export interface JwtPayload {
   sub:   string;  // userId
@@ -32,7 +33,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       select: { id: true, email: true, role: true, username: true, isVerified: true },
     });
 
-    if (!user) throw new UnauthorizedException('Token invalide.');
+    if (!user) throw new DomainException('AUTH_TOKEN_INVALID', 'Token invalide.', 401);
 
     return user; // Injecté dans req.user
   }

@@ -3,7 +3,7 @@
 // Phase 1 — MVP (32 entités)
 //
 // Conventions :
-//   - IDs     : cuid()
+//   - IDs     : uuid() (UUID v4)
 //   - Dates   : DateTime, stockées en UTC
 //   - Montants: Int en centimes (XOF/NGN → unité de base)
 //   - Vote    : polymorphique via entityType + entityId (enum strict)
@@ -64,6 +64,14 @@ enum JobMode {
   REMOTE
   ONSITE
   HYBRID
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  FREELANCE
+  INTERNSHIP
 }
 
 enum JobStatus {
@@ -127,14 +135,14 @@ enum NotificationType {
 // ─────────────────────────────────────────────────────────────────
 
 model User {
-  id               String   @id @default(cuid())
-  email            String   @unique
-  username         String   @unique
+  id               String    @id @default(uuid())
+  email            String    @unique
+  username         String    @unique
   passwordHash     String?
   name             String?
   displayName      String?
   avatarUrl        String?
-  bio              String?  @db.Text
+  bio              String?   @db.Text
   location         String?
   githubUrl        String?
   linkedinUrl      String?
@@ -142,12 +150,12 @@ model User {
   githubUsername   String?
   linkedinUsername String?
   twitterUsername  String?
-  reputation       Int      @default(0)
-  isVerified       Boolean  @default(false)
-  role             UserRole @default(MEMBER)
+  reputation       Int       @default(0)
+  isVerified       Boolean   @default(false)
+  role             UserRole  @default(MEMBER)
   lastSeenAt       DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   // Relations
   accounts          Account[]
@@ -176,7 +184,7 @@ model User {
 }
 
 model Account {
-  id                String  @id @default(cuid())
+  id                String  @id @default(uuid())
   userId            String
   provider          String
   providerAccountId String
@@ -206,7 +214,7 @@ model VerificationToken {
 // ─────────────────────────────────────────────────────────────────
 
 model Badge {
-  id             String  @id @default(cuid())
+  id             String  @id @default(uuid())
   name           String  @unique
   description    String
   icon           String
@@ -219,7 +227,7 @@ model Badge {
 }
 
 model UserBadge {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   userId    String
   badgeId   String
   awardedAt DateTime @default(now())
@@ -232,7 +240,7 @@ model UserBadge {
 }
 
 model ReputationEvent {
-  id         String   @id @default(cuid())
+  id         String   @id @default(uuid())
   userId     String
   delta      Int
   reason     String
@@ -252,7 +260,7 @@ model ReputationEvent {
 // ─────────────────────────────────────────────────────────────────
 
 model Tag {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   name        String   @unique
   slug        String   @unique
   description String?
@@ -270,7 +278,7 @@ model Tag {
 // ─────────────────────────────────────────────────────────────────
 
 model Post {
-  id         String   @id @default(cuid())
+  id         String   @id @default(uuid())
   title      String
   body       String   @db.Text
   userId     String
@@ -299,7 +307,7 @@ model PostTag {
 }
 
 model Answer {
-  id         String   @id @default(cuid())
+  id         String   @id @default(uuid())
   body       String   @db.Text
   postId     String
   userId     String
@@ -323,7 +331,7 @@ model Answer {
 // ─────────────────────────────────────────────────────────────────
 
 model Vote {
-  id         String         @id @default(cuid())
+  id         String         @id @default(uuid())
   userId     String
   entityType VoteEntityType
   entityId   String
@@ -341,7 +349,7 @@ model Vote {
 // ─────────────────────────────────────────────────────────────────
 
 model Report {
-  id         String           @id @default(cuid())
+  id         String           @id @default(uuid())
   userId     String
   entityType ReportEntityType
   entityId   String
@@ -358,7 +366,7 @@ model Report {
 }
 
 model ModerationAction {
-  id          String               @id @default(cuid())
+  id          String               @id @default(uuid())
   moderatorId String
   reportId    String?
   entityType  String
@@ -379,18 +387,19 @@ model ModerationAction {
 // ─────────────────────────────────────────────────────────────────
 
 model ProjectCategory {
-  id       String @id @default(cuid())
-  name     String @unique
-  slug     String @unique
-  icon     String?
+  id   String  @id @default(uuid())
+  name String  @unique
+  slug String  @unique
+  icon String?
 
   projects Project[]
 }
 
 model Project {
-  id             String    @id @default(cuid())
+  id             String    @id @default(uuid())
   name           String
   description    String    @db.Text
+  country        String    @default("SN") // ISO 3166-1 alpha-2
   repoUrl        String
   demoUrl        String?
   userId         String
@@ -439,7 +448,7 @@ model ProjectTag {
 // ─────────────────────────────────────────────────────────────────
 
 model JobCategory {
-  id   String @id @default(cuid())
+  id   String @id @default(uuid())
   name String @unique
   slug String @unique
 
@@ -447,13 +456,14 @@ model JobCategory {
 }
 
 model JobOffer {
-  id          String    @id @default(cuid())
+  id          String    @id @default(uuid())
   title       String
   description String    @db.Text
   company     String
   recruiterId String
   country     String
   mode        JobMode
+  type        JobType   @default(FULL_TIME)
   currency    String
   salaryMin   Int
   salaryMax   Int
@@ -475,7 +485,7 @@ model JobOffer {
 }
 
 model JobApplication {
-  id        String            @id @default(cuid())
+  id        String            @id @default(uuid())
   jobId     String
   userId    String
   message   String            @db.Text
@@ -492,7 +502,7 @@ model JobApplication {
 }
 
 model JobAlert {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   userId    String
   country   String?
   mode      JobMode?
@@ -508,7 +518,7 @@ model JobAlert {
 }
 
 model RecruiterPlan {
-  id        String    @id @default(cuid())
+  id        String    @id @default(uuid())
   userId    String    @unique
   planType  PlanType  @default(FREE)
   startedAt DateTime  @default(now())
@@ -523,12 +533,12 @@ model RecruiterPlan {
 // ─────────────────────────────────────────────────────────────────
 
 model Payment {
-  id          String            @id @default(cuid())
+  id          String            @id @default(uuid())
   userId      String
   provider    PaymentProvider
   externalRef String?
-  amount      Int               // En unités de base (XOF, NGN, KES…)
-  currency    String            // ISO 4217 : "XOF", "NGN", "KES", "USD"
+  amount      Int // En unités de base (XOF, NGN, KES…)
+  currency    String // ISO 4217 : "XOF", "NGN", "KES", "USD"
   status      PaymentStatus     @default(PENDING)
   entityType  PaymentEntityType
   entityId    String
@@ -547,17 +557,17 @@ model Payment {
 }
 
 model Commission {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   paymentId String   @unique
-  amount    Int      // Montant prélevé en unités de base
-  rate      Float    // Ex: 0.12 pour 12%
+  amount    Int // Montant prélevé en unités de base
+  rate      Float // Ex: 0.12 pour 12%
   createdAt DateTime @default(now())
 
   payment Payment @relation(fields: [paymentId], references: [id])
 }
 
 model Refund {
-  id        String       @id @default(cuid())
+  id        String       @id @default(uuid())
   paymentId String
   amount    Int
   reason    String
@@ -577,7 +587,7 @@ model Refund {
 // ─────────────────────────────────────────────────────────────────
 
 model Notification {
-  id         String           @id @default(cuid())
+  id         String           @id @default(uuid())
   userId     String
   type       NotificationType
   title      String?
@@ -601,7 +611,7 @@ model Notification {
 // ─────────────────────────────────────────────────────────────────
 
 model AuditLog {
-  id         String   @id @default(cuid())
+  id         String   @id @default(uuid())
   userId     String?
   action     String
   entityType String?
