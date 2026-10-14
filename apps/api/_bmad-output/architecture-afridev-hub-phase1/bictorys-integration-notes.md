@@ -65,7 +65,7 @@ Le parseur ne doit pas être écrit avant de connaître le format réel reçu en
 
 ## Choix d'implémentation (2026-10-14)
 
-- **Webhook** : format du guide (objet plat, `status: "succeeded"`). Le format `{ event, data }` de la page « statuts » n'est pas implémenté : à confirmer en sandbox.
+- **Webhook et statuts** : format et statuts du guide (objet plat, `status: "succeeded"`), retenus comme source de vérité par le mainteneur (2026-10-14). Le format `{ event, data }` de la page « statuts » n'est pas implémenté ; le test en sandbox confirmera le format réel.
 - **Signature invalide** : `401`. Le guide donne `200` dans son code d'exemple ; nous retenons `401` pour ne pas masquer les tentatives forgées. Écart volontaire à valider avec Bictorys (relance en cas de non-200).
 - **Webhook authentifié, doublon ou montant incohérent** : `200` sans modification (doublon et montant incohérent sont journalisés).
 - **Remboursement** : `PUT /pay/v1/transactions/{id}/refund` avec `X-API-Key` (clé publique). Ambiguïté doc (`bearerAuth` vs `X-API-Key`) : à tester.
