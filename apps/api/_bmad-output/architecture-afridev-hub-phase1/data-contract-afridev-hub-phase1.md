@@ -32,6 +32,7 @@ Les enums des niveaux 2 à 4 sont **identiques** : les DTO importent les enums d
 | `ReportEntityType` | POST, ANSWER, PROJECT | `CreateReportDto.entityType` | `ReportEntityType` |
 | `ReportStatus` | PENDING, REVIEWED, RESOLVED, DISMISSED | — | `ReportStatus` |
 | `ModerationActionType` | HIDDEN, RESTORED, WARNING, BAN | `ResolveReportDto.action` | `ModerationActionType` |
+| `ExperienceLevel` | JUNIOR, MID, SENIOR | `OnboardingDto.level`, `UpdateUserDto.level` | `ExperienceLevel` |
 | `JobType` | FULL_TIME, PART_TIME, CONTRACT, FREELANCE, INTERNSHIP | `CreateJobDto.type`, filtre `GET /jobs?type=` | `JobType` |
 | `JobMode` | REMOTE, ONSITE, HYBRID | `CreateJobDto.mode`, filtre `GET /jobs?mode=` | `JobMode` |
 | `JobStatus` | ACTIVE, EXPIRED, CLOSED | — | `JobStatus` |
@@ -142,6 +143,7 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 - (decision) **Stack projet = tags** : `Project` n'a pas de champ `stack` ; les technologies passent par `ProjectTag`. Le DTO s'appelle `tags`.
 - (decision) **Stack offre = `stack`** : `JobOffer.stack` est un `String[]`.
 - (decision) **Votes : enum `UP` / `DOWN`** dans l'API, convertis en +1 / −1 dans `VotesController`. Règle de réputation : +10 pour un vote reçu, −2 pour un vote négatif reçu (glossaire).
+- (decision) **Niveau d'expérience** `User.level` (JUNIOR, MID, SENIOR), déclaré à l'onboarding et modifiable par le profil. Valeurs choisies par le mainteneur à défaut de définition dans le glossaire.
 - (decision) **Réputation = `User.reputation`**. Seul `GamificationModule` l'écrit (spine AD-2). Les autres modules émettent des événements : `forum.question.created` (+5), `forum.answer.created` (+10), `forum.answer.accepted` (+15 à l'auteur de la réponse), `votes.vote.changed` (delta calculé avant/après : ajout, changement, annulation).
 - (decision) **Voter exige une réputation ≥ 10** (glossaire), contrôlé dans `VotesService` (`VOTES_REPUTATION_TOO_LOW`).
 - (decision) **Enveloppe AD-7 implémentée** : succès `{ data }` (les listes gardent `{ data, meta }`), erreur `{ error: { code, message, details? } }`. Codes au format `DOMAINE_ENTITE_RAISON`, listés dans `libs/shared-types`. Erreur non prévue : `COMMON_INTERNAL_ERROR`, détail journalisé, jamais renvoyé au client.

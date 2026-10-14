@@ -27,6 +27,18 @@ describe('UsersService — onboarding (story E2-4)', () => {
     expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: {} }));
   });
 
+  it('sets the experience level when it is empty', async () => {
+    const { service, prisma } = build({ location: null, country: null, stack: [], level: null });
+    await service.completeOnboarding('u1', { level: 'SENIOR' } as never);
+    expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: { level: 'SENIOR' } }));
+  });
+
+  it('keeps an experience level that is already declared', async () => {
+    const { service, prisma } = build({ location: null, country: null, stack: [], level: 'JUNIOR' });
+    await service.completeOnboarding('u1', { level: 'SENIOR' } as never);
+    expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: {} }));
+  });
+
   it('emits users.profile.updated', async () => {
     const { service, events } = build({ location: null, country: null, stack: [] });
     await service.completeOnboarding('u1', { country: 'SN' } as never);

@@ -88,6 +88,7 @@ export class UsersService {
         location:        true,
         country:         true,
         stack:           true,
+        level:           true,
         websiteUrl:      true,
         githubUsername:  true,
         linkedinUsername:true,
@@ -106,7 +107,7 @@ export class UsersService {
   async completeOnboarding(userId: string, dto: OnboardingDto) {
     const current = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { location: true, country: true, stack: true },
+      select: { location: true, country: true, stack: true, level: true },
     });
     if (!current) throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
 
@@ -114,12 +115,13 @@ export class UsersService {
       ...(!current.location && dto.location && { location: dto.location }),
       ...(!current.country && dto.country && { country: dto.country }),
       ...(current.stack.length === 0 && dto.stack?.length && { stack: dto.stack }),
+      ...(!current.level && dto.level && { level: dto.level }),
     };
 
     const user = await this.prisma.user.update({
       where: { id: userId },
       data,
-      select: { id: true, username: true, location: true, country: true, stack: true },
+      select: { id: true, username: true, location: true, country: true, stack: true, level: true },
     });
     this.emitProfileUpdated(userId);
     return user;

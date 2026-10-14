@@ -132,6 +132,13 @@ enum NotificationType {
 // AUTH & USER
 // ─────────────────────────────────────────────────────────────────
 
+// Niveau d'expérience déclaré par le membre (onboarding).
+enum ExperienceLevel {
+  JUNIOR
+  MID
+  SENIOR
+}
+
 model User {
   id               String    @id @default(uuid())
   email            String    @unique
@@ -144,6 +151,7 @@ model User {
   location         String?
   country          String?  // ISO 3166-1 alpha-2 (critère du badge vérifié)
   stack            String[] @default([])  // technologies déclarées (critère du badge vérifié)
+  level            ExperienceLevel?  // niveau d'expérience déclaré (onboarding)
   githubUrl        String?
   linkedinUrl      String?
   websiteUrl       String?

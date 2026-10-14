@@ -1,4 +1,5 @@
-import { IsString, IsOptional, MaxLength, IsUrl, Matches, IsArray, ArrayMaxSize, MinLength } from 'class-validator';
+import { IsString, IsOptional, MaxLength, IsUrl, Matches, IsArray, ArrayMaxSize, MinLength, IsEnum } from 'class-validator';
+import { ExperienceLevel } from '@prisma/client';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateUserDto {
@@ -24,6 +25,11 @@ export class UpdateUserDto {
   @IsOptional()
   @Matches(/^[A-Z]{2}$/, { message: 'Le pays doit être un code ISO 3166-1 alpha-2 (ex. SN).' })
   country?: string;
+
+  @ApiPropertyOptional({ enum: ExperienceLevel, description: 'Niveau d\'expérience déclaré' })
+  @IsOptional()
+  @IsEnum(ExperienceLevel)
+  level?: ExperienceLevel;
 
   @ApiPropertyOptional({ example: ['TypeScript', 'NestJS'], description: 'Technologies déclarées (max 10)' })
   @IsOptional()

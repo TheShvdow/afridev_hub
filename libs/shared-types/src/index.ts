@@ -17,6 +17,7 @@ export type ReportEntityType = 'POST' | 'ANSWER' | 'PROJECT';
 export type ModerationTargetType = 'POST' | 'ANSWER' | 'PROJECT' | 'USER';
 export type ReportStatus = 'PENDING' | 'REVIEWED' | 'RESOLVED' | 'DISMISSED';
 export type ModerationActionType = 'HIDDEN' | 'RESTORED' | 'WARNING' | 'BAN';
+export type ExperienceLevel = 'JUNIOR' | 'MID' | 'SENIOR';
 export type JobType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'FREELANCE' | 'INTERNSHIP';
 export type JobMode = 'REMOTE' | 'ONSITE' | 'HYBRID';
 export type JobStatus = 'ACTIVE' | 'EXPIRED' | 'CLOSED';
