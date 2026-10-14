@@ -9,7 +9,8 @@ describe('UsersService — onboarding (story E2-4)', () => {
       },
     };
     const events = { emit: jest.fn() };
-    return { service: new UsersService(prisma as never, events as never), prisma, events };
+    const config = { get: jest.fn((_k: string, d?: string) => d) };
+    return { service: new UsersService(prisma as never, events as never, config as never), prisma, events };
   }
 
   it('fills empty fields', async () => {

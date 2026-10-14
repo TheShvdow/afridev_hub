@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { DomainException } from '../common/errors/domain.exception';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ConfigService } from '@nestjs/config';
 import { OnboardingDto } from './dto/onboarding.dto';
 import type { UsersProfileUpdatedEvent } from '@afridev/shared-types';
 
@@ -13,6 +14,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventEmitter2,
+    private readonly config: ConfigService,
   ) {}
 
   async findByUsername(username: string) {
@@ -45,7 +47,7 @@ export class UsersService {
     });
 
     if (!user) throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
-    return user;
+    return { ...user, ogMeta: this.buildOgMeta(user) };
   }
 
   async findById(id: string) {
@@ -121,6 +123,19 @@ export class UsersService {
     });
     this.emitProfileUpdated(userId);
     return user;
+  }
+
+  // Métadonnées Open Graph du profil public (story E2-9) : consommées par les crawlers et le SSR.
+  private buildOgMeta(user: { username: string; displayName: string | null; bio: string | null; avatarUrl: string | null }) {
+    const webUrl = this.config.get<string>('WEB_URL', 'http://localhost:4200');
+    const name = user.displayName?.trim() || user.username;
+    const description = (user.bio?.trim() || `Profil de ${name} sur AfriDev Hub`).slice(0, 160);
+    return {
+      ogTitle:       `${name} — AfriDev Hub`,
+      ogDescription: description,
+      ogImage:       user.avatarUrl,
+      ogUrl:         `${webUrl}/@${user.username}`,
+    };
   }
 
   private emitProfileUpdated(userId: string) {
