@@ -4,6 +4,7 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { ForumQuestionCreatedEvent, ForumAnswerCreatedEvent, ForumAnswerAcceptedEvent } from '@afridev/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
+import { resolveTagIds } from '../common/tags/resolve-tags';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreateAnswerDto } from './dto/create-answer.dto';
 import { ListPostsDto } from './dto/list-posts.dto';
@@ -109,37 +110,26 @@ export class ForumService {
   }
 
   async createPost(userId: string, dto: CreatePostDto) {
-    const post = await this.prisma.post.create({
-      data: {
-        title:  dto.title,
-        body:   dto.body,
-        userId,
-        postTags: dto.tags?.length
-          ? {
-              create: await Promise.all(
-                dto.tags.map(async (tagName) => {
-                  const tagSlug = tagName
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/(^-|-$)/g, '');
-                  const tag = await this.prisma.tag.upsert({
-                    where:  { slug: tagSlug },
-                    update: { usageCount: { increment: 1 } },
-                    create: { name: tagName, slug: tagSlug, usageCount: 1 },
-                  });
-                  return { tagId: tag.id };
-                }),
-              ),
-            }
-          : undefined,
+    const post = await this.prisma.$transaction(
+      async (tx) => {
+        const tagIds = await resolveTagIds(tx, dto.tags);
+        return tx.post.create({
+          data: {
+            title:    dto.title,
+            body:     dto.body,
+            userId,
+            postTags: { create: tagIds.map((tagId) => ({ tagId })) },
+          },
+          include: {
+            user: {
+              select: { id: true, username: true, displayName: true, avatarUrl: true },
+            },
+            postTags: { include: { tag: true } },
+          },
+        });
       },
-      include: {
-        user: {
-          select: { id: true, username: true, displayName: true, avatarUrl: true },
-        },
-        postTags: { include: { tag: true } },
-      },
-    });
+      { timeout: 15000 }, // Neon distant : plusieurs allers-retours, marge au timeout par défaut (5 s)
+    );
 
     const questionEvent: ForumQuestionCreatedEvent = { authorId: userId, postId: post.id };
     this.events.emit('forum.question.created', questionEvent);

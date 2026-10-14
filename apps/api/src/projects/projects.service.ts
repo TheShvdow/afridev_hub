@@ -2,6 +2,7 @@ import {
   Injectable,
   } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { resolveTagIds } from '../common/tags/resolve-tags';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { Prisma } from '@prisma/client';
 import { DomainException } from '../common/errors/domain.exception';
@@ -81,25 +82,31 @@ export class ProjectsService {
       throw new DomainException('PROJECTS_CATEGORY_NOT_FOUND', 'Catégorie introuvable.', 400);
     }
 
-    return this.prisma.project.create({
-      data: {
-        name:        dto.name,
-        description: dto.description,
-        country:     dto.country,
-        repoUrl:     dto.repoUrl,
-        demoUrl:     dto.demoUrl,
-        userId,
-        categoryId:  category?.id,
-        isApproved:  false,          // Requires admin approval
-        projectTags: { create: await this.upsertTags(dto.tags) },
+    return this.prisma.$transaction(
+      async (tx) => {
+        const tagIds = await resolveTagIds(tx, dto.tags);
+        return tx.project.create({
+          data: {
+            name:        dto.name,
+            description: dto.description,
+            country:     dto.country,
+            repoUrl:     dto.repoUrl,
+            demoUrl:     dto.demoUrl,
+            userId,
+            categoryId:  category?.id,
+            isApproved:  false, // Requires admin approval
+            projectTags: { create: tagIds.map((tagId) => ({ tagId })) },
+          },
+          include: {
+            user: {
+              select: { id: true, username: true, displayName: true, avatarUrl: true },
+            },
+            projectTags: { include: { tag: true } },
+          },
+        });
       },
-      include: {
-        user: {
-          select: { id: true, username: true, displayName: true, avatarUrl: true },
-        },
-        projectTags: { include: { tag: true } },
-      },
-    });
+      { timeout: 15000 },
+    );
   }
 
   async update(projectId: string, userId: string, dto: Partial<CreateProjectDto>) {
