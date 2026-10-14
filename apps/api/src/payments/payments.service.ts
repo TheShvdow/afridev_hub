@@ -6,17 +6,19 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { PaymentEntityType } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 
 export type PaymentProvider = 'WAVE' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'STRIPE';
 
 interface InitiatePaymentInput {
   userId:      string;
-  amount:      number;       // en centimes (XOF)
+  amount:      number;              // en centimes (XOF)
   currency:    string;
   provider:    PaymentProvider;
-  purpose:     string;       // ex: 'JOB_PREMIUM_30D'
-  metadata?:   Record<string, string>;
+  entityType:  PaymentEntityType;   // required — replaces `purpose`
+  entityId:    string;              // required — ID de l'entité liée au paiement
+  metadata?:   Record<string, unknown>;
 }
 
 @Injectable()
@@ -34,26 +36,36 @@ export class PaymentsService {
   // ── Initier un paiement ──────────────────────────────────────────────
 
   async initiatePayment(input: InitiatePaymentInput) {
-    const reference = `AFRIDEV-${uuidv4().slice(0, 8).toUpperCase()}`;
-    const commission = Math.round(input.amount * this.commissionRate);
+    const externalRef = `AFRIDEV-${uuidv4().slice(0, 8).toUpperCase()}`; // externalRef not reference
+    const commissionAmount = Math.round(input.amount * this.commissionRate);
 
+    // Payment has entityType + entityId (required); no `purpose`, no `reference`, no `commission` field
     const payment = await this.prisma.payment.create({
       data: {
-        userId:       input.userId,
-        amount:       input.amount,
-        currency:     input.currency,
-        provider:     input.provider,
-        purpose:      input.purpose,
-        reference,
-        commission,
-        status:       'PENDING',
-        metadata:     input.metadata ?? {},
+        userId:      input.userId,
+        amount:      input.amount,
+        currency:    input.currency,
+        provider:    input.provider,
+        entityType:  input.entityType,
+        entityId:    input.entityId,
+        externalRef,
+        status:      'PENDING',
+        metadata:    input.metadata ?? {},
       },
     });
 
-    const checkoutUrl = await this.buildCheckoutUrl(payment.id, input);
+    // Commission is a separate model — not a field on Payment
+    await this.prisma.commission.create({
+      data: {
+        paymentId: payment.id,
+        amount:    commissionAmount,
+        rate:      this.commissionRate,
+      },
+    });
 
-    return { paymentId: payment.id, reference, checkoutUrl };
+    const checkoutUrl = this.buildCheckoutUrl(payment.id, input);
+
+    return { paymentId: payment.id, externalRef, checkoutUrl };
   }
 
   // ── Webhook handlers ─────────────────────────────────────────────────
@@ -105,49 +117,70 @@ export class PaymentsService {
   // ── Privé ────────────────────────────────────────────────────────────
 
   private async processWebhook(provider: PaymentProvider, payload: Record<string, unknown>) {
-    // Extraire la référence selon le provider
     const reference = this.extractReference(provider, payload);
     if (!reference) {
       this.logger.warn(`Impossible d'extraire la référence du webhook ${provider}`);
       return;
     }
 
-    const payment = await this.prisma.payment.findUnique({ where: { reference } });
+    // externalRef is not @unique — use findFirst, not findUnique
+    const payment = await this.prisma.payment.findFirst({ where: { externalRef: reference } });
     if (!payment) {
       this.logger.warn(`Paiement introuvable pour la référence ${reference}`);
       return;
     }
 
-    const success = this.isSuccessPayload(provider, payload);
-    const newStatus = success ? 'COMPLETED' : 'FAILED';
+    const success    = this.isSuccessPayload(provider, payload);
+    const newStatus  = success ? 'CAPTURED' : 'FAILED'; // CAPTURED not COMPLETED — COMPLETED doesn't exist
 
+    // Payment has no paidAt/providerRef/webhookData — store extras in metadata (Json field)
     await this.prisma.payment.update({
       where: { id: payment.id },
       data: {
-        status:       newStatus,
-        paidAt:       success ? new Date() : undefined,
-        providerRef:  String(payload['transactionId'] ?? payload['id'] ?? ''),
-        webhookData:  payload,
+        status:   newStatus,
+        metadata: {
+          ...((payment.metadata as Record<string, unknown>) ?? {}),
+          capturedAt:   success ? new Date().toISOString() : undefined,
+          providerRef:  String(payload['transactionId'] ?? payload['id'] ?? ''),
+          webhookData:  payload,
+        },
       },
     });
 
     if (success) {
-      await this.fulfillPayment(payment.id, payment.userId, payment.purpose);
+      // Create commission record after successful capture
+      await this.prisma.commission.create({
+        data: {
+          paymentId: payment.id,
+          amount:    Math.round(payment.amount * this.commissionRate),
+          rate:      this.commissionRate,
+        },
+      }).catch(() => null); // idempotence — may already exist from initiatePayment
+
+      await this.fulfillPayment(payment.id, payment.userId, payment.entityType, payment.entityId);
     }
   }
 
-  private async fulfillPayment(paymentId: string, userId: string, purpose: string) {
-    this.logger.log(`Fulfillment: ${purpose} pour userId=${userId}`);
+  private async fulfillPayment(
+    paymentId: string,
+    userId: string,
+    entityType: PaymentEntityType,  // was `purpose: string`
+    entityId: string,
+  ) {
+    this.logger.log(`Fulfillment: ${entityType}/${entityId} pour userId=${userId}`);
 
-    switch (purpose) {
-      case 'JOB_PREMIUM_30D':
-        // TODO: Activer le plan premium recruteur 30 jours
+    switch (entityType) {
+      case 'RECRUITER_PLAN':
+        // TODO: Activer le plan premium recruteur
         break;
-      case 'JOB_PREMIUM_90D':
-        // TODO: Activer le plan premium recruteur 90 jours
+      case 'MENTOR_SESSION':
+        // TODO: Confirmer la session mentoring
+        break;
+      case 'COURSE_ENROLLMENT':
+        // TODO: Inscrire l'utilisateur au cours
         break;
       default:
-        this.logger.warn(`Purpose inconnu: ${purpose}`);
+        this.logger.warn(`EntityType inconnu: ${entityType}`);
     }
   }
 
@@ -170,7 +203,7 @@ export class PaymentsService {
       case 'WAVE':         return payload['client_reference'] as string ?? null;
       case 'ORANGE_MONEY': return payload['externalId']      as string ?? null;
       case 'MTN_MOMO':     return payload['externalId']      as string ?? null;
-      case 'STRIPE':       return (payload['metadata'] as Record<string, string>)?.['reference'] ?? null;
+      case 'STRIPE':       return (payload['metadata'] as Record<string, string>)?.['externalRef'] ?? null;
       default:             return null;
     }
   }

@@ -20,14 +20,14 @@ export class AdminService {
       this.prisma.user.count({
         where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 3600 * 1000) } },
       }),
-      this.prisma.post.count({ where: { status: 'PUBLISHED' } }),
-      this.prisma.project.count({ where: { status: 'APPROVED' } }),
+      this.prisma.post.count(),                                         // Post has no `status` field
+      this.prisma.project.count({ where: { isApproved: true } }),       // isApproved not status
       this.prisma.jobOffer.count({ where: { status: 'ACTIVE' } }),
       this.prisma.report.count({ where: { status: 'PENDING' } }),
-      this.prisma.project.count({ where: { status: 'PENDING' } }),
-      this.prisma.payment.aggregate({
-        where:  { status: 'COMPLETED' },
-        _sum:   { commission: true },
+      this.prisma.project.count({ where: { isApproved: false } }),      // pending = not yet approved
+      this.prisma.commission.aggregate({                                // Commission is a separate model
+        where: { payment: { status: 'CAPTURED' } },                    // CAPTURED not COMPLETED
+        _sum:  { amount: true },
       }),
     ]);
 
@@ -35,7 +35,7 @@ export class AdminService {
       users:        { total: totalUsers, newThisWeek: newUsersThisWeek },
       content:      { posts: totalPosts, projects: totalProjects, jobs: totalJobs },
       moderation:   { pendingReports, pendingProjects },
-      revenue:      { totalCommission: totalRevenue._sum.commission ?? 0 },
+      revenue:      { totalCommission: totalRevenue._sum.amount ?? 0 }, // _sum.amount not _sum.commission
     };
   }
 
@@ -62,7 +62,7 @@ export class AdminService {
           email:      true,
           role:       true,
           isVerified: true,
-          isBanned:   true,
+          // isBanned removed — User has no such field; ban state lives in ModerationAction
           reputation: true,
           createdAt:  true,
           lastSeenAt: true,
@@ -102,12 +102,12 @@ export class AdminService {
   async createAuditEntry(
     userId: string,
     action: string,
-    targetType: string,
-    targetId: string,
+    entityType: string,               // was targetType
+    entityId: string,                 // was targetId
     details?: Record<string, unknown>,
   ) {
     return this.prisma.auditLog.create({
-      data: { userId, action, targetType, targetId, details: details ?? {} },
+      data: { userId, action, entityType, entityId, metadata: details ?? {} }, // metadata not details
     });
   }
 }

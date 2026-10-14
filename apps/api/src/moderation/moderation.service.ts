@@ -1,85 +1,127 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ReportType } from '@prisma/client';
+import { ReportEntityType, ReportStatus, ModerationActionType } from '@prisma/client'; // ReportType n'existe pas
 
 @Injectable()
 export class ModerationService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createReport(
-    reporterId: string,
-    targetType: string,
-    targetId: string,
-    reason: string,
-    description?: string,
+    userId: string,                     // was reporterId — field on Report is `userId`
+    entityType: string,                 // Report has entityType (ReportEntityType), not targetType
+    entityId: string,                   // Report has entityId, not targetId
+    reason: string,                     // reason is a plain String on Report, not an enum
   ) {
     return this.prisma.report.create({
       data: {
-        reporterId,
-        targetType,
-        targetId,
-        reason:      reason as ReportType,
-        description: description ?? '',
+        userId,
+        entityType: entityType as ReportEntityType,
+        entityId,
+        reason,                         // no `description` field on Report
       },
     });
   }
 
-  async listReports(status = 'PENDING', page = 1, limit = 20) {
+  async listReports(status: ReportStatus = 'PENDING', page = 1, limit = 20) {
     const skip = (page - 1) * limit;
     const [reports, total] = await Promise.all([
       this.prisma.report.findMany({
-        where:   { status: status as never },
+        where:   { status },
         orderBy: { createdAt: 'desc' },
         skip,
         take:    limit,
         include: {
-          reporter: {
+          user: {                        // relation name is `user`, not `reporter`
             select: { id: true, username: true, avatarUrl: true },
+          },
+          moderationActions: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
           },
         },
       }),
-      this.prisma.report.count({ where: { status: status as never } }),
+      this.prisma.report.count({ where: { status } }),
     ]);
 
     return { data: reports, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }
 
-  async resolveReport(reportId: string, moderatorId: string, action: string, note?: string) {
+  async resolveReport(
+    reportId: string,
+    moderatorId: string,
+    action: ModerationActionType,
+    note?: string,
+  ) {
     const report = await this.prisma.report.findUnique({ where: { id: reportId } });
     if (!report) throw new NotFoundException('Signalement introuvable.');
 
-    return this.prisma.report.update({
-      where: { id: reportId },
-      data: {
-        status:       'RESOLVED',
-        resolvedBy:   moderatorId,
-        resolvedAt:   new Date(),
-        resolution:   action,
-        moderatorNote: note,
-      },
-    });
+    // Report has no resolvedBy/resolvedAt/resolution/moderatorNote fields — must use ModerationAction
+    await this.prisma.$transaction([
+      this.prisma.report.update({
+        where: { id: reportId },
+        data:  { status: 'RESOLVED' },
+      }),
+      this.prisma.moderationAction.create({
+        data: {
+          moderatorId,
+          reportId,
+          entityType: report.entityType,   // String (stored as enum value)
+          entityId:   report.entityId,
+          action,
+          note,
+        },
+      }),
+    ]);
+
+    return { success: true, reportId };
   }
 
   async dismissReport(reportId: string, moderatorId: string) {
-    return this.resolveReport(reportId, moderatorId, 'DISMISSED');
+    const report = await this.prisma.report.findUnique({ where: { id: reportId } });
+    if (!report) throw new NotFoundException('Signalement introuvable.');
+
+    await this.prisma.$transaction([
+      this.prisma.report.update({
+        where: { id: reportId },
+        data:  { status: 'DISMISSED' },
+      }),
+      this.prisma.moderationAction.create({
+        data: {
+          moderatorId,
+          reportId,
+          entityType: report.entityType,
+          entityId:   report.entityId,
+          action:     ModerationActionType.HIDDEN,
+        },
+      }),
+    ]);
+
+    return { success: true, reportId };
   }
 
-  async banUser(userId: string, moderatorId: string, reason: string, until?: Date) {
-    return this.prisma.user.update({
-      where: { id: userId },
+  async banUser(userId: string, moderatorId: string, reason: string) {
+    // User has NO isBanned/bannedAt/bannedUntil/banReason fields — ban via ModerationAction
+    return this.prisma.moderationAction.create({
       data: {
-        isBanned:    true,
-        bannedAt:    new Date(),
-        bannedUntil: until ?? null,
-        banReason:   reason,
+        moderatorId,
+        entityType: 'USER',
+        entityId:   userId,
+        action:     ModerationActionType.BAN,
+        note:       reason,
       },
     });
   }
 
-  async unbanUser(userId: string) {
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: { isBanned: false, bannedAt: null, bannedUntil: null, banReason: null },
+  async unbanUser(userId: string, moderatorId: string) {
+    // Restore access — RESTORED is the closest action to "unban"
+    return this.prisma.moderationAction.create({
+      data: {
+        moderatorId,
+        entityType: 'USER',
+        entityId:   userId,
+        action:     ModerationActionType.RESTORED,
+        note:       'Accès restauré (levée de ban)',
+      },
     });
   }
 }
