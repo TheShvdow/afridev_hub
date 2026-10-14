@@ -5,7 +5,7 @@ import { PaymentEntityType, PaymentProvider, Prisma } from '@prisma/client';
 import { DomainException } from '../common/errors/domain.exception';
 import { BictorysProvider } from './providers/bictorys.provider';
 import { verifyBictorysWebhook, BictorysWebhookHeaders } from './providers/bictorys-webhook';
-import { mapBictorysStatus } from './providers/bictorys-status';
+import { mapBictorysStatus, isOutcomeConfirmed } from './providers/bictorys-status';
 import type { ChargeCustomer } from './providers/payment-provider.interface';
 
 interface InitiatePaymentInput {
@@ -171,6 +171,19 @@ export class PaymentsService {
       return;
     }
     if (outcome === 'PENDING') return;
+
+    // Confirmation côté Bictorys : un webhook seul ne change jamais l'état d'un paiement.
+    // Une erreur de l'appel remonte (502) pour que Bictorys renvoie le webhook.
+    const transactionId = payment.externalRef ?? payload.id;
+    if (!transactionId) {
+      this.logger.warn(`Webhook Bictorys pour ${paymentId} sans identifiant de transaction : ignoré`);
+      return;
+    }
+    const confirmed = await this.bictorys.getStatus(transactionId);
+    if (!isOutcomeConfirmed(payload.status, confirmed)) {
+      this.logger.warn(`Webhook Bictorys non confirmé pour ${paymentId} : webhook=${payload.status}, Bictorys=${confirmed}`);
+      return;
+    }
 
     // Mise à jour conditionnelle : un webhook rejoué ne retraite jamais un paiement déjà fermé.
     const result = await this.prisma.payment.updateMany({

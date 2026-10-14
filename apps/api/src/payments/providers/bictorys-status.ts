@@ -20,3 +20,11 @@ export function mapBictorysStatus(status: string): PaymentOutcome {
       return 'IGNORED';
   }
 }
+
+// Un webhook n'est appliqué que si Bictorys confirme la même issue (GET /transactions/{id}/status).
+// Une issue en attente ou inconnue ne déclenche jamais de changement d'état.
+export function isOutcomeConfirmed(webhookStatus: string, confirmedStatus: string): boolean {
+  const claimed = mapBictorysStatus(webhookStatus);
+  if (claimed !== 'CAPTURED' && claimed !== 'FAILED') return false;
+  return claimed === mapBictorysStatus(confirmedStatus);
+}
