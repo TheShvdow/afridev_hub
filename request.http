@@ -1,0 +1,335 @@
+### AfriDev Hub — REST Client (VS Code)
+### Extension requise : REST Client (humao.rest-client)
+
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+# ─── Variables dynamiques ────────────────────────────────────────────────────
+# Remplace après login
+@accessToken  = PASTE_ACCESS_TOKEN_HERE
+@refreshToken = PASTE_REFRESH_TOKEN_HERE
+
+# IDs à remplir au fil des tests
+@userId       = PASTE_USER_ID_HERE
+@postId       = PASTE_POST_ID_HERE
+@answerId     = PASTE_ANSWER_ID_HERE
+@projectId    = PASTE_PROJECT_ID_HERE
+@jobId        = PASTE_JOB_ID_HERE
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AUTH
+# ═══════════════════════════════════════════════════════════════════════════════
+
+### [Story 2.1] Register
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "username": "idy_dev",
+  "email": "idy@gtech.sn",
+  "password": "Secret123!",
+  "fullName": "Idrissa Wade"
+}
+
+###
+
+### [Story 2.1] Login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "idy@gtech.sn",
+  "password": "Secret123!"
+}
+
+###
+
+### Refresh token
+POST {{baseUrl}}/auth/refresh
+Content-Type: {{contentType}}
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+###
+
+### Logout
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{accessToken}}
+
+###
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# USERS / PROFILES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+### [Story 2.1] Get public profile (tracer bullet)
+GET {{baseUrl}}/users/idy_dev
+
+###
+
+### Get profile by username
+GET {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### Update my profile
+PATCH {{baseUrl}}/users/me
+Authorization: Bearer {{accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "bio": "Fullstack Dev — GTECH Sénégal",
+  "country": "SN",
+  "githubUrl": "https://github.com/TheShvdow"
+}
+
+###
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FORUM — Posts
+# ═══════════════════════════════════════════════════════════════════════════════
+
+### List posts
+GET {{baseUrl}}/forum/posts
+
+###
+
+### Get post by id
+GET {{baseUrl}}/forum/posts/{{postId}}
+
+###
+
+### Create post
+POST {{baseUrl}}/forum/posts
+Authorization: Bearer {{accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "title": "Comment configurer Prisma avec Neon sur NestJS ?",
+  "content": "J'essaie de connecter Prisma 5 à Neon DB dans un monorepo Nx…",
+  "tags": ["prisma", "nestjs", "neon"]
+}
+
+###
+
+### Update post
+PATCH {{baseUrl}}/forum/posts/{{postId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "title": "Comment configurer Prisma 5 avec Neon sur NestJS 10 ?",
+  "content": "Contenu mis à jour…"
+}
+
+###
+
+### Delete post
+DELETE {{baseUrl}}/forum/posts/{{postId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FORUM — Answers
+# ═══════════════════════════════════════════════════════════════════════════════
+
+### Create answer
+POST {{baseUrl}}/forum/posts/{{postId}}/answers
+Authorization: Bearer {{accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "content": "Tu dois ajouter `directUrl` dans le schema Prisma pour Neon…"
+}
+
+###
+
+### Accept answer
+PATCH {{baseUrl}}/forum/answers/{{answerId}}/accept
+Authorization: Bearer {{accessToken}}
+
+###
+
+### Delete answer
+DELETE {{baseUrl}}/forum/answers/{{answerId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VOTES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+### Vote UP on a post
+POST {{baseUrl}}/votes
+Authorization: Bearer {{accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "entityType": "POST",
+  "entityId": "{{postId}}",
+  "value": "UP"
+}
+
+###
+
+### Vote DOWN on an answer
+POST {{baseUrl}}/votes
+Authorization: Bearer {{accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "entityType": "ANSWER",
+  "entityId": "{{answerId}}",
+  "value": "DOWN"
+}
+
+###
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROJECTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+### List projects
+GET {{baseUrl}}/projects
+
+###
+
+### Get project by id
+GET {{baseUrl}}/projects/{{projectId}}
+
+###
+
+### Create project
+POST {{baseUrl}}/projects
+Authorization: Bearer {{accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "title": "AfriDev Hub",
+  "description": "Plateforme communautaire pour les devs africains",
+  "repoUrl": "https://github.com/TheShvdow/afridev_hub",
+  "stack": ["NestJS", "Prisma", "PostgreSQL", "Angular"],
+  "country": "SN"
+}
+
+###
+
+### Update project
+PATCH {{baseUrl}}/projects/{{projectId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "description": "Description mise à jour"
+}
+
+###
+
+### Star / unstar project
+POST {{baseUrl}}/projects/{{projectId}}/star
+Authorization: Bearer {{accessToken}}
+
+###
+
+### Delete project
+DELETE {{baseUrl}}/projects/{{projectId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### [Admin] List pending projects
+GET {{baseUrl}}/projects/pending
+Authorization: Bearer {{accessToken}}
+
+###
+
+### [Admin] Approve project
+POST {{baseUrl}}/projects/{{projectId}}/approve
+Authorization: Bearer {{accessToken}}
+
+###
+
+### [Admin] Reject project
+POST {{baseUrl}}/projects/{{projectId}}/reject
+Authorization: Bearer {{accessToken}}
+
+###
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# JOBS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+### List jobs
+GET {{baseUrl}}/jobs
+
+###
+
+### Get job by id
+GET {{baseUrl}}/jobs/{{jobId}}
+
+###
+
+### Create job
+POST {{baseUrl}}/jobs
+Authorization: Bearer {{accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "title": "Développeur NestJS Senior",
+  "description": "Nous recherchons un dev NestJS expérimenté…",
+  "company": "GTECH Sénégal",
+  "location": "SN",
+  "mode": "REMOTE",
+  "stack": ["NestJS", "PostgreSQL", "Docker"],
+  "salaryMin": 500000,
+  "salaryMax": 800000
+}
+
+###
+
+### Update job
+PATCH {{baseUrl}}/jobs/{{jobId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "title": "Développeur NestJS & Prisma Senior"
+}
+
+###
+
+### Close job
+PATCH {{baseUrl}}/jobs/{{jobId}}/close
+Authorization: Bearer {{accessToken}}
+
+###
+
+### Apply to job
+POST {{baseUrl}}/jobs/{{jobId}}/apply
+Authorization: Bearer {{accessToken}}
+Content-Type: {{contentType}}
+
+{
+  "message": "Motivé par ce poste, 3 ans d'expérience NestJS.",
+  "cvUrl": "https://idrissawade.com/cv.pdf"
+}
+
+###
+
+### [Recruiter] Get applications for a job
+GET {{baseUrl}}/jobs/{{jobId}}/applications
+Authorization: Bearer {{accessToken}}
+
+###
