@@ -7,6 +7,8 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshStrategy } from './strategies/refresh.strategy';
 import { GithubStrategy } from './strategies/github.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 
@@ -30,6 +32,8 @@ import { RolesGuard } from './guards/roles.guard';
     JwtStrategy,
     RefreshStrategy,
     GithubStrategy,
+    GoogleStrategy,
+    GoogleAuthGuard,
     JwtAuthGuard,
     RolesGuard,
   ],

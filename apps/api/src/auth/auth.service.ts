@@ -25,12 +25,23 @@ const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;  // lien de vérification : 24 
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
-interface GithubUserInput {
-  githubId: string;
-  email: string;
-  username: string;
-  displayName: string;
-  avatarUrl: string | null;
+export interface OAuthProfileInput {
+  provider:          'github' | 'google';
+  providerAccountId: string;
+  email:             string;
+  emailVerified:     boolean;
+  username:          string;
+  displayName:       string;
+  avatarUrl:         string | null;
+}
+
+export type OAuthLoginResult =
+  | { type: 'tokens'; tokens: AuthTokensResult }
+  | { type: 'link'; linkToken: string; email: string };
+
+export interface AuthTokensResult {
+  accessToken:  string;
+  refreshToken: string;
 }
 
 @Injectable()
@@ -151,66 +162,77 @@ export class AuthService {
 
   // ── GitHub OAuth ─────────────────────────────────────────────────────
 
-  async findOrCreateGithubUser(input: GithubUserInput): Promise<SafeUser> {
-    // Chercher d'abord via la table Account
-    const account = await this.prisma.account.findUnique({
-      where: {
-        provider_providerAccountId: {
-          provider:          'github',
-          providerAccountId: input.githubId,
-        },
-      },
+  // Connexion OAuth (GitHub, Google). Aucun lien automatique avec un compte existant :
+  // si l'email appartient déjà à un compte, l'utilisateur doit confirmer la liaison
+  // avec le mot de passe de ce compte (linkOAuthAccount).
+  async resolveOAuthLogin(input: OAuthProfileInput): Promise<OAuthLoginResult> {
+    const existing = await this.prisma.account.findUnique({
+      where: { provider_providerAccountId: { provider: input.provider, providerAccountId: input.providerAccountId } },
       include: { user: true },
     });
-
-    if (account) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { passwordHash: _, ...safeUser } = account.user;
-      return safeUser as SafeUser;
+    if (existing) {
+      return { type: 'tokens', tokens: await this.generateTokenPair(existing.user) };
     }
 
-    // Aucun compte GitHub trouvé — chercher par email
-    let user = await this.prisma.user.findUnique({ where: { email: input.email } });
-
-    if (!user) {
-      // Créer un nouveau compte
-      let username = input.username;
-      const usernameExists = await this.prisma.user.findUnique({ where: { username } });
-      if (usernameExists) {
-        username = `${username}_${Math.floor(Math.random() * 9999)}`;
-      }
-      user = await this.prisma.user.create({
-        data: {
-          email:       input.email,
-          username,
-          displayName: input.displayName,
-          avatarUrl:   input.avatarUrl ?? null,
-          isVerified:  true, // GitHub a déjà vérifié l'email
-        },
-      });
-    } else {
-      // Mettre à jour le profil si des champs sont manquants
-      user = await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          avatarUrl:   user.avatarUrl   ?? input.avatarUrl   ?? null,
-          displayName: user.displayName ?? input.displayName ?? null,
-        },
-      });
+    const sameEmail = await this.prisma.user.findUnique({ where: { email: input.email } });
+    if (sameEmail) {
+      const linkToken = await this.jwt.signAsync(
+        { typ: 'oauth-link', provider: input.provider, providerAccountId: input.providerAccountId, userId: sameEmail.id },
+        { secret: this.config.getOrThrow<string>('JWT_SECRET'), expiresIn: '10m' },
+      );
+      return { type: 'link', linkToken, email: input.email };
     }
 
-    // Lier le compte GitHub
-    await this.prisma.account.create({
+    const user = await this.prisma.user.create({
       data: {
-        userId:            user.id,
-        provider:          'github',
-        providerAccountId: input.githubId,
+        email:       input.email,
+        username:    await this.uniqueUsername(input.username),
+        displayName: input.displayName || null,
+        avatarUrl:   input.avatarUrl,
+        isVerified:  input.emailVerified,
+        accounts:    { create: { provider: input.provider, providerAccountId: input.providerAccountId } },
       },
     });
+    return { type: 'tokens', tokens: await this.generateTokenPair(user) };
+  }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { passwordHash: _, ...safeUser } = user;
-    return safeUser as SafeUser;
+  // Liaison confirmée par le mot de passe du compte existant.
+  async linkOAuthAccount(linkToken: string, password: string): Promise<AuthTokensResult> {
+    let claims: { typ?: string; provider?: string; providerAccountId?: string; userId?: string };
+    try {
+      claims = await this.jwt.verifyAsync(linkToken, { secret: this.config.getOrThrow<string>('JWT_SECRET') });
+    } catch {
+      throw new DomainException('AUTH_LINK_TOKEN_INVALID', 'Lien de liaison invalide ou expiré.', 400);
+    }
+    if (claims.typ !== 'oauth-link' || !claims.provider || !claims.providerAccountId || !claims.userId) {
+      throw new DomainException('AUTH_LINK_TOKEN_INVALID', 'Lien de liaison invalide ou expiré.', 400);
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: claims.userId } });
+    if (!user || !user.passwordHash) {
+      throw new DomainException('AUTH_INVALID_CREDENTIALS', 'Email ou mot de passe incorrect.', 401);
+    }
+    if (!(await bcrypt.compare(password, user.passwordHash))) {
+      throw new DomainException('AUTH_INVALID_CREDENTIALS', 'Email ou mot de passe incorrect.', 401);
+    }
+
+    const taken = await this.prisma.account.findUnique({
+      where: { provider_providerAccountId: { provider: claims.provider, providerAccountId: claims.providerAccountId } },
+    });
+    if (taken) {
+      throw new DomainException('AUTH_ACCOUNT_ALREADY_LINKED', 'Ce compte externe est déjà lié à un utilisateur.', 409);
+    }
+
+    await this.prisma.account.create({
+      data: { userId: user.id, provider: claims.provider, providerAccountId: claims.providerAccountId },
+    });
+    return this.generateTokenPair(user);
+  }
+
+  private async uniqueUsername(base: string): Promise<string> {
+    const clean = base.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || 'membre';
+    const taken = await this.prisma.user.findUnique({ where: { username: clean } });
+    return taken ? `${clean}_${Math.floor(Math.random() * 9999)}` : clean;
   }
 
   // ── Refresh tokens ───────────────────────────────────────────────────
@@ -258,6 +280,7 @@ export class AuthService {
   }
 
   // ── OAuth helpers ────────────────────────────────────────────────────
+
 
   async generateTokensForOAuthUser(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });

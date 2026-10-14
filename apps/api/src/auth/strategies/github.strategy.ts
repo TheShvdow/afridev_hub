@@ -29,11 +29,16 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
 
     const avatarUrl = profile.photos?.[0]?.value ?? null;
 
-    return this.authService.findOrCreateGithubUser({
-      githubId: profile.id,
+    // Un email de repli (sans adresse réelle) n'est jamais considéré comme vérifié.
+    const hasRealEmail = Boolean(profile.emails?.[0]?.value);
+
+    return this.authService.resolveOAuthLogin({
+      provider:          'github',
+      providerAccountId: profile.id,
       email,
-      username: profile.username ?? `gh_${profile.id}`,
-      displayName: profile.displayName ?? profile.username ?? '',
+      emailVerified:     hasRealEmail,
+      username:          profile.username ?? `gh_${profile.id}`,
+      displayName:       profile.displayName ?? profile.username ?? '',
       avatarUrl,
     });
   }

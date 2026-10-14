@@ -20,6 +20,9 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RefreshAuthGuard } from './guards/refresh-auth.guard';
 import { GithubAuthGuard } from './guards/github-auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { OAuthLinkDto } from './dto/oauth-link.dto';
+import type { OAuthLoginResult } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { ApiData } from '../common/swagger/api-data.decorator';
@@ -145,19 +148,50 @@ export class AuthController {
   @UseGuards(GithubAuthGuard)
   @ApiOperation({ summary: 'Callback GitHub OAuth' })
   @ApiExcludeEndpoint()
-  async githubCallback(
-    @Req() req: Request & { user: AuthUser },
-    @Res() res: Response,
-  ) {
-    const tokens = await this.authService.generateTokensForOAuthUser(req.user.id);
+  githubCallback(@Req() req: Request & { user: OAuthLoginResult }, @Res() res: Response) {
+    this.redirectAfterOAuth(res, 'github', req.user);
+  }
+
+  // ── Google OAuth ─────────────────────────────────────────────────────
+
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Démarrer l\'authentification Google' })
+  @ApiExcludeEndpoint()
+  googleAuth() {
+    // Passport redirige vers Google automatiquement
+  }
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Callback Google OAuth' })
+  @ApiExcludeEndpoint()
+  googleCallback(@Req() req: Request & { user: OAuthLoginResult }, @Res() res: Response) {
+    this.redirectAfterOAuth(res, 'google', req.user);
+  }
+
+  // Confirmation de la liaison d'un compte OAuth à un compte existant (mot de passe requis).
+  @Post('oauth/link')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Lier un compte GitHub ou Google à mon compte existant' })
+  @ApiData({ type: AuthTokensDto, description: 'Compte lié, tokens renvoyés' })
+  linkOAuth(@Body() dto: OAuthLinkDto) {
+    return this.authService.linkOAuthAccount(dto.linkToken, dto.password);
+  }
+
+  // Les tokens partent dans le fragment (#), jamais dans la query : ils n'apparaissent ni dans les logs ni dans l'historique serveur.
+  private redirectAfterOAuth(res: Response, provider: 'github' | 'google', result: OAuthLoginResult) {
     const webUrl = this.config.get<string>('WEB_URL', 'http://localhost:4200');
 
-    // Rediriger vers le front avec les tokens dans le hash (#)
-    // Le front lit l'URL et les stocke
-    const redirectUrl = new URL('/auth/github/callback', webUrl);
-    redirectUrl.searchParams.set('at', tokens.accessToken);
-    redirectUrl.searchParams.set('rt', tokens.refreshToken);
+    if (result.type === 'link') {
+      const url = new URL(`/auth/oauth/link`, webUrl);
+      url.hash = new URLSearchParams({ provider, linkToken: result.linkToken, email: result.email }).toString();
+      res.redirect(url.toString());
+      return;
+    }
 
-    res.redirect(redirectUrl.toString());
+    const url = new URL(`/auth/${provider}/callback`, webUrl);
+    url.hash = new URLSearchParams({ at: result.tokens.accessToken, rt: result.tokens.refreshToken }).toString();
+    res.redirect(url.toString());
   }
 }

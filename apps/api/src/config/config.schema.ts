@@ -22,6 +22,11 @@ export const configValidationSchema = Joi.object({
   CLOUDFLARE_R2_PUBLIC_URL:      Joi.string().optional().allow(''),
   CLOUDFLARE_ACCOUNT_ID:         Joi.string().optional().allow(''),
 
+  // ── OAuth Google (optionnel : route 503 si absent) ─────────────────────
+  GOOGLE_CLIENT_ID:               Joi.string().optional().allow(''),
+  GOOGLE_CLIENT_SECRET:           Joi.string().optional().allow(''),
+  GOOGLE_CALLBACK_URL:            Joi.string().optional().allow(''),
+
   // ── Paiements — agrégateur Bictorys (optionnel au démarrage : 503 si absent à l'usage) ──
   BICTORYS_API_URL:               Joi.string().optional().allow(''),
   BICTORYS_API_KEY:               Joi.string().optional().allow(''),
