@@ -119,6 +119,9 @@ export class PaymentsService {
       return { received: true };
     }
 
+    // Journal sans données personnelles : seulement les clés et le statut, pour valider le format en sandbox.
+    this.logger.log(`Webhook Bictorys reçu : clés=${Object.keys(payload).join(',')} statut=${payload.status ?? 'absent'}`);
+
     await this.applyWebhook(payload);
     return { received: true };
   }
