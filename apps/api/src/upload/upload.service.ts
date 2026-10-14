@@ -34,6 +34,8 @@ export class UploadService {
       region: 'auto',
       endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
       credentials: { accessKeyId, secretAccessKey },
+      // Pas de somme de contrôle ajoutée par défaut : R2 signe alors uniquement les en-têtes utiles.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
     });
 
     const key = `avatars/${userId}/${randomUUID()}.${EXTENSIONS[dto.mimeType]}`;
