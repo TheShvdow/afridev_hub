@@ -92,11 +92,9 @@ enum PlanType {
   PREMIUM
 }
 
+// Agrégateur de paiement unique (décision 2026-10-14) : Bictorys.
 enum PaymentProvider {
-  WAVE
-  ORANGE_MONEY
-  MTN_MOMO
-  STRIPE
+  BICTORYS
 }
 
 enum PaymentStatus {

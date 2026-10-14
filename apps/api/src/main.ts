@@ -9,8 +9,10 @@ import * as compression from 'compression';
 import { applyEnvelopeToDocument } from './common/swagger/envelope.document';
 
 async function bootstrap() {
+  // rawBody : la vérification HMAC des webhooks Bictorys exige le corps brut
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
+    rawBody: true,
   });
   app.useLogger(app.get(Logger));
 

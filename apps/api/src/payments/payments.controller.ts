@@ -6,18 +6,17 @@ import {
   Body,
   Headers,
   UseGuards,
-  RawBodyRequest,
   Req,
   HttpCode,
   HttpStatus,
+  RawBodyRequest,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiHeader, ApiExcludeController } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-
 
 @ApiTags('Payments')
 @Controller('payments')
@@ -27,7 +26,7 @@ export class PaymentsController {
   @Post('initiate')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Initier un paiement' })
+  @ApiOperation({ summary: 'Initier un paiement Bictorys (charge)' })
   initiate(
     @CurrentUser('id') userId: string,
     @Body() dto: InitiatePaymentDto,
@@ -51,47 +50,22 @@ export class PaymentsController {
     return this.paymentsService.getUserPayments(userId);
   }
 
-  // ── Webhooks (pas de guard — vérification par signature) ─────────────
+  // ── Webhook Bictorys (pas de guard : authentifié par signature) ──────
 
-  @Post('webhooks/wave')
-  @ApiOperation({ summary: 'Webhook Wave — confirmation de paiement (signature vérifiée côté service)' })
-  @ApiBody({ schema: { type: 'object', description: 'Payload brut du fournisseur (format propre à chaque opérateur)' } })
+  @Post('webhooks/bictorys')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Webhook Wave' })
-  waveWebhook(
-    @Body() payload: Record<string, unknown>,
-    @Headers('x-wave-signature') signature: string,
-  ) {
-    return this.paymentsService.handleWaveWebhook(payload, signature);
-  }
-
-  @Post('webhooks/orange')
-  @ApiOperation({ summary: 'Webhook Orange Money — confirmation de paiement (signature vérifiée côté service)' })
-  @ApiBody({ schema: { type: 'object', description: 'Payload brut du fournisseur (format propre à chaque opérateur)' } })
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Webhook Orange Money' })
-  orangeWebhook(@Body() payload: Record<string, unknown>) {
-    return this.paymentsService.handleOrangeWebhook(payload);
-  }
-
-  @Post('webhooks/mtn')
-  @ApiOperation({ summary: 'Webhook MTN MoMo — confirmation de paiement (signature vérifiée côté service)' })
-  @ApiBody({ schema: { type: 'object', description: 'Payload brut du fournisseur (format propre à chaque opérateur)' } })
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Webhook MTN MoMo' })
-  mtnWebhook(@Body() payload: Record<string, unknown>) {
-    return this.paymentsService.handleMtnWebhook(payload);
-  }
-
-  @Post('webhooks/stripe')
-  @ApiOperation({ summary: 'Webhook Stripe — confirmation de paiement (signature vérifiée côté service)' })
-  @ApiBody({ schema: { type: 'object', description: 'Payload brut du fournisseur (format propre à chaque opérateur)' } })
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Webhook Stripe' })
-  stripeWebhook(
+  @ApiOperation({ summary: 'Webhook Bictorys — confirmation de paiement' })
+  @ApiHeader({ name: 'X-Secret-Key', required: false, description: 'Secret statique du webhook' })
+  @ApiHeader({ name: 'X-Webhook-Signature', required: false, description: 'HMAC-SHA256 hex' })
+  @ApiHeader({ name: 'X-Webhook-Timestamp', required: false, description: 'Unix ms, fenêtre de 5 minutes' })
+  @ApiBody({ schema: { type: 'object', description: 'Payload Bictorys (id, status, paymentReference, amount, currency, …)' } })
+  bictorysWebhook(
     @Req() req: RawBodyRequest<Request>,
-    @Headers('stripe-signature') signature: string,
+    @Headers('x-secret-key') secretKey?: string,
+    @Headers('x-webhook-signature') signature?: string,
+    @Headers('x-webhook-timestamp') timestamp?: string,
   ) {
-    return this.paymentsService.handleStripeWebhook(req.rawBody!, signature);
+    const rawBody = req.rawBody?.toString('utf-8') ?? '';
+    return this.paymentsService.handleBictorysWebhook(rawBody, { secretKey, signature, timestamp });
   }
 }

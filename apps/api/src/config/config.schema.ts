@@ -16,11 +16,16 @@ export const configValidationSchema = Joi.object({
 
   // ── Optional ──────────────────────────────────────────────────────────────
   RESEND_API_KEY:                Joi.string().optional().allow(''),
-  WAVE_API_KEY:                  Joi.string().optional().allow(''),
-  STRIPE_SECRET_KEY:             Joi.string().optional().allow(''),
   CLOUDFLARE_R2_ACCESS_KEY_ID:   Joi.string().optional().allow(''),
   CLOUDFLARE_R2_SECRET_ACCESS_KEY: Joi.string().optional().allow(''),
   CLOUDFLARE_R2_BUCKET_NAME:     Joi.string().optional().allow(''),
   CLOUDFLARE_R2_PUBLIC_URL:      Joi.string().optional().allow(''),
   CLOUDFLARE_ACCOUNT_ID:         Joi.string().optional().allow(''),
+
+  // ── Paiements — agrégateur Bictorys (optionnel au démarrage : 503 si absent à l'usage) ──
+  BICTORYS_API_URL:               Joi.string().optional().allow(''),
+  BICTORYS_API_KEY:               Joi.string().optional().allow(''),
+  BICTORYS_PRIVATE_KEY:           Joi.string().optional().allow(''),
+  BICTORYS_WEBHOOK_SECRET:        Joi.string().optional().allow(''),
+  BICTORYS_MERCHANT_SECRET_CODE:  Joi.string().optional().allow(''),
 });

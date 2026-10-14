@@ -1,24 +1,30 @@
-import {
-  Injectable,
-  Logger,
-  } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { PaymentEntityType, Prisma } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
-
-export type { PaymentProvider } from '@prisma/client';
-import type { PaymentProvider } from '@prisma/client';
+import { PaymentEntityType, PaymentProvider, Prisma } from '@prisma/client';
 import { DomainException } from '../common/errors/domain.exception';
+import { BictorysProvider } from './providers/bictorys.provider';
+import { verifyBictorysWebhook, BictorysWebhookHeaders } from './providers/bictorys-webhook';
+import { mapBictorysStatus } from './providers/bictorys-status';
+import type { ChargeCustomer } from './providers/payment-provider.interface';
 
 interface InitiatePaymentInput {
   userId:      string;
-  amount:      number;              // en centimes (XOF)
+  amount:      number;              // entier, XOF (unités de base)
   currency:    string;
-  provider:    PaymentProvider;
-  entityType:  PaymentEntityType;   // required — replaces `purpose`
-  entityId:    string;              // required — ID de l'entité liée au paiement
-  metadata?:   Record<string, unknown>;
+  paymentType: string;              // wave_money, orange_money, card, …
+  country:     string;              // SN, CI, BK, ML, TG, BJ
+  entityType:  PaymentEntityType;
+  entityId:    string;
+  customer?:   ChargeCustomer;
+}
+
+interface BictorysWebhookPayload {
+  id?:                string;
+  status?:            string;
+  paymentReference?:  string;
+  amount?:            number;
+  currency?:          string;
 }
 
 @Injectable()
@@ -29,6 +35,7 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly bictorys: BictorysProvider,
   ) {
     this.commissionRate = Number(this.config.get('COMMISSION_RATE', '0.12'));
   }
@@ -36,73 +43,93 @@ export class PaymentsService {
   // ── Initier un paiement ──────────────────────────────────────────────
 
   async initiatePayment(input: InitiatePaymentInput) {
-    const externalRef = `AFRIDEV-${uuidv4().slice(0, 8).toUpperCase()}`; // externalRef not reference
     const commissionAmount = Math.round(input.amount * this.commissionRate);
 
-    // Payment has entityType + entityId (required); no `purpose`, no `reference`, no `commission` field
     const payment = await this.prisma.payment.create({
       data: {
         userId:      input.userId,
         amount:      input.amount,
         currency:    input.currency,
-        provider:    input.provider,
+        provider:    PaymentProvider.BICTORYS,
         entityType:  input.entityType,
         entityId:    input.entityId,
-        externalRef,
         status:      'PENDING',
-        metadata:    (input.metadata ?? {}) as Prisma.InputJsonObject,
+        metadata:    { paymentType: input.paymentType, country: input.country } as Prisma.InputJsonObject,
       },
     });
 
-    // Commission is a separate model — not a field on Payment
     await this.prisma.commission.create({
-      data: {
-        paymentId: payment.id,
-        amount:    commissionAmount,
-        rate:      this.commissionRate,
+      data: { paymentId: payment.id, amount: commissionAmount, rate: this.commissionRate },
+    });
+
+    const webUrl = this.config.get<string>('WEB_URL', 'http://localhost:4200');
+    const charge = await this.bictorys.initiate({
+      paymentReference:   payment.id,
+      amount:             input.amount,
+      currency:           'XOF',
+      country:            input.country,
+      paymentType:        input.paymentType,
+      successRedirectUrl: `${webUrl}/payment/result?ref=${payment.id}&status=success`,
+      errorRedirectUrl:   `${webUrl}/payment/result?ref=${payment.id}&status=error`,
+      customer:           input.customer,
+    }).catch(async (error: unknown) => {
+      await this.prisma.payment.update({ where: { id: payment.id }, data: { status: 'FAILED' } });
+      throw error;
+    });
+
+    // La référence Bictorys (transactionId) sert de lien pour les webhooks et le statut.
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data:  {
+        externalRef: charge.transactionId,
+        metadata: {
+          paymentType: input.paymentType,
+          country:     input.country,
+          redirectUrl: charge.redirectUrl,
+          ...(charge.link && { link: charge.link }),
+        } as Prisma.InputJsonObject,
       },
     });
 
-    const checkoutUrl = this.buildCheckoutUrl(payment.id, input);
-
-    return { paymentId: payment.id, externalRef, checkoutUrl };
+    return {
+      paymentId:     payment.id,
+      transactionId: charge.transactionId,
+      redirectUrl:   charge.redirectUrl,
+      link:          charge.link ?? null,
+      qrCode:        charge.qrCode ?? null,
+      message:       charge.message ?? null,
+    };
   }
 
-  // ── Webhook handlers ─────────────────────────────────────────────────
+  // ── Webhook Bictorys ─────────────────────────────────────────────────
 
-  async handleWaveWebhook(payload: Record<string, unknown>, signature: string) {
-    // TODO: Vérifier la signature HMAC Wave
-    this.logger.log('Wave webhook reçu', payload);
-    return this.processWebhook('WAVE', payload);
+  // Vérifie la signature avant toute lecture du payload. Le corps brut est requis.
+  async handleBictorysWebhook(rawBody: string, headers: BictorysWebhookHeaders) {
+    const secret = this.config.get<string>('BICTORYS_WEBHOOK_SECRET', '');
+    if (!verifyBictorysWebhook(rawBody, headers, secret)) {
+      this.logger.warn('Webhook Bictorys rejeté : signature invalide');
+      throw new DomainException('PAYMENTS_WEBHOOK_INVALID_SIGNATURE', 'Signature du webhook invalide.', 401);
+    }
+
+    let payload: BictorysWebhookPayload;
+    try {
+      payload = JSON.parse(rawBody) as BictorysWebhookPayload;
+    } catch {
+      this.logger.warn('Webhook Bictorys ignoré : JSON invalide');
+      return { received: true };
+    }
+
+    await this.applyWebhook(payload);
+    return { received: true };
   }
 
-  async handleOrangeWebhook(payload: Record<string, unknown>) {
-    this.logger.log('Orange Money webhook reçu', payload);
-    return this.processWebhook('ORANGE_MONEY', payload);
-  }
-
-  async handleMtnWebhook(payload: Record<string, unknown>) {
-    this.logger.log('MTN MoMo webhook reçu', payload);
-    return this.processWebhook('MTN_MOMO', payload);
-  }
-
-  async handleStripeWebhook(rawBody: Buffer, signature: string) {
-    // TODO: Vérifier avec stripe.webhooks.constructEvent
-    this.logger.log('Stripe webhook reçu');
-    return this.processWebhook('STRIPE', {});
-  }
-
-  // ── Statut paiement ──────────────────────────────────────────────────
+  // ── Statut ───────────────────────────────────────────────────────────
 
   async getPayment(paymentId: string, userId: string) {
-    const payment = await this.prisma.payment.findUnique({
-      where: { id: paymentId },
-    });
-
+    const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
     if (!payment || payment.userId !== userId) {
       throw new DomainException('PAYMENTS_PAYMENT_NOT_FOUND', 'Paiement introuvable.', 404);
     }
-
     return payment;
   }
 
@@ -116,47 +143,47 @@ export class PaymentsService {
 
   // ── Privé ────────────────────────────────────────────────────────────
 
-  private async processWebhook(provider: PaymentProvider, payload: Record<string, unknown>) {
-    const reference = this.extractReference(provider, payload);
-    if (!reference) {
-      this.logger.warn(`Impossible d'extraire la référence du webhook ${provider}`);
+  private async applyWebhook(payload: BictorysWebhookPayload) {
+    const paymentId = payload.paymentReference;
+    if (!paymentId || !payload.status) {
+      this.logger.warn('Webhook Bictorys sans référence ou statut');
       return;
     }
 
-    // externalRef is not @unique — use findFirst, not findUnique
-    const payment = await this.prisma.payment.findFirst({ where: { externalRef: reference } });
+    const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
     if (!payment) {
-      this.logger.warn(`Paiement introuvable pour la référence ${reference}`);
+      this.logger.warn(`Webhook Bictorys : paiement ${paymentId} introuvable`);
       return;
     }
 
-    const success    = this.isSuccessPayload(provider, payload);
-    const newStatus  = success ? 'CAPTURED' : 'FAILED'; // CAPTURED not COMPLETED — COMPLETED doesn't exist
+    // Contrôle anti-fraude de la doc : le montant et la devise doivent correspondre.
+    if (payload.amount !== payment.amount || payload.currency !== payment.currency) {
+      this.logger.error(`Webhook Bictorys incohérent pour ${paymentId} (montant ou devise)`);
+      return;
+    }
 
-    // Payment has no paidAt/providerRef/webhookData — store extras in metadata (Json field)
-    await this.prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        status:   newStatus,
+    const outcome = mapBictorysStatus(payload.status);
+    if (outcome === 'IGNORED') {
+      this.logger.warn(`Statut Bictorys non géré : ${payload.status}`);
+      return;
+    }
+    if (outcome === 'PENDING') return;
+
+    // Mise à jour conditionnelle : un webhook rejoué ne retraite jamais un paiement déjà fermé.
+    const result = await this.prisma.payment.updateMany({
+      where: { id: payment.id, status: { in: ['PENDING'] } },
+      data:  {
+        status:   outcome === 'CAPTURED' ? 'CAPTURED' : 'FAILED',
         metadata: {
           ...((payment.metadata as Record<string, unknown>) ?? {}),
-          capturedAt:   success ? new Date().toISOString() : undefined,
-          providerRef:  String(payload['transactionId'] ?? payload['id'] ?? ''),
-          webhookData:  payload,
+          providerStatus: payload.status,
+          providerRef:    payload.id ?? null,
+          ...(outcome === 'CAPTURED' && { capturedAt: new Date().toISOString() }),
         } as Prisma.InputJsonObject,
       },
     });
 
-    if (success) {
-      // Create commission record after successful capture
-      await this.prisma.commission.create({
-        data: {
-          paymentId: payment.id,
-          amount:    Math.round(payment.amount * this.commissionRate),
-          rate:      this.commissionRate,
-        },
-      }).catch(() => null); // idempotence — may already exist from initiatePayment
-
+    if (outcome === 'CAPTURED' && result.count === 1) {
       await this.fulfillPayment(payment.id, payment.userId, payment.entityType, payment.entityId);
     }
   }
@@ -164,57 +191,23 @@ export class PaymentsService {
   private async fulfillPayment(
     paymentId: string,
     userId: string,
-    entityType: PaymentEntityType,  // was `purpose: string`
+    entityType: PaymentEntityType,
     entityId: string,
   ) {
-    this.logger.log(`Fulfillment: ${entityType}/${entityId} pour userId=${userId}`);
+    this.logger.log(`Fulfillment: ${entityType}/${entityId} pour userId=${userId} (paiement ${paymentId})`);
 
     switch (entityType) {
       case 'RECRUITER_PLAN':
         // TODO: Activer le plan premium recruteur
         break;
       case 'MENTOR_SESSION':
-        // TODO: Confirmer la session mentoring
+        // TODO: Confirmer la session mentoring (Phase 2)
         break;
       case 'COURSE_ENROLLMENT':
-        // TODO: Inscrire l'utilisateur au cours
+        // TODO: Inscrire l'utilisateur au cours (Phase 2)
         break;
       default:
         this.logger.warn(`EntityType inconnu: ${entityType}`);
-    }
-  }
-
-  private buildCheckoutUrl(paymentId: string, input: InitiatePaymentInput): string {
-    const webUrl = this.config.get('WEB_URL', 'http://localhost:4200');
-    const apiUrl = this.config.get('API_URL', 'http://localhost:3000');
-
-    switch (input.provider) {
-      case 'WAVE':
-        return `${this.config.get('WAVE_CHECKOUT_URL', 'https://pay.wave.com/m/checkout')}?amount=${input.amount}&currency=${input.currency}&client_reference=${paymentId}`;
-      case 'STRIPE':
-        return `${apiUrl}/api/payments/stripe/session/${paymentId}`;
-      default:
-        return `${webUrl}/payment/checkout/${paymentId}`;
-    }
-  }
-
-  private extractReference(provider: PaymentProvider, payload: Record<string, unknown>): string | null {
-    switch (provider) {
-      case 'WAVE':         return payload['client_reference'] as string ?? null;
-      case 'ORANGE_MONEY': return payload['externalId']      as string ?? null;
-      case 'MTN_MOMO':     return payload['externalId']      as string ?? null;
-      case 'STRIPE':       return (payload['metadata'] as Record<string, string>)?.['externalRef'] ?? null;
-      default:             return null;
-    }
-  }
-
-  private isSuccessPayload(provider: PaymentProvider, payload: Record<string, unknown>): boolean {
-    switch (provider) {
-      case 'WAVE':         return payload['status'] === 'succeeded';
-      case 'ORANGE_MONEY': return payload['status'] === 'SUCCESS';
-      case 'MTN_MOMO':     return payload['status'] === 'SUCCESSFUL';
-      case 'STRIPE':       return (payload['type'] as string)?.startsWith('payment_intent.succeeded') ?? false;
-      default:             return false;
     }
   }
 }

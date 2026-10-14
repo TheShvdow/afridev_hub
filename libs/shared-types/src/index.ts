@@ -21,7 +21,7 @@ export type JobMode = 'REMOTE' | 'ONSITE' | 'HYBRID';
 export type JobStatus = 'ACTIVE' | 'EXPIRED' | 'CLOSED';
 export type ApplicationStatus = 'PENDING' | 'REVIEWED' | 'ACCEPTED' | 'REJECTED';
 export type PlanType = 'FREE' | 'PREMIUM';
-export type PaymentProvider = 'WAVE' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'STRIPE';
+export type PaymentProvider = 'BICTORYS';  // agrégateur unique (décision 2026-10-14)
 export type PaymentStatus = 'PENDING' | 'AUTHORIZED' | 'CAPTURED' | 'FAILED' | 'REFUNDED';
 export type PaymentEntityType = 'MENTOR_SESSION' | 'RECRUITER_PLAN' | 'COURSE_ENROLLMENT';
 export type RefundStatus = 'PENDING' | 'PROCESSED' | 'REJECTED';
@@ -321,7 +321,10 @@ export type ErrorCode =
   // Modération
   | 'MODERATION_REPORT_NOT_FOUND'
   // Paiements
-  | 'PAYMENTS_PAYMENT_NOT_FOUND';
+  | 'PAYMENTS_PAYMENT_NOT_FOUND'
+  | 'PAYMENTS_PROVIDER_NOT_CONFIGURED'
+  | 'PAYMENTS_PROVIDER_ERROR'
+  | 'PAYMENTS_WEBHOOK_INVALID_SIGNATURE';
 
 // ── Événements de domaine (EventEmitter2, AD-1 / AD-8) ───────────────────────
 // Nommage : <module>.<entité>.<action>. Payloads typés ici, jamais `any`.
