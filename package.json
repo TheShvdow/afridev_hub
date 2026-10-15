@@ -11,7 +11,7 @@
     "start:api": "nx serve api",
     "start:all": "nx run-many --target=serve --projects=web,api --parallel",
     "build:web": "nx build web --configuration=production",
-    "build:api": "nx build api --configuration=production",
+    "build:api": "npm run prisma:generate && nx build api --configuration=production",
     "build:all": "nx run-many --target=build --all --configuration=production",
     "test": "nx run-many --target=test --all",
     "test:watch": "nx run-many --target=test --all --watch",
@@ -27,7 +27,7 @@
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
     "docker:reset": "docker-compose down -v && docker-compose up -d",
-    "prepare": "prisma generate --schema=prisma/schema.prisma"
+    "prepare": "node scripts/prepare.js"
   },
   "dependencies": {
     "@angular/animations": "^18.2.0",
