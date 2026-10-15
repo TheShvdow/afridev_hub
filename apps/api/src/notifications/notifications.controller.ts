@@ -5,11 +5,11 @@ import {
   Param,
   Query,
   UseGuards,
-  ParseIntPipe,
   DefaultValuePipe,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { PositiveIntPipe, MAX_PAGE_LIMIT } from '../common/pipes/positive-int.pipe';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { NotificationsService } from './notifications.service';
@@ -28,8 +28,8 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Mes notifications' })
   list(
     @CurrentUser('id') userId: string,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('page', new DefaultValuePipe(1), new PositiveIntPipe()) page: number,
+    @Query('limit', new DefaultValuePipe(20), new PositiveIntPipe(MAX_PAGE_LIMIT)) limit: number,
   ) {
     return this.notificationsService.list(userId, page, limit);
   }

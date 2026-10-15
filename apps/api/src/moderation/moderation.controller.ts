@@ -7,7 +7,9 @@ import {
   Body,
   Query,
   UseGuards,
+  DefaultValuePipe,
 } from '@nestjs/common';
+import { PositiveIntPipe } from '../common/pipes/positive-int.pipe';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ReportStatus } from '@prisma/client';
 import { ModerationService } from './moderation.service';
@@ -49,10 +51,10 @@ export class ModerationController {
   @ApiData({ type: ReportDto, paginated: true, description: 'Signalements paginés' })
   @ApiQuery({ name: 'status', enum: ReportStatus, required: false })
   listReports(
-    @Query('status') status?: string,
-    @Query('page') page?: string,
+    @Query('status') status: string | undefined,
+    @Query('page', new DefaultValuePipe(1), new PositiveIntPipe()) page: number,
   ) {
-    return this.moderationService.listReports(status as never, Number(page) || 1);
+    return this.moderationService.listReports(status as never, page);
   }
 
   @Patch('reports/:id/resolve')

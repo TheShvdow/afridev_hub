@@ -7,10 +7,10 @@ import {
   Body,
   Query,
   UseGuards,
-  ParseIntPipe,
   ParseEnumPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
+import { PositiveIntPipe, MAX_PAGE_LIMIT } from '../common/pipes/positive-int.pipe';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { JobMode, JobType } from '@prisma/client';
 import { JobsService } from './jobs.service';
@@ -33,8 +33,8 @@ export class JobsController {
   @ApiQuery({ name: 'mode', enum: JobMode, required: false })
   @ApiData({ type: JobDto, paginated: true, description: 'Offres actives, paginées' })
   list(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('page', new DefaultValuePipe(1), new PositiveIntPipe()) page: number,
+    @Query('limit', new DefaultValuePipe(20), new PositiveIntPipe(MAX_PAGE_LIMIT)) limit: number,
     @Query('type', new ParseEnumPipe(JobType, { optional: true })) type?: JobType,
     @Query('mode', new ParseEnumPipe(JobMode, { optional: true })) mode?: JobMode,
     @Query('search') search?: string,

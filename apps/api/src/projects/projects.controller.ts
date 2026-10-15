@@ -10,9 +10,9 @@ import {
   Body,
   Query,
   UseGuards,
-  ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
+import { PositiveIntPipe, MAX_PAGE_LIMIT } from '../common/pipes/positive-int.pipe';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -33,8 +33,8 @@ export class ProjectsController {
   @ApiOperation({ summary: 'Lister les projets approuvés' })
   @ApiData({ type: ProjectDto, paginated: true, description: 'Projets approuvés, paginés' })
   list(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('page', new DefaultValuePipe(1), new PositiveIntPipe()) page: number,
+    @Query('limit', new DefaultValuePipe(20), new PositiveIntPipe(MAX_PAGE_LIMIT)) limit: number,
     @Query('category') category?: string,
   ) {
     return this.projectsService.list(page, limit, category);

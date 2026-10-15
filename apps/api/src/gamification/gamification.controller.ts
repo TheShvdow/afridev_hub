@@ -3,9 +3,9 @@ import {
   Get,
   Param,
   Query,
-  ParseIntPipe,
   DefaultValuePipe,
 } from '@nestjs/common';
+import { PositiveIntPipe, MAX_PAGE_LIMIT } from '../common/pipes/positive-int.pipe';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { GamificationService } from './gamification.service';
 import { ApiData } from '../common/swagger/api-data.decorator';
@@ -19,8 +19,8 @@ export class GamificationController {
   @ApiOperation({ summary: 'Classement par réputation' })
   @ApiData({ array: true, description: 'Classement par réputation' })
   leaderboard(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+    @Query('page', new DefaultValuePipe(1), new PositiveIntPipe()) page: number,
+    @Query('limit', new DefaultValuePipe(50), new PositiveIntPipe(MAX_PAGE_LIMIT)) limit: number,
   ) {
     return this.gamificationService.getLeaderboard(page, limit);
   }
