@@ -31,6 +31,20 @@ const ERROR_DESCRIPTIONS: Record<string, string> = {
 
 const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete'];
 
+interface ResponseLike {
+  description?: string;
+  content?: Record<string, { schema?: { properties?: Record<string, unknown>; [key: string]: unknown } }>;
+}
+
+interface OperationLike {
+  summary?: string;
+  description?: string;
+  responses?: Record<string, ResponseLike>;
+  requestBody?: unknown;
+  parameters?: { in?: string }[];
+  security?: unknown[];
+}
+
 // Passe sur le document OpenAPI généré : applique l'enveloppe AD-7 à toutes les opérations
 // (succès { data }, erreurs { error }) et complète les descriptions manquantes.
 // Les réponses de redirection (ex. callback OAuth) ne sont pas enveloppées.
@@ -40,7 +54,7 @@ export function applyEnvelopeToDocument(doc: OpenAPIObject): void {
 
   for (const [path, item] of Object.entries(doc.paths)) {
     for (const method of HTTP_METHODS) {
-      const op = (item as Record<string, any>)[method];
+      const op = (item as Record<string, OperationLike | undefined>)[method];
       if (!op) continue;
 
       op.description ??= op.summary;
@@ -65,7 +79,7 @@ export function applyEnvelopeToDocument(doc: OpenAPIObject): void {
       }
 
       const errorCodes = new Set<string>(['500']);
-      if (op.requestBody || (op.parameters ?? []).some((p: any) => p.in === 'query')) errorCodes.add('400');
+      if (op.requestBody || (op.parameters ?? []).some((p) => p.in === 'query')) errorCodes.add('400');
       if (op.security) {
         errorCodes.add('401');
         errorCodes.add('403');

@@ -22,7 +22,8 @@ export class PrismaService
 
     // Log des queries lentes en dev (> 500ms)
     if (process.env['NODE_ENV'] === 'development') {
-      (this as any).$on('query', (e: any) => {
+      type QueryEvent = { duration: number; query: string };
+      (this as unknown as { $on(event: 'query', cb: (e: QueryEvent) => void): void }).$on('query', (e) => {
         if (e.duration > 500) {
           this.logger.warn({ duration: e.duration, query: e.query }, 'Slow query detected');
         }
