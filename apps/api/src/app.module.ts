@@ -21,6 +21,7 @@ import { AdminModule } from './admin/admin.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
 import { UploadModule } from './upload/upload.module';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
@@ -74,6 +75,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
     GamificationModule,
     AdminModule,
     UploadModule,
+    ScheduleModule.forRoot(),
   ],
   providers: [
     // Enveloppe AD-7 : succès { data }, erreur { error: { code, message } }

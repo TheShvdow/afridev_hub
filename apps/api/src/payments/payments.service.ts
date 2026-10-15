@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentEntityType, PaymentProvider, Prisma } from '@prisma/client';
@@ -185,15 +186,25 @@ export class PaymentsService {
       return;
     }
 
-    // Mise à jour conditionnelle : un webhook rejoué ne retraite jamais un paiement déjà fermé.
+    await this.settle(payment, outcome, payload.status, payload.id ?? transactionId);
+  }
+
+  // Règlement commun aux webhooks et à la réconciliation. Mise à jour conditionnelle :
+  // un paiement déjà fermé n'est jamais retraité, donc jamais activé deux fois.
+  private async settle(
+    payment: { id: string; userId: string; entityType: PaymentEntityType; entityId: string; metadata: unknown },
+    outcome: 'CAPTURED' | 'FAILED',
+    providerStatus: string,
+    providerRef: string,
+  ) {
     const result = await this.prisma.payment.updateMany({
-      where: { id: payment.id, status: { in: ['PENDING'] } },
+      where: { id: payment.id, status: 'PENDING' },
       data:  {
-        status:   outcome === 'CAPTURED' ? 'CAPTURED' : 'FAILED',
+        status:   outcome,
         metadata: {
           ...((payment.metadata as Record<string, unknown>) ?? {}),
-          providerStatus: payload.status,
-          providerRef:    payload.id ?? null,
+          providerStatus,
+          providerRef,
           ...(outcome === 'CAPTURED' && { capturedAt: new Date().toISOString() }),
         } as Prisma.InputJsonObject,
       },
@@ -202,6 +213,41 @@ export class PaymentsService {
     if (outcome === 'CAPTURED' && result.count === 1) {
       await this.fulfillPayment(payment.id, payment.userId, payment.entityType, payment.entityId);
     }
+  }
+
+  // Réconciliation (job planifié) : relit les paiements restés en attente auprès de Bictorys.
+  // Une fenêtre évite de doubler les webhooks récents ; au-delà de 24 h, on ne touche plus.
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async reconcilePendingPayments(now: Date = new Date()): Promise<{ checked: number; settled: number }> {
+    const pending = await this.prisma.payment.findMany({
+      where: {
+        status:      'PENDING',
+        externalRef: { not: null },
+        createdAt:   { lt: new Date(now.getTime() - 5 * 60 * 1000), gt: new Date(now.getTime() - 24 * 60 * 60 * 1000) },
+      },
+      orderBy: { createdAt: 'asc' },
+      take:    100,
+    });
+
+    let settled = 0;
+    for (const payment of pending) {
+      try {
+        const providerStatus = await this.bictorys.getStatus(payment.externalRef as string);
+        const outcome = mapBictorysStatus(providerStatus);
+        if (outcome === 'CAPTURED' || outcome === 'FAILED') {
+          await this.settle(payment, outcome, providerStatus, payment.externalRef as string);
+          settled++;
+        }
+      } catch (error) {
+        // Une erreur sur un paiement n'empêche pas les autres : il sera repris au prochain passage.
+        this.logger.warn(`Réconciliation impossible pour ${payment.id} : ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    if (pending.length > 0) {
+      this.logger.log(`Réconciliation : ${pending.length} vérifié(s), ${settled} réglé(s)`);
+    }
+    return { checked: pending.length, settled };
   }
 
   private async fulfillPayment(
