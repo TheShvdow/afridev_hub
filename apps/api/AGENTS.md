@@ -35,7 +35,7 @@ NestJS 10 REST + WebSocket API for AfriDev Hub. TypeScript, Prisma 5, PostgreSQL
 - Build: `nx build api`. Its `rootDir` is the monorepo root so `libs/shared-types` resolves; do not change it.
 - Type check: `npx tsc --noEmit -p apps/api/tsconfig.app.json`. Lint: `npx nx lint api` (ESLint config in `apps/api/.eslintrc.json`).
 - Unit tests: `npx nx test api`, about 126 tests, no services needed.
-- End-to-end auth and profile test: `TEST_DATABASE_URL=… TEST_REDIS_URL=… npx nx test api --testPathPattern=auth.e2e`. Without both variables it is skipped. Never point it at the shared development database.
+- End-to-end auth and profile test: `TEST_DATABASE_URL=… TEST_REDIS_URL=… npx nx test api --testPathPattern=auth.e2e`. Without both variables it is skipped. Never point it at the shared development database. The test database needs `prisma migrate deploy` and `prisma:seed` first, or the badge check fails with no error about the missing badge: run both with `DATABASE_URL` set to the test database, inline.
 - Presigned uploads: the object must exist in R2 before `PATCH /api/users/me/avatar` accepts its key; test with a real PUT against the bucket.
 
 ## Conventions that differ from defaults
