@@ -1,7 +1,7 @@
 import { Injectable, } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { DomainException } from '../common/errors/domain.exception';
-import { ReportEntityType, ReportStatus, ModerationActionType, ModerationTargetType } from '@prisma/client'; // ReportType n'existe pas
+import { Prisma, ReportEntityType, ReportStatus, ModerationActionType, ModerationTargetType } from '@prisma/client'; // ReportType n'existe pas
 
 @Injectable()
 export class ModerationService {
@@ -100,29 +100,53 @@ export class ModerationService {
     return { success: true, reportId };
   }
 
+  // User has NO isBanned/bannedAt/bannedUntil/banReason fields — ban via ModerationAction.
+  // L'action de modération et sa trace d'audit sont écrites ensemble ou pas du tout.
   async banUser(userId: string, moderatorId: string, reason: string) {
-    // User has NO isBanned/bannedAt/bannedUntil/banReason fields — ban via ModerationAction
-    return this.prisma.moderationAction.create({
-      data: {
-        moderatorId,
-        entityType: ModerationTargetType.USER,
-        entityId:   userId,
-        action:     ModerationActionType.BAN,
-        note:       reason,
-      },
-    });
+    const [action] = await this.prisma.$transaction([
+      this.prisma.moderationAction.create({
+        data: {
+          moderatorId,
+          entityType: ModerationTargetType.USER,
+          entityId:   userId,
+          action:     ModerationActionType.BAN,
+          note:       reason,
+        },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          userId:     moderatorId,
+          action:     'USER_BANNED',
+          entityType: 'USER',
+          entityId:   userId,
+          metadata:   { reason } as Prisma.InputJsonObject,
+        },
+      }),
+    ]);
+    return action;
   }
 
   async unbanUser(userId: string, moderatorId: string) {
     // Restore access — RESTORED is the closest action to "unban"
-    return this.prisma.moderationAction.create({
-      data: {
-        moderatorId,
-        entityType: ModerationTargetType.USER,
-        entityId:   userId,
-        action:     ModerationActionType.RESTORED,
-        note:       'Accès restauré (levée de ban)',
-      },
-    });
+    const [action] = await this.prisma.$transaction([
+      this.prisma.moderationAction.create({
+        data: {
+          moderatorId,
+          entityType: ModerationTargetType.USER,
+          entityId:   userId,
+          action:     ModerationActionType.RESTORED,
+          note:       'Accès restauré (levée de ban)',
+        },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          userId:     moderatorId,
+          action:     'USER_UNBANNED',
+          entityType: 'USER',
+          entityId:   userId,
+        },
+      }),
+    ]);
+    return action;
   }
 }
