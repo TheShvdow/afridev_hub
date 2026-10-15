@@ -58,7 +58,7 @@ Le parseur ne doit pas être écrit avant de connaître le format réel reçu en
 ## Points à décider avant implémentation
 
 1. **Signature invalide** : le guide recommande de répondre `200` quand même. Cela masque les tentatives forgées et empêche la relance. Proposition : `401` sur signature invalide, `200` sur tout webhook authentifié, doublons compris. À confirmer avec le comportement de relance de Bictorys.
-2. **Corps brut** : la vérification HMAC exige le corps brut. `src/main.ts` crée l'application sans `rawBody: true` : à ajouter.
+2. ~~**Corps brut**~~ : résolu. `src/main.ts` crée l'application avec `rawBody: true` (vérification HMAC).
 3. **Mode test et production** : la configuration webhook est séparée par environnement. Les deux doivent être déclarées.
 4. **Périmètre de lancement** : Wave SN, Orange Money SN, carte SN, ou une autre combinaison.
 5. **Frais** : `merchantFees` vient du webhook. Les commissions `COMMISSION_*` restent-elles à nous en plus ?
@@ -72,3 +72,10 @@ Le parseur ne doit pas être écrit avant de connaître le format réel reçu en
 - **Pays** : `SN, CI, BK, ML, TG, BJ` (table du guide). Les exemples du guide utilisent `BF` pour le Burkina : à trancher.
 - **Capture et payouts** : non implémentés. Aucun parcours Phase 1 ne les utilise encore.
 - **Activation après paiement** : les TODO `fulfillPayment` restent, par type d'entité.
+
+## Confirmation et réconciliation (2026-10-15)
+
+- **Un webhook ne modifie jamais un paiement seul.** Après contrôle de signature, montant et devise, `PaymentsService` relit le statut auprès de Bictorys (`GET /pay/v1/transactions/{id}/status`) et ne règle que si les deux concordent. Une erreur d'appel renvoie `502` pour que Bictorys renvoie le webhook.
+- **Réconciliation planifiée** : `@Cron` toutes les 10 minutes sur les paiements `PENDING` ayant un `externalRef`, créés entre 5 minutes et 24 heures plus tôt, par lots de 100. Le règlement est conditionnel à `PENDING` : un paiement n'est activé qu'une fois.
+- **Paiement par carte : bloqué.** Bictorys ne renvoie pas de `transactionId` pour une charge carte, et la page de checkout carte a répondu 404 en sandbox. Sans identifiant, ni la confirmation ni la réconciliation ne peuvent suivre ce paiement. À traiter avec le support Bictorys avant d'ouvrir la carte.
+- **Format réel du webhook** : toujours non validé. Il faut un paiement sandbox complet, fait par le mainteneur, pour le confirmer.

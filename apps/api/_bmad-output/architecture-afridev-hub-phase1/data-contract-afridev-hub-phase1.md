@@ -165,7 +165,7 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 | E8 | `ModerationAction.entityType` était une chaîne libre. | schéma, `moderation.service.ts` | **Résolu** : enum `ModerationTargetType` (POST, ANSWER, PROJECT, USER), migration `20261014140000`. Table vide au moment du passage. |
 | E9 | `VotesService` écrivait la réputation. | `votes.service.ts` | **Résolu** : événement `votes.vote.changed`, écriture dans `gamification/`. |
 | E10 | Règle « l'auteur d'une question ne peut pas y répondre » non appliquée. | `forum.service.ts` | **Résolu** : contrôle `FORUM_SELF_ANSWER_FORBIDDEN`, couvert par un test. |
-| E11 | Le paquet `@nestjs/testing` installé n'avait pas ses fichiers `.d.ts`. | `node_modules` | **Résolu** : installation complète constatée ; `nx test api` passe (10 tests, Postgres et Redis démarrés). |
+| E11 | Le paquet `@nestjs/testing` installé n'avait pas ses fichiers `.d.ts`. | `node_modules` | **Résolu** : installation complète constatée ; `nx test api` passe (voir section 8 pour le nombre à jour). |
 | E12 | Enum `PaymentProvider`, webhooks et service étaient écrits pour Wave, Orange Money, MTN MoMo et Stripe. | `schema.prisma`, `payments/` | **Résolu** pour le code (48a1f52). **Reste ouvert** : format du webhook et auth du remboursement à valider en sandbox (voir `bictorys-integration-notes.md`). |
 
 ## 7. Vérification (2026-10-14)
@@ -176,3 +176,12 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 - **Enveloppe AD-7** (instance locale) : succès `{ data }` ; erreur métier `AUTH_INVALID_CREDENTIALS` ; 404 de route `COMMON_NOT_FOUND` ; validation `COMMON_VALIDATION_FAILED` avec `details`.
 - **Réputation** (scénario complet, historique vérifié) : question +5, réponse +10, vote reçu +10 annulé −10, vote négatif −2, acceptation +15 ; vote refusé à 5 points (403 `VOTES_REPUTATION_TOO_LOW`) ; auto-vote refusé. Solde final : auteur 3, répondant 25.
 - **Tests unitaires** : `nx test api` → 2 suites, 10 tests, tous passent (Postgres et Redis démarrés).
+
+## 8. Mise à jour (2026-10-15)
+
+- **Tests** : `nx test api` → 23 suites, 126 tests passent. Le test e2e d'authentification et de profil (story E2-11) est lancé à part, sur une base dédiée `afridev_test` après `prisma migrate deploy` et `prisma:seed` : 2 tests passent. Sans le seed, le badge `dev-verifie` n'existe pas et le test échoue.
+- **Lint** : configuré (`apps/api/.eslintrc.json`), 0 erreur et 0 avertissement. Le constat « lint impossible » de la story 10 est obsolète.
+- **Documentation API** : toutes les routes de gamification, admin, paiements et modération sont décrites avec l'enveloppe AD-7 dans Swagger.
+- **Avatars** : `PATCH /api/users/me/avatar` prend la clé de l'objet et vérifie sa présence dans R2 (`HeadObject`). Le téléversement multipart est retiré.
+- **Paiements** : confirmation par l'API de statut et réconciliation planifiée. Voir `bictorys-integration-notes.md`, section « Confirmation et réconciliation ».
+- **Écarts restants** : E5 (corps du refresh côté front, hors périmètre), E12 (format du webhook et remboursement, à valider en sandbox), carte bloquée côté Bictorys.
