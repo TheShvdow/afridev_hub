@@ -29,6 +29,7 @@ function build(opts: {
       create: jest.fn().mockResolvedValue({ id: 'new', email: 'g@x.sn', username: 'g', role: 'MEMBER' }),
       update: jest.fn().mockResolvedValue({}),
     },
+    moderationAction: { findFirst: jest.fn().mockResolvedValue(null) }, // aucun ban
   };
   const jwt = {
     signAsync: jest.fn().mockImplementation((payload: unknown) =>

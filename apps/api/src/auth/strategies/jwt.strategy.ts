@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DomainException } from '../../common/errors/domain.exception';
+import { isUserBanned } from '../../common/moderation/user-ban';
 
 export interface JwtPayload {
   sub:   string;  // userId
@@ -34,6 +35,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
 
     if (!user) throw new DomainException('AUTH_TOKEN_INVALID', 'Token invalide.', 401);
+
+    // Relu à chaque requête : un ban prend effet immédiatement, même avec un access token encore valide.
+    if (await isUserBanned(this.prisma, user.id)) {
+      throw new DomainException('AUTH_ACCOUNT_BANNED', 'Compte suspendu.', 403);
+    }
 
     return user; // Injecté dans req.user
   }

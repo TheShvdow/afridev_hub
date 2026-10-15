@@ -17,6 +17,7 @@ import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 import type { User } from '@prisma/client';
 import { DomainException } from '../common/errors/domain.exception';
+import { isUserBanned } from '../common/moderation/user-ban';
 
 const BCRYPT_ROUNDS = 12;
 const REFRESH_TTL_S  = 7 * 24 * 60 * 60;         // 7 jours en secondes
@@ -155,6 +156,10 @@ export class AuthService {
     if (!isMatch) {
       throw new DomainException('AUTH_INVALID_CREDENTIALS', 'Email ou mot de passe incorrect.', 401);
     }
+    // Vérifié après le mot de passe : le statut de bannissement n'est révélé qu'à qui le connaît.
+    if (await isUserBanned(this.prisma, user.id)) {
+      throw new DomainException('AUTH_ACCOUNT_BANNED', 'Compte suspendu.', 403);
+    }
 
     return this.generateTokenPair(user);
   }
@@ -170,6 +175,9 @@ export class AuthService {
       include: { user: true },
     });
     if (existing) {
+      if (await isUserBanned(this.prisma, existing.user.id)) {
+        throw new DomainException('AUTH_ACCOUNT_BANNED', 'Compte suspendu.', 403);
+      }
       return { type: 'tokens', tokens: await this.generateTokenPair(existing.user) };
     }
 
@@ -214,6 +222,9 @@ export class AuthService {
     if (!(await bcrypt.compare(password, user.passwordHash))) {
       throw new DomainException('AUTH_INVALID_CREDENTIALS', 'Email ou mot de passe incorrect.', 401);
     }
+    if (await isUserBanned(this.prisma, user.id)) {
+      throw new DomainException('AUTH_ACCOUNT_BANNED', 'Compte suspendu.', 403);
+    }
 
     const taken = await this.prisma.account.findUnique({
       where: { provider_providerAccountId: { provider: claims.provider, providerAccountId: claims.providerAccountId } },
@@ -242,6 +253,10 @@ export class AuthService {
 
     // Révoquer l'ancien refresh token (rotation)
     await this.redis.revokeRefreshToken(userId, oldJti);
+
+    if (await isUserBanned(this.prisma, user.id)) {
+      throw new DomainException('AUTH_ACCOUNT_BANNED', 'Compte suspendu.', 403);
+    }
 
     return this.generateTokenPair(user);
   }
