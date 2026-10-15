@@ -51,6 +51,9 @@ const google = {
   username: 'g', displayName: 'G', avatarUrl: null,
 };
 
+// bcrypt à 12 tours est lent : sous charge (suite complète en parallèle) le délai de 5 s est dépassé.
+jest.setTimeout(20000);
+
 describe('AuthService — connexion OAuth', () => {
   it('logs in directly when the provider account is already linked', async () => {
     const { service, prisma } = build({ account: { user: { id: 'u1', email: 'g@x.sn', username: 'g', role: 'MEMBER' } } });

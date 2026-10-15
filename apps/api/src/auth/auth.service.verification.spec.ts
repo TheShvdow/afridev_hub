@@ -36,6 +36,9 @@ function build(opts: { user?: Record<string, unknown> | null; token?: Record<str
 
 const dto = { username: 'amadou', email: 'a@b.sn', password: 'Secret123!' };
 
+// bcrypt à 12 tours est lent : sous charge (suite complète en parallèle) le délai de 5 s est dépassé.
+jest.setTimeout(20000);
+
 describe('AuthService — vérification email', () => {
   it('creates a verification token on register and sends the link by email', async () => {
     const { service, prisma, mail } = build();
