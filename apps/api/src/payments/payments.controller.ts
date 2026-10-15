@@ -17,6 +17,8 @@ import { PaymentsService } from './payments.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ApiData } from '../common/swagger/api-data.decorator';
+import { PaymentDto } from '../common/swagger/models';
 
 @ApiTags('Payments')
 @Controller('payments')
@@ -27,6 +29,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Initier un paiement Bictorys (charge)' })
+  @ApiData({ status: 201, description: 'Paiement initié, redirection ou lien de paiement' })
   initiate(
     @CurrentUser('id') userId: string,
     @Body() dto: InitiatePaymentDto,
@@ -38,6 +41,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Statut d\'un paiement' })
+  @ApiData({ type: PaymentDto, description: 'Paiement' })
   getPayment(@Param('id') id: string, @CurrentUser('id') userId: string) {
     return this.paymentsService.getPayment(id, userId);
   }
@@ -46,6 +50,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Historique des paiements' })
+  @ApiData({ type: PaymentDto, array: true, description: 'Paiements de l\'utilisateur' })
   getHistory(@CurrentUser('id') userId: string) {
     return this.paymentsService.getUserPayments(userId);
   }
@@ -55,6 +60,7 @@ export class PaymentsController {
   @Post('webhooks/bictorys')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Webhook Bictorys — confirmation de paiement' })
+  @ApiData({ description: 'Webhook accepté' })
   @ApiHeader({ name: 'X-Secret-Key', required: false, description: 'Secret statique du webhook' })
   @ApiHeader({ name: 'X-Webhook-Signature', required: false, description: 'HMAC-SHA256 hex' })
   @ApiHeader({ name: 'X-Webhook-Timestamp', required: false, description: 'Unix ms, fenêtre de 5 minutes' })

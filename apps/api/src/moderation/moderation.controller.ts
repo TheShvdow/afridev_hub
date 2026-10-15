@@ -46,6 +46,7 @@ export class ModerationController {
   @Roles('MODERATOR', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Lister les signalements [MODERATOR]' })
+  @ApiData({ type: ReportDto, paginated: true, description: 'Signalements paginés' })
   @ApiQuery({ name: 'status', enum: ReportStatus, required: false })
   listReports(
     @Query('status') status?: string,
@@ -73,6 +74,7 @@ export class ModerationController {
   @Roles('MODERATOR', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Bannir un utilisateur [MODERATOR]' })
+  @ApiData({ description: 'Utilisateur banni' })
   banUser(@CurrentUser('id') moderatorId: string, @Body() dto: BanUserDto) {
     // `until` removed — no bannedUntil on User; ModerationAction tracks the ban
     return this.moderationService.banUser(dto.userId, moderatorId, dto.reason);
@@ -83,6 +85,7 @@ export class ModerationController {
   @Roles('MODERATOR', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Débannir un utilisateur [MODERATOR]' })
+  @ApiData({ description: 'Utilisateur débanni' })
   unbanUser(
     @Param('userId') userId: string,
     @CurrentUser('id') moderatorId: string,   // needed — service now requires moderatorId
