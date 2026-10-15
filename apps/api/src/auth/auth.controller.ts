@@ -13,6 +13,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiNoContentResponse, ApiResponse, ApiExcludeEndpoint, ApiQuery } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -46,6 +47,7 @@ export class AuthController {
   // ── Inscription ──────────────────────────────────────────────────────
 
   @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Créer un compte' })
   @ApiData({ type: AuthTokensDto, status: 201, description: 'Compte créé, tokens renvoyés' })
   @ApiResponse({ status: 409, description: 'Email ou nom d\'utilisateur déjà utilisé' })
@@ -56,6 +58,7 @@ export class AuthController {
   // ── Connexion ────────────────────────────────────────────────────────
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Se connecter' })
   @ApiData({ type: AuthTokensDto, description: 'Tokens d\'accès et de rafraîchissement' })
@@ -67,6 +70,7 @@ export class AuthController {
   // ── Refresh ──────────────────────────────────────────────────────────
 
   @Post('refresh')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @UseGuards(RefreshAuthGuard)
   @ApiOperation({ summary: 'Renouveler les tokens' })
@@ -115,6 +119,7 @@ export class AuthController {
   // ── Vérification email ───────────────────────────────────────────────
 
   @Post('verify-email')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Confirmer son adresse email avec le lien reçu' })
   @ApiQuery({ name: 'token', required: true })
@@ -125,6 +130,7 @@ export class AuthController {
   }
 
   @Post('resend-verification')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
