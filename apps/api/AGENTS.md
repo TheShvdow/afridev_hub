@@ -1,5 +1,5 @@
 <!-- bmad:context -->
-<!-- Verified 2026-10-15 against 4d06a44. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-10-15 against 49113bd. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## afridev-hub/api
 

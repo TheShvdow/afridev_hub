@@ -5,16 +5,14 @@
 #
 # Contraintes héritées (AGENTS.md) :
 #   - Toutes les commandes depuis la racine monorepo, jamais depuis apps/api/
-#   - prisma:generate doit être exécuté localement (proxy sandbox bloque binaries.prisma.sh)
-#   - Montants monétaires en centimes entiers, jamais float
-#   - JWT access 15 min / refresh 7j stocké Redis whitelist
+#   - Le client Prisma est généré par `npm install` (script prepare) ; relancer `npm run prisma:generate` après tout changement de schéma
+#   - Montants monétaires en unités de base entières (FCFA, XOF), jamais float
+#   - JWT access 15 min / refresh 7 j ; le refresh token est enregistré dans Redis (liste blanche par jti)
 #   - bcrypt rounds = 12
-#   - Monetary amounts: integer cents — never float
 #
 # Pré-requis E2 :
 #   - E1 terminé (CI, PrismaModule, RedisModule, MailModule, Config, Docker services)
-#   - Migration Neon principale appliquée (27 tables présentes)
-#   - @prisma/client non encore régénéré localement (bloqué sandbox)
+#   - Schéma géré par migrations Prisma versionnées (prisma/migrations/, baseline 20261014120000_init)
 #
 # Build order :
 #   - Piste principale  : 1 → 2 → 3 → 4
@@ -68,7 +66,7 @@ nx build api passe sans erreur TypeScript (après prisma:generate local).
 nx lint api passe sans warning sur les fichiers modifiés.
 """
 covers = ["CAP-2"]
-after = []
+after = ["epic-infra-scaffold"]
 hitl = true
 risk = "high"
 notes = [
