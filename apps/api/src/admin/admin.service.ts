@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -75,12 +75,15 @@ export class AdminService {
     return { data: users, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }
 
-  async updateUserRole(userId: string, role: string) {
-    return this.prisma.user.update({
+  // Chaque changement de rôle est journalisé : qui, quel compte, quel rôle.
+  async updateUserRole(userId: string, role: UserRole, actorId: string) {
+    const user = await this.prisma.user.update({
       where: { id: userId },
-      data:  { role: role as never },
+      data:  { role },
       select: { id: true, username: true, role: true },
     });
+    await this.createAuditEntry(actorId, 'USER_ROLE_UPDATED', 'USER', userId, { role });
+    return user;
   }
 
   async getAuditLog(page = 1, limit = 50) {

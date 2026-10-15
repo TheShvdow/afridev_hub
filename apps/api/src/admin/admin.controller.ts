@@ -12,6 +12,7 @@ import { PositiveIntPipe } from '../common/pipes/positive-int.pipe';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { ApiData } from '../common/swagger/api-data.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -45,8 +46,12 @@ export class AdminController {
   @Patch('users/:id/role')
   @ApiOperation({ summary: 'Modifier le rôle d\'un utilisateur [ADMIN]' })
   @ApiData({ description: 'Utilisateur mis à jour' })
-  updateRole(@Param('id') id: string, @Body() dto: UpdateRoleDto) {
-    return this.adminService.updateUserRole(id, dto.role);
+  updateRole(
+    @CurrentUser('id') actorId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateRoleDto,
+  ) {
+    return this.adminService.updateUserRole(id, dto.role, actorId);
   }
 
   @Get('audit-log')
