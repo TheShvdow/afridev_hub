@@ -27,7 +27,7 @@
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
     "docker:reset": "docker-compose down -v && docker-compose up -d",
-    "prepare": "node scripts/prepare.js"
+    "prepare": "if [ -f prisma/schema.prisma ]; then prisma generate --schema=prisma/schema.prisma; fi"
   },
   "dependencies": {
     "@angular/animations": "^18.2.0",
