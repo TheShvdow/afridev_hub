@@ -5,29 +5,26 @@ import {
   Param,
   Body,
   UseGuards,
-  UploadedFile,
-  UseInterceptors,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
   } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { UploadService } from '../upload/upload.service';
+import { UpdateAvatarDto } from './dto/update-avatar.dto';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { OnboardingDto } from './dto/onboarding.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { DomainException } from '../common/errors/domain.exception';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { UserProfileDto } from '../common/swagger/models';
 
-const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5 MB
 
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly uploads: UploadService,
+  ) {}
 
   @Get(':username')
   @ApiOperation({ summary: 'Profil public d\'un utilisateur' })
@@ -71,32 +68,11 @@ export class UsersController {
   @Patch('me/avatar')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['avatar'],
-      properties: { avatar: { type: 'string', format: 'binary', description: 'JPEG, PNG, WebP ou GIF (5 Mo max)' } },
-    },
-  })
-  @ApiOperation({ summary: 'Changer son avatar' })
-  @UseInterceptors(FileInterceptor('avatar'))
+  @ApiOperation({ summary: 'Enregistrer son avatar après son envoi vers le stockage' })
+  @ApiBody({ type: UpdateAvatarDto })
   @ApiData({ type: UserProfileDto, description: 'Avatar mis à jour' })
-  async uploadAvatar(
-    @CurrentUser('id') userId: string,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: MAX_AVATAR_SIZE }),
-          new FileTypeValidator({ fileType: /^image\/(jpeg|png|webp|gif)$/ }),
-        ],
-      }),
-    )
-    file: Express.Multer.File,
-  ) {
-    if (!file) throw new DomainException('USERS_FILE_MISSING', 'Aucun fichier fourni.', 400);
-    // TODO: Upload vers Cloudflare R2 et retourner l'URL publique
-    const avatarUrl = `https://placeholder.r2.dev/${userId}-${Date.now()}.${file.mimetype.split('/')[1]}`;
+  async updateAvatar(@CurrentUser('id') userId: string, @Body() dto: UpdateAvatarDto) {
+    const avatarUrl = await this.uploads.confirmAvatar(userId, dto.key);
     return this.usersService.updateAvatar(userId, avatarUrl);
   }
 }
