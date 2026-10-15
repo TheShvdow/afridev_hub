@@ -11,7 +11,7 @@ NestJS 10 REST + WebSocket API for AfriDev Hub. TypeScript, Prisma 5, PostgreSQL
 - Never run `npx`, `npm run` or `nest` inside `apps/api/`; use the root `npm run` scripts or `nx` targets.
 - Never hand-edit `node_modules/` or the generated Prisma client; run `npm run prisma:generate` after any schema change.
 - Never run `prisma db push` on the shared dev database. Schema changes go through `npm run prisma:migrate`, and the generated folder in `prisma/migrations/` is committed with them.
-- Never commit `.env` or `.env.local`. Personal config `_bmad/custom/*.user.toml` is gitignored.
+- Never commit `.env` or `.env.local`; both are gitignored.
 - Never paste keys or secrets into a conversation or a commit; a secret that was shared must be rotated at its provider.
 - Payments use one aggregator, Bictorys (decision 2026-10-14). Do not add provider-specific code for Wave, Orange Money, MTN or Stripe.
 
