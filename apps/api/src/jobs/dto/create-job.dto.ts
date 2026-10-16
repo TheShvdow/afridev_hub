@@ -4,6 +4,7 @@ import {
   IsInt,
   IsPositive,
   IsArray,
+  IsIn,
   Matches,
   MinLength,
   MaxLength,
@@ -12,6 +13,7 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { JobMode, JobType } from '@prisma/client';
+import { COUNTRY_CODES, CountryCode } from '../../common/countries';
 
 // Règles : BMAD glossaire « Offre » — stack 1 à 5 tags, pays, mode, salaire obligatoire
 // (montant + devise), expiration à J60. Type de contrat conservé (décision 2026-10-14).
@@ -34,9 +36,13 @@ export class CreateJobDto {
   @MaxLength(100)
   company!: string;
 
-  @ApiProperty({ example: 'SN', description: 'Code pays ISO 3166-1 alpha-2' })
-  @Matches(/^[A-Z]{2}$/, { message: 'Le pays doit être un code ISO 3166-1 alpha-2 (ex. SN).' })
-  country!: string;
+  @ApiProperty({
+    enum: COUNTRY_CODES,
+    example: 'SN',
+    description: 'Code pays ISO 3166-1 alpha-2 : 54 pays africains et pays de la diaspora',
+  })
+  @IsIn(COUNTRY_CODES, { message: 'Le pays doit être un code de la liste des pays acceptés (ex. SN).' })
+  country!: CountryCode;
 
   @ApiProperty({ enum: JobType, example: JobType.FULL_TIME })
   @IsEnum(JobType)

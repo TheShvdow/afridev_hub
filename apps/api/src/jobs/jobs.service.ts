@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
 import { DomainException } from '../common/errors/domain.exception';
+import { CountryCode } from '../common/countries';
 
 @Injectable()
 export class JobsService {
@@ -17,6 +18,7 @@ export class JobsService {
     type?:  JobType,
     mode?:  JobMode,
     search?: string,
+    country?: CountryCode,
   ) {
     const skip = (page - 1) * limit;
     const where: Prisma.JobOfferWhereInput = {
@@ -28,6 +30,9 @@ export class JobsService {
     }
     if (mode) {
       where.mode = mode;
+    }
+    if (country) {
+      where.country = country;
     }
 
     if (search) {

@@ -43,3 +43,37 @@ describe('JobsService — modification et fermeture', () => {
     await expect(service.close('j1', 'intrus')).rejects.toMatchObject({ code: 'JOBS_FORBIDDEN' });
   });
 });
+
+describe('JobsService — liste filtrée par pays', () => {
+  function buildList() {
+    const prisma = {
+      jobOffer: {
+        findMany: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(0),
+      },
+    };
+    return { service: new JobsService(prisma as never), prisma };
+  }
+
+  it('restricts the active offers to the chosen country', async () => {
+    const { service, prisma } = buildList();
+    await service.list(1, 20, undefined, undefined, undefined, 'CI');
+    const where = { status: 'ACTIVE', country: 'CI' };
+    expect(prisma.jobOffer.findMany).toHaveBeenCalledWith(expect.objectContaining({ where }));
+    expect(prisma.jobOffer.count).toHaveBeenCalledWith({ where });
+  });
+
+  it('combines the country with the other filters', async () => {
+    const { service, prisma } = buildList();
+    await service.list(1, 20, 'FULL_TIME' as never, 'REMOTE' as never, 'angular', 'SN');
+    expect(prisma.jobOffer.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({ status: 'ACTIVE', type: 'FULL_TIME', mode: 'REMOTE', country: 'SN' }),
+    });
+  });
+
+  it('returns every country when none is chosen', async () => {
+    const { service, prisma } = buildList();
+    await service.list(1, 20);
+    expect(prisma.jobOffer.count).toHaveBeenCalledWith({ where: { status: 'ACTIVE' } });
+  });
+});

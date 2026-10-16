@@ -22,6 +22,8 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { JobDto, JobApplicationDto } from '../common/swagger/models';
 import { ApiPaginationQuery } from '../common/swagger/api-pagination.decorator';
+import { OptionalCountryCodePipe } from '../common/pipes/country-code.pipe';
+import { COUNTRY_CODES, CountryCode } from '../common/countries';
 
 @ApiTags('Jobs')
 @Controller('jobs')
@@ -34,6 +36,7 @@ export class JobsController {
   @ApiQuery({ name: 'type', enum: JobType, required: false })
   @ApiQuery({ name: 'mode', enum: JobMode, required: false })
   @ApiQuery({ name: 'search', required: false, description: 'Recherche dans le titre, la description et l\'entreprise' })
+  @ApiQuery({ name: 'country', required: false, enum: COUNTRY_CODES, description: 'Code pays ISO 3166-1 alpha-2 (ex. SN)' })
   @ApiData({ type: JobDto, paginated: true, description: 'Offres actives, paginées' })
   list(
     @Query('page', new DefaultValuePipe(1), new PositiveIntPipe()) page: number,
@@ -41,8 +44,9 @@ export class JobsController {
     @Query('type', new ParseEnumPipe(JobType, { optional: true })) type?: JobType,
     @Query('mode', new ParseEnumPipe(JobMode, { optional: true })) mode?: JobMode,
     @Query('search') search?: string,
+    @Query('country', OptionalCountryCodePipe) country?: CountryCode,
   ) {
-    return this.jobsService.list(page, limit, type, mode, search);
+    return this.jobsService.list(page, limit, type, mode, search, country);
   }
 
   @Get(':id')
