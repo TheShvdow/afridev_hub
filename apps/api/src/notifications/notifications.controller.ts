@@ -15,6 +15,7 @@ import { ApiData } from '../common/swagger/api-data.decorator';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ApiPaginationQuery } from '../common/swagger/api-pagination.decorator';
 
 @ApiTags('Notifications')
 @Controller('notifications')
@@ -25,6 +26,7 @@ export class NotificationsController {
 
   @Get()
   @ApiData({ paginated: true, description: 'Notifications, les plus récentes d\'abord' })
+  @ApiPaginationQuery()
   @ApiOperation({ summary: 'Mes notifications' })
   list(
     @CurrentUser('id') userId: string,

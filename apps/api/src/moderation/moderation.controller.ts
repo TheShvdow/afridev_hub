@@ -22,6 +22,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { ReportDto } from '../common/swagger/models';
+import { ApiPaginationQuery } from '../common/swagger/api-pagination.decorator';
 
 @ApiTags('Moderation')
 @Controller('moderation')
@@ -50,6 +51,7 @@ export class ModerationController {
   @ApiOperation({ summary: 'Lister les signalements [MODERATOR]' })
   @ApiData({ type: ReportDto, paginated: true, description: 'Signalements paginés' })
   @ApiQuery({ name: 'status', enum: ReportStatus, required: false })
+  @ApiPaginationQuery({ defaultLimit: false })
   listReports(
     @Query('status') status: string | undefined,
     @Query('page', new DefaultValuePipe(1), new PositiveIntPipe()) page: number,

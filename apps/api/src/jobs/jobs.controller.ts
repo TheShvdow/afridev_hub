@@ -21,6 +21,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { JobDto, JobApplicationDto } from '../common/swagger/models';
+import { ApiPaginationQuery } from '../common/swagger/api-pagination.decorator';
 
 @ApiTags('Jobs')
 @Controller('jobs')
@@ -29,8 +30,10 @@ export class JobsController {
 
   @Get()
   @ApiOperation({ summary: 'Lister les offres d\'emploi' })
+  @ApiPaginationQuery()
   @ApiQuery({ name: 'type', enum: JobType, required: false })
   @ApiQuery({ name: 'mode', enum: JobMode, required: false })
+  @ApiQuery({ name: 'search', required: false, description: 'Recherche dans le titre, la description et l\'entreprise' })
   @ApiData({ type: JobDto, paginated: true, description: 'Offres actives, paginées' })
   list(
     @Query('page', new DefaultValuePipe(1), new PositiveIntPipe()) page: number,

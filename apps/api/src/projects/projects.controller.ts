@@ -13,7 +13,7 @@ import {
   DefaultValuePipe,
 } from '@nestjs/common';
 import { PositiveIntPipe, MAX_PAGE_LIMIT } from '../common/pipes/positive-int.pipe';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -23,6 +23,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { ProjectDto } from '../common/swagger/models';
+import { ApiPaginationQuery } from '../common/swagger/api-pagination.decorator';
 
 @ApiTags('Projects')
 @Controller('projects')
@@ -32,6 +33,8 @@ export class ProjectsController {
   @Get()
   @ApiOperation({ summary: 'Lister les projets approuvés' })
   @ApiData({ type: ProjectDto, paginated: true, description: 'Projets approuvés, paginés' })
+  @ApiPaginationQuery()
+  @ApiQuery({ name: 'category', required: false })
   list(
     @Query('page', new DefaultValuePipe(1), new PositiveIntPipe()) page: number,
     @Query('limit', new DefaultValuePipe(20), new PositiveIntPipe(MAX_PAGE_LIMIT)) limit: number,
