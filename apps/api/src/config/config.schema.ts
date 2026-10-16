@@ -15,7 +15,9 @@ export const configValidationSchema = Joi.object({
     .default('development'),
 
   // ── Optional ──────────────────────────────────────────────────────────────
-  RESEND_API_KEY:                Joi.string().optional().allow(''),
+  // Expose /api/docs en production (toujours actif hors production)
+  SWAGGER_ENABLED:               Joi.string().valid('true', 'false').optional(),
+  RESEND_API_KEY:               Joi.string().optional().allow(''),
   CLOUDFLARE_R2_ACCESS_KEY_ID:   Joi.string().optional().allow(''),
   CLOUDFLARE_R2_SECRET_ACCESS_KEY: Joi.string().optional().allow(''),
   CLOUDFLARE_R2_BUCKET_NAME:     Joi.string().optional().allow(''),
