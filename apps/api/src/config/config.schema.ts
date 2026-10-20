@@ -14,6 +14,10 @@ export const configValidationSchema = Joi.object({
     .valid('development', 'production', 'test')
     .default('development'),
 
+  // Signalements distincts en attente au-delà desquels un contenu est masqué
+  // automatiquement, en attendant la décision d'un modérateur (FR-20/FR-21).
+  MODERATION_AUTO_HIDE_THRESHOLD: Joi.number().integer().min(1).default(3),
+
   // ── Optional ──────────────────────────────────────────────────────────────
   RESEND_API_KEY:                Joi.string().optional().allow(''),
   CLOUDFLARE_R2_ACCESS_KEY_ID:   Joi.string().optional().allow(''),
