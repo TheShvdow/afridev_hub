@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { NotificationsGateway } from './notifications.gateway';
 import { NotificationType } from '@prisma/client';
 
@@ -11,13 +13,25 @@ interface CreateNotificationInput {
   targetType?:  string;
   targetId?:    string;
   actorId?:     string;
+  // Chemin côté web (ex. /forum/<id>) : sert au lien de l'email, n'est pas stocké.
+  link?:        string;
 }
+
+// Types envoyés aussi par email (FR-18), sauf si le membre a désactivé les emails.
+const EMAIL_TYPES: NotificationType[] = ['NEW_ANSWER', 'ANSWER_ACCEPTED', 'VOTE_RECEIVED'];
+
+const escapeHtml = (value: string) =>
+  value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] ?? c);
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly gateway: NotificationsGateway,
+    private readonly mail?: MailService,
+    private readonly config?: ConfigService,
   ) {}
 
   async create(input: CreateNotificationInput) {
@@ -41,7 +55,31 @@ export class NotificationsService {
     // Envoyer en temps réel via WebSocket
     this.gateway.sendToUser(input.userId, 'notification', notification);
 
+    // Email en arrière-plan : son échec n'annule pas la notification in-app.
+    if (EMAIL_TYPES.includes(input.type)) {
+      this.sendEmail(input).catch((error) =>
+        this.logger.error(`Email de notification non envoyé (${input.type})`, error instanceof Error ? error.stack : String(error)),
+      );
+    }
+
     return notification;
+  }
+
+  private async sendEmail(input: CreateNotificationInput) {
+    if (!this.mail) return;
+    const user = await this.prisma.user.findUnique({
+      where:  { id: input.userId },
+      select: { email: true, emailNotifications: true },
+    });
+    if (!user?.emailNotifications) return;
+
+    const webUrl = this.config?.get<string>('WEB_URL') ?? 'http://localhost:4200';
+    const url = `${webUrl}${input.link ?? '/notifications'}`;
+    const html = `
+      <p>${escapeHtml(input.message)}</p>
+      <p><a href="${escapeHtml(url)}">Voir sur AfriDev Hub</a></p>
+      <p style="color:#666;font-size:12px">Vous pouvez désactiver ces emails dans vos préférences de notification.</p>`;
+    await this.mail.send(user.email, input.title, html);
   }
 
   // API publique exportée (story E2-6) : les autres modules notifient via cette méthode.
@@ -103,10 +141,11 @@ export class NotificationsService {
       targetType: 'ANSWER',
       targetId:   answerId,
       actorId,
+      link:       `/forum/${postId}`,
     });
   }
 
-  async notifyAnswerAccepted(answerAuthorId: string, answerId: string, actorId: string) {
+  async notifyAnswerAccepted(answerAuthorId: string, answerId: string, postId: string, actorId: string) {
     return this.create({
       userId:     answerAuthorId,
       type:       'ANSWER_ACCEPTED',
@@ -115,10 +154,11 @@ export class NotificationsService {
       targetType: 'ANSWER',
       targetId:   answerId,
       actorId,
+      link:       `/forum/${postId}`,
     });
   }
 
-  async notifyUpvote(targetUserId: string, targetType: string, targetId: string, actorId: string) {
+  async notifyUpvote(targetUserId: string, targetType: string, targetId: string, postId: string | null, actorId: string) {
     return this.create({
       userId:     targetUserId,
       type:       'VOTE_RECEIVED',
@@ -127,6 +167,7 @@ export class NotificationsService {
       targetType,
       targetId,
       actorId,
+      ...(postId && { link: `/forum/${postId}` }),
     });
   }
 }

@@ -75,6 +75,7 @@ export interface UserMe {
   role:        UserRole;
   isVerified:  boolean;
   reputation:  number;
+  emailNotifications: boolean;
   createdAt:   string;
 }
 

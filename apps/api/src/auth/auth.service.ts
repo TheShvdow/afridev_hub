@@ -285,6 +285,7 @@ export class AuthService {
         role:        true,
         isVerified:  true,
         reputation:  true,
+        emailNotifications: true,
         createdAt:   true,
       },
     });

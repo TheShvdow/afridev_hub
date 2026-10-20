@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MaxLength, IsUrl, Matches, IsArray, ArrayMaxSize, MinLength, IsEnum } from 'class-validator';
+import { IsString, IsOptional, MaxLength, IsUrl, Matches, IsArray, ArrayMaxSize, MinLength, IsEnum, IsBoolean } from 'class-validator';
 import { ExperienceLevel } from '@prisma/client';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -62,4 +62,9 @@ export class UpdateUserDto {
   @IsString()
   @MaxLength(50)
   twitterUsername?: string;
+
+  @ApiPropertyOptional({ example: true, description: 'Recevoir les emails d\'activité du forum (FR-18)' })
+  @IsOptional()
+  @IsBoolean()
+  emailNotifications?: boolean;
 }

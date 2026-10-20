@@ -96,6 +96,7 @@ export class UsersService {
         reputation:      true,
         role:            true,
         isVerified:      true,
+        emailNotifications: true,
       },
     });
 
