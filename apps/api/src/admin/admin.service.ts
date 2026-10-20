@@ -16,6 +16,8 @@ export class AdminService {
       pendingReports,
       pendingProjects,
       totalRevenue,
+      forum,
+      forumLast30Days,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({
@@ -30,6 +32,8 @@ export class AdminService {
         where: { payment: { status: 'CAPTURED' } },                    // CAPTURED not COMPLETED
         _sum:  { amount: true },
       }),
+      this.forumStats(),
+      this.forumStats(new Date(Date.now() - 30 * 24 * 3600 * 1000)),
     ]);
 
     return {
@@ -37,6 +41,24 @@ export class AdminService {
       content:      { posts: totalPosts, projects: totalProjects, jobs: totalJobs },
       moderation:   { pendingReports, pendingProjects },
       revenue:      { totalCommission: totalRevenue._sum.amount ?? 0 }, // _sum.amount not _sum.commission
+      forum:        { ...forum, last30Days: forumLast30Days },
+    };
+  }
+
+  // SM-2 (questions avec au moins une réponse) et SM-7 (taux de réponses acceptées).
+  // Les contenus masqués par la modération ne comptent pas.
+  private async forumStats(since?: Date) {
+    const where: Prisma.PostWhereInput = { isHidden: false, ...(since && { createdAt: { gte: since } }) };
+    const [questions, questionsWithAnswer, questionsWithAcceptedAnswer] = await Promise.all([
+      this.prisma.post.count({ where }),
+      this.prisma.post.count({ where: { ...where, answers: { some: { isHidden: false } } } }),
+      this.prisma.post.count({ where: { ...where, answers: { some: { isAccepted: true, isHidden: false } } } }),
+    ]);
+    return {
+      questions,
+      questionsWithAnswer,
+      questionsWithAcceptedAnswer,
+      acceptedAnswerRate: questions ? Math.round((questionsWithAcceptedAnswer / questions) * 100) : 0,
     };
   }
 

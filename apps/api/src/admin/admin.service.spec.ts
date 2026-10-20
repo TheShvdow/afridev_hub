@@ -53,7 +53,24 @@ describe('AdminService', () => {
         content:    { posts: 10, projects: 7, jobs: 3 },
         moderation: { pendingReports: 1, pendingProjects: 2 },
         revenue:    { totalCommission: 0 },
+        forum:      expect.any(Object),
       });
+    });
+
+    it('calcule les indicateurs forum SM-2 et SM-7 hors contenus masqués', async () => {
+      // Sans argument : total historique des questions, hors indicateurs forum.
+      prisma.post.count.mockImplementation((args?: { where: { answers?: { some: { isAccepted?: boolean } } } }) => {
+        const answers = args?.where.answers;
+        return Promise.resolve(!answers ? 40 : answers.some.isAccepted ? 13 : 30);
+      });
+
+      const stats = await service.getDashboardStats();
+
+      expect(stats.forum).toEqual(expect.objectContaining({
+        questions: 40, questionsWithAnswer: 30, questionsWithAcceptedAnswer: 13, acceptedAnswerRate: 33,
+      }));
+      expect(stats.forum.last30Days.acceptedAnswerRate).toBe(33);
+      expect(prisma.post.count).toHaveBeenCalledWith({ where: expect.objectContaining({ isHidden: false }) });
     });
 
     it('calcule les projets en attente sur isApproved = false et la commission sur les paiements CAPTURED', async () => {
