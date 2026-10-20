@@ -17,28 +17,30 @@ Forum Q&A pleinement fonctionnel en production : questions techniques posées et
 ## Done when
 
 - Un membre peut poser une question, répondre, voter (+/−) et accepter une réponse ; chaque action met à jour `reputation` en temps réel via WebSocket.
-- File de modération accessible aux MODERATOR : signalements visibles, contenu masquable (FR-20/FR-21 — seuil d'auto-masquage à définir avant S7).
-- Notifications in-app délivrées pour : nouvelle réponse à ma question, commentaire sur ma réponse (via `NotificationsModule`).
+- File de modération accessible aux MODERATOR : signalements visibles, contenu masquable, restaurable ou signalement ignoré (FR-20/FR-21). Auto-masquage à 3 signalements ouverts.
+- Notifications in-app et email délivrées pour : nouvelle réponse à ma question, réponse acceptée, vote positif reçu (FR-18, via `NotificationsModule`).
 - SM-2 mesurable : structure permettant de vérifier 100+ questions avec ≥ 1 réponse dans les 30 jours post-bêta.
 - SM-7 mesurable : taux de questions avec réponse acceptée calculable pour le suivi post-lancement (> 30 % cible).
 - Déployé en production Systalink.
 
 ## Boundaries
 
-**In scope :** CRUD questions, réponses, commentaires ; votes bidirectionnels (+/−) ; acceptation de réponse par l'auteur ; tags/catégories ; recherche full-text basique ; file de modération MODERATOR ; notifications Q&A (in-app + email) ; handlers `GamificationModule` pour les events de cet épic ; pagination.
+**In scope :** CRUD questions, réponses ; votes bidirectionnels (+/−) ; acceptation de réponse par l'auteur ; tags/catégories ; recherche full-text basique ; file de modération MODERATOR ; notifications Q&A (in-app + email) ; handlers `GamificationModule` pour les events de cet épic ; pagination.
 
-**Out of scope :** éditeur riche (Markdown simple suffit Phase 1), images dans les posts (upload traité dans E2, lien simple si besoin), messagerie directe (Phase 2), votes sur commentaires (Phase 2), historique de révision des questions (Phase 2).
+**Out of scope :** commentaires (Phase 2, décision du 2026-10-20 : absents du PRD), éditeur riche (Markdown simple suffit Phase 1), images dans les posts (upload traité dans E2, lien simple si besoin), messagerie directe (Phase 2), votes sur commentaires (Phase 2), historique de révision des questions (Phase 2).
 
 **Touch points consommés :**
-- `GamificationModule` (E2) — ajout de handlers pour EventEmitter2 events : `question.posted`, `answer.posted`, `answer.accepted`, `vote.received`
-- `NotificationsModule` (E2) — appel `notify()` sur nouvelle réponse, commentaire
+- `GamificationModule` (E2) — handlers EventEmitter2 : `forum.question.created` (+5), `forum.answer.created` (+10), `forum.answer.accepted` (+15), `votes.vote.changed` (+10 vote positif, −2 vote négatif), barème du glossaire
+- `NotificationsModule` (E2) — `NotificationsListener` sur les mêmes événements (nouvelle réponse, acceptation, vote positif)
 - `JWT guards` (E2) — routes protégées membres/MODERATOR
 
 ## Notes
 
 **Tracer bullet :** question postée → réponse postée → vote sur réponse → `reputation` de l'auteur de la réponse incrémenté en temps réel via WebSocket — chemin complet du tracer path initiative (E1 → E2 → E3).
 
-**Open question critique :** Seuil d'auto-masquage signalements (FR-20/FR-21) — doit être défini avant Sprint 7. Ajouter comme `unknown` sur la story de modération.
+**Décision 2026-10-20 :** seuil d'auto-masquage = 3 signalements ouverts distincts, réglable par `MODERATION_AUTO_HIDE_THRESHOLD`.
+
+**État 2026-10-20 :** backend E3 livré sur la branche `feat/e3-forum-backend` (tri, recherche plein texte, doublons, modération, notifications, indicateurs SM-2/SM-7). Le front Angular reste à faire.
 
 **Décisions :**
 - `GamificationModule` reste le seul writer de `reputation` ; E3 y ajoute des handlers via `EventEmitter2`, pas d'import direct depuis ForumModule (AD-3, AD-5).

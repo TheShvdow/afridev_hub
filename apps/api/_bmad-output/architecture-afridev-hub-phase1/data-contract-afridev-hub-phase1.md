@@ -31,7 +31,7 @@ Les enums des niveaux 2 à 4 sont **identiques** : les DTO importent les enums d
 | `VoteValue` | UP, DOWN | `VoteDto.value` | `VoteValue` |
 | `ReportEntityType` | POST, ANSWER, PROJECT | `CreateReportDto.entityType` | `ReportEntityType` |
 | `ReportStatus` | PENDING, REVIEWED, RESOLVED, DISMISSED | — | `ReportStatus` |
-| `ModerationActionType` | HIDDEN, RESTORED, WARNING, BAN | `ResolveReportDto.action` | `ModerationActionType` |
+| `ModerationActionType` | HIDDEN, RESTORED, DISMISSED, WARNING, BAN | `ResolveReportDto.action` (HIDDEN, RESTORED, WARNING) | `ModerationActionType` |
 | `ExperienceLevel` | JUNIOR, MID, SENIOR | `OnboardingDto.level`, `UpdateUserDto.level` | `ExperienceLevel` |
 | `JobType` | FULL_TIME, PART_TIME, CONTRACT, FREELANCE, INTERNSHIP | `CreateJobDto.type`, filtre `GET /jobs?type=` | `JobType` |
 | `JobMode` | REMOTE, ONSITE, HYBRID | `CreateJobDto.mode`, filtre `GET /jobs?mode=` | `JobMode` |
@@ -107,8 +107,9 @@ Les contraintes de longueur viennent du glossaire quand il en définit une ; sin
 | --- | --- | --- | --- |
 | `UpdateRoleDto` (admin) | role | `User.role` | `UserRole` |
 | `CreateReportDto` | entityType | `Report.entityType` | `ReportEntityType` |
-| | entityId, reason | `Report.entityId`, `Report.reason` | string ; reason 3–500 |
-| `ResolveReportDto` | action | `ModerationAction.action` | `ModerationActionType` |
+| | entityId | `Report.entityId` | string ; le contenu doit exister (`MODERATION_TARGET_NOT_FOUND`) |
+| | reason, details | `Report.reason` (`RAISON` ou `RAISON : détails`) | reason ∈ SPAM, OFFENSIVE, OFF_TOPIC, DUPLICATE, OTHER ; details ≤ 500, optionnel |
+| `ResolveReportDto` | action | `ModerationAction.action` | HIDDEN, RESTORED ou WARNING |
 | | note | `ModerationAction.note` | ≤ 1 000 |
 | `BanUserDto` | userId, reason | `ModerationAction` | reason 3–500 |
 | `InitiatePaymentDto` | amount | `Payment.amount` (Int) | entier > 0, unité de base |
@@ -149,6 +150,14 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 - (decision) **Enveloppe AD-7 implémentée** : succès `{ data }` (les listes gardent `{ data, meta }`), erreur `{ error: { code, message, details? } }`. Codes au format `DOMAINE_ENTITE_RAISON`, listés dans `libs/shared-types`. Erreur non prévue : `COMMON_INTERNAL_ERROR`, détail journalisé, jamais renvoyé au client.
 - (decision) **Migrations Prisma avec historique** (remplace `db push`, décision 2026-10-14). Dossier `prisma/migrations/`, verrou `migration_lock.toml`. Baseline `20261014120000_init` (schéma initial), puis `20261014120100_job_type_project_country`. La base dev, créée sans historique, a été marquée à jour avec `migrate resolve --applied`. Règle : aucun `db push` sur une base partagée ; tout changement de schéma passe par `prisma migrate dev` puis commit du dossier de migration.
 - (decision) **Agrégateur de paiement : Bictorys**, implémenté (commit `48a1f52`). `IPaymentProvider` avec une implémentation. Le schéma ne garde que `BICTORYS`. Source de vérité : la documentation Bictorys, consignée dans `bictorys-integration-notes.md`.
+- (decision) **Forum E3 (2026-10-20)** : migration `20261020120000_forum_e3_votes_search_moderation`.
+  - `Post.voteScore` et `Answer.voteScore` (votes positifs − négatifs) sont tenus à jour par `ForumListener` sur `votes.vote.changed`. `Post.lastActivityAt` change à chaque réponse, acceptation ou modification. Ils servent aux tris `votes` et `active`.
+  - Recherche plein texte en français, accents ignorés : index d'expression GIN sur `to_tsvector('french', f_unaccent(title || ' ' || body))`, interrogé par `$queryRaw`. Détection de doublons (FR-14) : index trigramme sur `lower(f_unaccent(title))`, seuil de similarité 0.6. Ces index ne sont pas dans `schema.prisma` ; `prisma migrate diff` ne propose pas de les supprimer (vérifié).
+  - `isHidden` et `hiddenAt` sur Post, Answer et Project. Un contenu masqué disparaît des listes et de la recherche ; au détail, titre et corps valent « [Contenu masqué] », sauf pour MODERATOR et ADMIN.
+  - Un signalement par membre et par contenu (`@@unique`, 409 `MODERATION_REPORT_DUPLICATE`). **Seuil d'auto-masquage : 3 signalements ouverts** (décision du 2026-10-20), réglable par `MODERATION_AUTO_HIDE_THRESHOLD`. L'action automatique a `moderatorId` à null.
+  - Résoudre ou ignorer un signalement clôt tous les signalements ouverts du même contenu. Ignorer rend le contenu visible. Chaque décision est écrite dans `AuditLog`.
+  - Notifications FR-18 (nouvelle réponse, réponse acceptée, nouveau vote positif) en in-app et par email, sauf si `User.emailNotifications` vaut false.
+  - Les commentaires sont reportés en phase 2 (absents du PRD, décision du 2026-10-20).
 - (decision) **Build API : `rootDir` = racine du monorepo** (`apps/api/project.json`), pour que l'API puisse importer `libs/shared-types`. `outputFileName` fixé pour que `nx serve` retrouve `main.js`.
 
 ## 6. Écarts connus
