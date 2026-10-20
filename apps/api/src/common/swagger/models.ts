@@ -56,6 +56,10 @@ export class PostDto {
   @ApiPropertyOptional({ description: 'Présent sur le détail et la création' }) body?: string;
   @ApiPropertyOptional() viewCount?: number;
   @ApiProperty() isResolved!: boolean;
+  @ApiProperty({ example: 3, description: 'Votes positifs − négatifs' }) voteScore!: number;
+  @ApiProperty({ format: 'date-time' }) lastActivityAt!: string;
+  @ApiPropertyOptional({ description: 'Présent sur le détail ; titre et corps remplacés par « [Contenu masqué] » hors modération' })
+  isHidden?: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
   @ApiPropertyOptional({ format: 'date-time' }) updatedAt?: string;
   @ApiProperty({ type: AuthorSummaryDto }) user!: AuthorSummaryDto;
@@ -66,14 +70,23 @@ export class PostDto {
 
 export class AnswerDto {
   @ApiProperty() id!: string;
-  @ApiProperty() body!: string;
+  @ApiProperty({ description: '« [Contenu masqué] » quand isHidden, hors modération' }) body!: string;
   @ApiProperty() isAccepted!: boolean;
+  @ApiProperty({ example: 1 }) voteScore!: number;
+  @ApiProperty() isHidden!: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
   @ApiProperty({ type: AuthorSummaryDto }) user!: AuthorSummaryDto;
 }
 
 export class PostDetailDto extends PostDto {
   @ApiProperty({ type: [AnswerDto] }) answers!: AnswerDto[];
+}
+
+export class SimilarPostDto {
+  @ApiProperty() id!: string;
+  @ApiProperty({ example: 'Comment configurer Nx avec Angular 18 ?' }) title!: string;
+  @ApiProperty() isResolved!: boolean;
+  @ApiProperty({ example: 0.72, description: 'Similarité trigramme du titre (0 à 1)' }) similarity!: number;
 }
 
 export class VoteResultDto {

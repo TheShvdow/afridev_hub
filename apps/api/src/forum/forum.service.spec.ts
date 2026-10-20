@@ -1,10 +1,15 @@
-import { ForumService } from './forum.service';
+import { ForumService, HIDDEN_CONTENT } from './forum.service';
+import { ForumListener } from './forum.listener';
 
 describe('ForumService.createAnswer — règle du glossaire', () => {
   function build(postAuthor: string) {
     const prisma = {
-      post: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', userId: postAuthor }) },
+      post: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'p1', userId: postAuthor }),
+        update:     jest.fn().mockResolvedValue({}),
+      },
       answer: { create: jest.fn().mockResolvedValue({ id: 'a1', body: 'x', user: {} }) },
+      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     };
     const events = { emit: jest.fn() };
     return { service: new ForumService(prisma as never, events as never), prisma, events };
@@ -19,9 +24,84 @@ describe('ForumService.createAnswer — règle du glossaire', () => {
     expect(prisma.answer.create).not.toHaveBeenCalled();
   });
 
-  it('accepts an answer from another member and emits forum.answer.created', async () => {
-    const { service, events } = build('author');
+  it('accepts an answer from another member, bumps activity and emits forum.answer.created', async () => {
+    const { service, prisma, events } = build('author');
     await service.createAnswer('p1', 'other', dto as never);
-    expect(events.emit).toHaveBeenCalledWith('forum.answer.created', expect.objectContaining({ authorId: 'other', postId: 'p1' }));
+    expect(prisma.post.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'p1' }, data: { lastActivityAt: expect.any(Date) },
+    }));
+    expect(events.emit).toHaveBeenCalledWith('forum.answer.created', {
+      authorId: 'other', answerId: 'a1', postId: 'p1', postAuthorId: 'author',
+    });
+  });
+});
+
+describe('ForumService.listPosts — tri', () => {
+  function build() {
+    const prisma = {
+      post: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
+    };
+    return { service: new ForumService(prisma as never, { emit: jest.fn() } as never), prisma };
+  }
+
+  it.each([
+    ['votes',  [{ voteScore: 'desc' }, { createdAt: 'desc' }]],
+    ['active', [{ lastActivityAt: 'desc' }]],
+    ['newest', [{ createdAt: 'desc' }]],
+  ])('sorts by %s and excludes hidden questions', async (sort, orderBy) => {
+    const { service, prisma } = build();
+    await service.listPosts({ sort } as never);
+    expect(prisma.post.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      orderBy, where: expect.objectContaining({ isHidden: false }),
+    }));
+  });
+});
+
+describe('ForumService.getPost — contenu masqué', () => {
+  const post = {
+    id: 'p1', title: 'Titre', body: 'Corps', isHidden: true,
+    answers: [{ id: 'a1', body: 'Visible', isHidden: false }, { id: 'a2', body: 'Spam', isHidden: true }],
+  };
+  function build() {
+    const prisma = {
+      post: { findUnique: jest.fn().mockResolvedValue(post), update: jest.fn().mockResolvedValue({}) },
+    };
+    return new ForumService(prisma as never, { emit: jest.fn() } as never);
+  }
+
+  it('masks hidden content for members and anonymous visitors', async () => {
+    const result = await build().getPost('p1', null);
+    expect(result.title).toBe(HIDDEN_CONTENT);
+    expect(result.body).toBe(HIDDEN_CONTENT);
+    expect(result.answers.map((a) => a.body)).toEqual(['Visible', HIDDEN_CONTENT]);
+  });
+
+  it('shows hidden content to moderators', async () => {
+    const result = await build().getPost('p1', { id: 'm1', role: 'MODERATOR' });
+    expect(result.body).toBe('Corps');
+    expect(result.answers[1].body).toBe('Spam');
+  });
+});
+
+describe('ForumListener — voteScore', () => {
+  function build() {
+    const prisma = {
+      post:   { update: jest.fn().mockResolvedValue({}) },
+      answer: { update: jest.fn().mockResolvedValue({}) },
+    };
+    return { listener: new ForumListener(prisma as never), prisma };
+  }
+  const base = { voterId: 'v', targetOwnerId: 'o', entityId: 'e1' };
+
+  it('adds 2 when a downvote becomes an upvote', async () => {
+    const { listener, prisma } = build();
+    await listener.onVoteChanged({ ...base, entityType: 'ANSWER', previous: 'DOWN', next: 'UP' });
+    expect(prisma.answer.update).toHaveBeenCalledWith({ where: { id: 'e1' }, data: { voteScore: { increment: 2 } } });
+  });
+
+  it('removes 1 when an upvote is cancelled on a question', async () => {
+    const { listener, prisma } = build();
+    await listener.onVoteChanged({ ...base, entityType: 'POST', previous: 'UP', next: null });
+    expect(prisma.post.update).toHaveBeenCalledWith({ where: { id: 'e1' }, data: { voteScore: { increment: -1 } } });
   });
 });

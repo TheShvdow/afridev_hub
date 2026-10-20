@@ -10,18 +10,20 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
-  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { ForumService } from './forum.service';
+import { ForumService, ForumViewer } from './forum.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreateAnswerDto } from './dto/create-answer.dto';
 import { ListPostsDto } from './dto/list-posts.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ApiData } from '../common/swagger/api-data.decorator';
-import { PostDto, PostDetailDto, AnswerDto, SuccessDto } from '../common/swagger/models';
+import { PostDto, PostDetailDto, AnswerDto, SuccessDto, SimilarPostDto } from '../common/swagger/models';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { UpdateAnswerDto } from './dto/update-answer.dto';
+import { SimilarPostsDto } from './dto/similar-posts.dto';
 
 interface ReqUser { id: string; role: string; }
 
@@ -39,14 +41,23 @@ export class ForumController {
     return this.forumService.listPosts(query);
   }
 
+  // Déclarée avant posts/:id pour ne pas être capturée par le paramètre.
+  @Get('posts/similar')
+  @ApiOperation({ summary: 'Questions au titre proche (détection de doublons)' })
+  @ApiData({ type: SimilarPostDto, array: true, description: '3 questions similaires au plus' })
+  findSimilar(@Query() query: SimilarPostsDto) {
+    return this.forumService.findSimilar(query.title);
+  }
+
   @Get('posts/:id')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Détail d\'une question' })
   @ApiData({ type: PostDetailDto, description: 'Question avec ses réponses' })
   getPost(
     @Param('id') id: string,
-    @Request() req: { user?: ReqUser },
+    @CurrentUser() viewer: ForumViewer | null,
   ) {
-    return this.forumService.getPost(id, req.user?.id);
+    return this.forumService.getPost(id, viewer);
   }
 
   @Post('posts')
@@ -99,6 +110,19 @@ export class ForumController {
     @Body() dto: CreateAnswerDto,
   ) {
     return this.forumService.createAnswer(postId, userId, dto);
+  }
+
+  @Patch('answers/:answerId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Modifier une réponse' })
+  @ApiData({ type: AnswerDto, description: 'Réponse mise à jour' })
+  updateAnswer(
+    @Param('answerId') answerId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateAnswerDto,
+  ) {
+    return this.forumService.updateAnswer(answerId, userId, dto);
   }
 
   @Patch('answers/:answerId/accept')
