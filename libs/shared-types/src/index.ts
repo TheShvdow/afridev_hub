@@ -16,7 +16,7 @@ export type VoteValue = 'UP' | 'DOWN';
 export type ReportEntityType = 'POST' | 'ANSWER' | 'PROJECT';
 export type ModerationTargetType = 'POST' | 'ANSWER' | 'PROJECT' | 'USER';
 export type ReportStatus = 'PENDING' | 'REVIEWED' | 'RESOLVED' | 'DISMISSED';
-export type ModerationActionType = 'HIDDEN' | 'RESTORED' | 'WARNING' | 'BAN';
+export type ModerationActionType = 'HIDDEN' | 'RESTORED' | 'DISMISSED' | 'WARNING' | 'BAN';
 export type ExperienceLevel = 'JUNIOR' | 'MID' | 'SENIOR';
 export type JobType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'FREELANCE' | 'INTERNSHIP';
 export type JobMode = 'REMOTE' | 'ONSITE' | 'HYBRID';
@@ -117,6 +117,8 @@ export interface PostListItem {
   title:      string;
   viewCount:  number;
   isResolved: boolean;
+  voteScore:  number;
+  lastActivityAt: string;
   createdAt:  string;
   user:       UserSummary;
   postTags:   PostTagItem[];
@@ -125,15 +127,18 @@ export interface PostListItem {
 
 export interface AnswerItem {
   id:         string;
-  body:       string;
+  body:       string;   // « [Contenu masqué] » quand isHidden, sauf pour la modération
   isAccepted: boolean;
+  voteScore:  number;
+  isHidden:   boolean;
   createdAt:  string;
   user:       UserSummary;
 }
 
 export interface PostDetail extends PostListItem {
-  body:    string;
-  answers: AnswerItem[];
+  body:     string;   // « [Contenu masqué] » quand isHidden, sauf pour la modération
+  isHidden: boolean;
+  answers:  AnswerItem[];
 }
 
 // ── Votes ─────────────────────────────────────────────────────────────────────
@@ -314,6 +319,7 @@ export type ErrorCode =
   | 'FORUM_FORBIDDEN'
   | 'FORUM_ANSWER_ACCEPT_FORBIDDEN'
   | 'FORUM_SELF_ANSWER_FORBIDDEN'
+  | 'FORUM_ANSWER_FORBIDDEN'
   // Votes
   | 'VOTES_TARGET_NOT_FOUND'
   | 'VOTES_SELF_VOTE_FORBIDDEN'
@@ -330,6 +336,9 @@ export type ErrorCode =
   | 'JOBS_SALARY_RANGE_INVALID'
   // Modération
   | 'MODERATION_REPORT_NOT_FOUND'
+  | 'MODERATION_REPORT_DUPLICATE'
+  | 'MODERATION_REPORT_ALREADY_CLOSED'
+  | 'MODERATION_TARGET_NOT_FOUND'
   // Paiements
   | 'PAYMENTS_PAYMENT_NOT_FOUND'
   | 'PAYMENTS_PROVIDER_NOT_CONFIGURED'
@@ -348,15 +357,17 @@ export interface ForumQuestionCreatedEvent {
 }
 
 export interface ForumAnswerCreatedEvent {
-  authorId: string;
-  answerId: string;
-  postId:   string;
+  authorId:     string;
+  answerId:     string;
+  postId:       string;
+  postAuthorId: string;
 }
 
 export interface ForumAnswerAcceptedEvent {
   answerAuthorId: string;
   answerId:       string;
   postId:         string;
+  acceptedById:   string;
 }
 
 export interface UsersProfileUpdatedEvent {
@@ -375,6 +386,7 @@ export interface GamificationReputationUpdatedEvent {
 }
 
 export interface VotesVoteChangedEvent {
+  voterId:       string;
   targetOwnerId: string;
   entityType:    VoteEntityType;
   entityId:      string;

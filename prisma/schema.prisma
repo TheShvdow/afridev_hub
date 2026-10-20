@@ -56,6 +56,7 @@ enum ReportStatus {
 enum ModerationActionType {
   HIDDEN
   RESTORED
+  DISMISSED
   WARNING
   BAN
 }
@@ -160,6 +161,7 @@ model User {
   twitterUsername  String?
   reputation       Int       @default(0)
   isVerified       Boolean   @default(false)
+  emailNotifications Boolean @default(true)  // FR-18 : emails d'activité désactivables
   role             UserRole  @default(MEMBER)
   lastSeenAt       DateTime?
   createdAt        DateTime  @default(now())
@@ -292,6 +294,10 @@ model Post {
   userId     String
   isResolved Boolean  @default(false)
   viewCount  Int      @default(0)
+  voteScore  Int      @default(0)   // upvotes − downvotes, tenu à jour par ForumListener
+  lastActivityAt DateTime @default(now())
+  isHidden   Boolean  @default(false) // masqué par la modération (FR-21)
+  hiddenAt   DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -302,6 +308,9 @@ model Post {
   @@index([userId])
   @@index([isResolved])
   @@index([createdAt])
+  @@index([voteScore])
+  @@index([lastActivityAt])
+  @@index([isHidden])
 }
 
 model PostTag {
@@ -320,6 +329,9 @@ model Answer {
   postId     String
   userId     String
   isAccepted Boolean  @default(false)
+  voteScore  Int      @default(0)
+  isHidden   Boolean  @default(false)
+  hiddenAt   DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -368,6 +380,7 @@ model Report {
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   moderationActions ModerationAction[]
 
+  @@unique([userId, entityType, entityId]) // FR-20 : un signalement par membre et par contenu
   @@index([status])
   @@index([entityType, entityId])
   @@index([userId])
@@ -383,7 +396,7 @@ enum ModerationTargetType {
 
 model ModerationAction {
   id          String               @id @default(uuid())
-  moderatorId String
+  moderatorId String?  // null : action automatique (masquage au seuil de signalements)
   reportId    String?
   entityType  ModerationTargetType
   entityId    String
@@ -391,7 +404,7 @@ model ModerationAction {
   note        String?
   createdAt   DateTime             @default(now())
 
-  moderator User    @relation("ModeratorActions", fields: [moderatorId], references: [id])
+  moderator User?   @relation("ModeratorActions", fields: [moderatorId], references: [id])
   report    Report? @relation(fields: [reportId], references: [id])
 
   @@index([moderatorId])
@@ -424,6 +437,8 @@ model Project {
   githubStars    Int       @default(0)
   githubLanguage String?
   githubLastPush DateTime?
+  isHidden       Boolean   @default(false) // masqué par la modération (FR-21)
+  hiddenAt       DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
