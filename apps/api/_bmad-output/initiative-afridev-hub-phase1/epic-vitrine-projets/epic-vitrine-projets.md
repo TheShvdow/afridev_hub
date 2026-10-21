@@ -41,7 +41,13 @@ Répertoire public de projets open-source africains avec stats GitHub live, page
 
 **Décision :** Les étoiles internes de projet N'alimentent PAS `reputation` en Phase 1 (glossaire exhaustif des règles réputation). E4 peut donc tourner en parallèle avec E3 sans collision sur GamificationModule. Cette décision doit être confirmée avant l'inception E4 si la spec évolue.
 
-**Open question :** Fréquence de rafraîchissement des stats GitHub — à la demande (bouton) ou job schedulé ? `@nestjs/schedule` est premier consommateur dans E5 ; si E4 en a besoin avant E5, activer le module dans E4.
+**Décisions 2026-10-21 :**
+- Pas d'approbation manuelle : badge « dev vérifié » requis, lien `https://github.com/<compte>/<dépôt>` vérifié auprès de l'API GitHub (introuvable ou privé → 422), un dépôt ne figure qu'une fois, catégorie obligatoire. Le projet est publié tout de suite ; les signalements et le masquage d'E3 servent de filet. La colonne `isApproved` est supprimée.
+- Stats GitHub (étoiles, forks, langage, dernier push) importées à la soumission. Si GitHub est indisponible, le projet est publié sans stats. Rafraîchissement chaque nuit à 3 h, et à la demande de l'auteur une fois par heure. `GITHUB_API_TOKEN` (optionnel) relève la limite de 60 à 5 000 requêtes/heure.
+- URL publique `/projects/<slug>` ; les anciens liens par identifiant restent valides. Image Open Graph : carte générée par GitHub pour le dépôt.
+- « Type » de projet = catégorie. Tris : récents, étoiles GitHub, étoiles AfriDev Hub, dernier push.
+
+**État 2026-10-21 :** backend E4 livré sur la branche `feat/e4-projects`. Le front Angular reste à faire (page projet en SSR pour les balises OG).
 
 ## References
 

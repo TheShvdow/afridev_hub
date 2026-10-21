@@ -166,6 +166,10 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
   - Quota du plan gratuit : 3 offres par mois calendaire UTC, offres refusées exclues. Plan premium = `RecruiterPlan` PREMIUM actif et non expiré.
   - Les technologies (`JobOffer.stack`, `JobAlert.stack`) sont stockées en minuscules.
   - Événements : `jobs.offer.published`, `jobs.offer.reviewed`, `jobs.application.created`, `jobs.alert.matched`, `currency.rates.updated`.
+- (decision) **Vitrine projets E4 (2026-10-21)** : migration `20261021130000_projects_e4`.
+  - `Project.isApproved` supprimé : publication immédiate si badge vérifié et dépôt GitHub existant. Les projets existants non approuvés deviennent visibles.
+  - `Project.slug` unique (tiré du nom, suffixe aléatoire court en cas de collision), `githubFullName` (« owner/repo » en minuscules, un projet par dépôt), `githubForks`, `githubSyncedAt` (dernier import réussi ; null = pas encore importé).
+  - `CreateProjectDto.categorySlug` devient obligatoire (FR-22) ; `UpdateProjectDto` accepte les tags, la catégorie et un nouveau dépôt (revérifié, stats remplacées).
 - (decision) **Build API : `rootDir` = racine du monorepo** (`apps/api/project.json`), pour que l'API puisse importer `libs/shared-types`. `outputFileName` fixé pour que `nx serve` retrouve `main.js`.
 
 ## 6. Écarts connus
