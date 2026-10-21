@@ -218,10 +218,12 @@ model Account {
   @@index([userId])
 }
 
+// Code de vérification d'email : 6 caractères envoyés par email, stockés en empreinte SHA-256.
 model VerificationToken {
   identifier String
-  token      String   @unique
+  token      String   @unique // empreinte SHA-256 du code, unique
   expires    DateTime
+  attempts   Int      @default(0) // essais erronés : au 5e, le code est invalidé
 
   @@unique([identifier, token])
 }

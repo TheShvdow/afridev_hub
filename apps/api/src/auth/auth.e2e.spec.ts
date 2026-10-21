@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AppModule } from '../app.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 
 // Smoke test E2 (story E2-11). Ne tourne que sur une base de TEST explicite :
 // jamais sur la base de développement partagée. Lancer avec :
@@ -17,13 +18,18 @@ runE2E('Auth + profil — parcours complet (E2)', () => {
   const username = `e2e_${Date.now().toString(36)}`;
   const email = `${username}@test.invalid`;
   const password = 'Secret123!';
+  // Le code n'est stocké qu'en empreinte : on le lit dans l'email envoyé.
+  const sentMails: { to: string; subject: string; html: string }[] = [];
 
   beforeAll(async () => {
     process.env['DATABASE_URL'] = TEST_DB;
     process.env['DIRECT_URL'] = TEST_DB;
     process.env['REDIS_URL'] = TEST_REDIS;
 
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(MailService)
+      .useValue({ send: async (to: string, subject: string, html: string) => { sentMails.push({ to, subject, html }); } })
+      .compile();
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api', { exclude: ['health'] });
     app.useGlobalPipes(new ValidationPipe({
@@ -42,12 +48,15 @@ runE2E('Auth + profil — parcours complet (E2)', () => {
   });
 
   it('registers, verifies the email, logs in and reads the profile', async () => {
-    await request(app.getHttpServer()).post('/api/auth/register')
+    const registered = await request(app.getHttpServer()).post('/api/auth/register')
       .send({ username, email, password }).expect(201);
 
-    const user = await prisma.user.findUniqueOrThrow({ where: { username } });
-    const link = await prisma.verificationToken.findFirstOrThrow({ where: { identifier: user.id } });
-    await request(app.getHttpServer()).post(`/api/auth/verify-email?token=${link.token}`).expect(200);
+    const mail = sentMails.find((sent) => sent.to === email);
+    const code = /^([A-Z0-9]{6}) /.exec(mail?.subject ?? '')?.[1];
+    expect(code).toBeDefined();
+    await request(app.getHttpServer()).post('/api/auth/verify-email')
+      .set('Authorization', `Bearer ${registered.body.data.accessToken as string}`)
+      .send({ code }).expect(200);
 
     const login = await request(app.getHttpServer()).post('/api/auth/login')
       .send({ email, password }).expect(200);
