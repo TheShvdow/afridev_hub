@@ -8,14 +8,14 @@ import {
   Res,
   HttpCode,
   HttpStatus,
-  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiNoContentResponse, ApiResponse, ApiExcludeEndpoint, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiNoContentResponse, ApiResponse, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -121,12 +121,14 @@ export class AuthController {
   @Post('verify-email')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Confirmer son adresse email avec le lien reçu' })
-  @ApiQuery({ name: 'token', required: true })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Confirmer son adresse email avec le code à 6 caractères reçu' })
   @ApiResponse({ status: 200, description: 'Email vérifié' })
-  @ApiResponse({ status: 400, description: 'Lien invalide ou expiré' })
-  verifyEmail(@Query('token') token: string) {
-    return this.authService.verifyEmail(token);
+  @ApiResponse({ status: 400, description: 'Code invalide ou expiré' })
+  @ApiResponse({ status: 429, description: '5 essais erronés : le code est invalidé, en demander un nouveau' })
+  verifyEmail(@CurrentUser('id') userId: string, @Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(userId, dto.code);
   }
 
   @Post('resend-verification')
@@ -134,7 +136,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Renvoyer l\'email de vérification' })
+  @ApiOperation({ summary: 'Recevoir un nouveau code de vérification par email' })
   @ApiResponse({ status: 409, description: 'Email déjà vérifié' })
   resendVerification(@CurrentUser('id') userId: string) {
     return this.authService.resendVerification(userId);
