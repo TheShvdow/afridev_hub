@@ -20,7 +20,7 @@ export type ModerationActionType = 'HIDDEN' | 'RESTORED' | 'DISMISSED' | 'WARNIN
 export type ExperienceLevel = 'JUNIOR' | 'MID' | 'SENIOR';
 export type JobType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'FREELANCE' | 'INTERNSHIP';
 export type JobMode = 'REMOTE' | 'ONSITE' | 'HYBRID';
-export type JobStatus = 'ACTIVE' | 'EXPIRED' | 'CLOSED';
+export type JobStatus = 'PENDING_REVIEW' | 'ACTIVE' | 'REJECTED' | 'EXPIRED' | 'CLOSED';
 export type ApplicationStatus = 'PENDING' | 'REVIEWED' | 'ACCEPTED' | 'REJECTED';
 export type PlanType = 'FREE' | 'PREMIUM';
 export type PaymentProvider = 'BICTORYS';  // agrégateur unique (décision 2026-10-14)
@@ -34,6 +34,8 @@ export type NotificationType =
   | 'MENTION'
   | 'REPORT_RESOLVED'
   | 'JOB_ALERT'
+  | 'JOB_APPLICATION'
+  | 'JOB_REVIEWED'
   | 'SYSTEM'
   | 'BADGE_AWARDED';
 
@@ -76,6 +78,9 @@ export interface UserMe {
   isVerified:  boolean;
   reputation:  number;
   emailNotifications: boolean;
+  isRecruiter: boolean;
+  companyName: string | null;
+  preferredCurrency: string | null;
   createdAt:   string;
 }
 
@@ -197,9 +202,19 @@ export interface JobListItem {
   salaryMin: number;
   salaryMax: number;
   currency:  string;
+  // Salaire converti dans la devise demandée (?currency= ou devise préférée du membre), si un taux est connu.
+  converted?: ConvertedSalary | null;
+  publishedAt: string | null;
   expiresAt: string;
   createdAt: string;
   recruiter: UserSummary;
+}
+
+export interface ConvertedSalary {
+  currency:  string;
+  salaryMin: number;
+  salaryMax: number;
+  ratesAt:   string;
 }
 
 export interface CreateJobDto {
@@ -217,13 +232,13 @@ export interface CreateJobDto {
 
 export interface ApplyJobDto {
   message: string;
-  cvUrl?:  string;
+  cvKey?:  string;  // clé R2 renvoyée par POST /upload/cv-presign
 }
 
 export interface JobApplicationItem {
   id:        string;
   message:   string;
-  cvUrl:     string | null;
+  cvDownloadUrl: string | null;  // URL signée, valable 10 min
   status:    ApplicationStatus;
   createdAt: string;
   user:      UserSummary;
@@ -335,6 +350,12 @@ export type ErrorCode =
   | 'JOBS_FORBIDDEN'
   | 'JOBS_ALREADY_APPLIED'
   | 'JOBS_SALARY_RANGE_INVALID'
+  | 'JOBS_RECRUITER_REQUIRED'
+  | 'JOBS_PLAN_LIMIT_REACHED'
+  | 'JOBS_OFFER_NOT_PENDING'
+  | 'JOBS_OFFER_NOT_RENEWABLE'
+  | 'JOBS_ALERT_NOT_FOUND'
+  | 'JOBS_ALERT_LIMIT_REACHED'
   // Modération
   | 'MODERATION_REPORT_NOT_FOUND'
   | 'MODERATION_REPORT_DUPLICATE'
@@ -384,6 +405,33 @@ export interface GamificationReputationUpdatedEvent {
   reputation: number;
   delta:      number;
   reason:     string;
+}
+
+export interface JobsOfferPublishedEvent {
+  jobId:       string;
+  recruiterId: string;
+}
+
+export interface JobsOfferReviewedEvent {
+  jobId:       string;
+  recruiterId: string;
+  title:       string;
+  approved:    boolean;
+  reason?:     string;
+}
+
+export interface JobsApplicationCreatedEvent {
+  applicationId: string;
+  jobId:         string;
+  jobTitle:      string;
+  recruiterId:   string;
+  applicantId:   string;
+}
+
+export interface JobsAlertMatchedEvent {
+  userId:   string;
+  jobId:    string;
+  jobTitle: string;
 }
 
 export interface VotesVoteChangedEvent {

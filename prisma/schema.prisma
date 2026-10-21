@@ -76,7 +76,9 @@ enum JobType {
 }
 
 enum JobStatus {
+  PENDING_REVIEW // en attente de validation par la modération (FR-28)
   ACTIVE
+  REJECTED
   EXPIRED
   CLOSED
 }
@@ -125,6 +127,8 @@ enum NotificationType {
   MENTION
   REPORT_RESOLVED
   JOB_ALERT
+  JOB_APPLICATION
+  JOB_REVIEWED
   SYSTEM
   BADGE_AWARDED
 }
@@ -162,6 +166,9 @@ model User {
   reputation       Int       @default(0)
   isVerified       Boolean   @default(false)
   emailNotifications Boolean @default(true)  // FR-18 : emails d'activité désactivables
+  isRecruiter      Boolean   @default(false) // profil recruteur activé par le membre (glossaire « Recruteur »)
+  companyName      String?
+  preferredCurrency String?  // ISO 4217 : devise d'affichage des salaires (FR-30)
   role             UserRole  @default(MEMBER)
   lastSeenAt       DateTime?
   createdAt        DateTime  @default(now())
@@ -500,8 +507,14 @@ model JobOffer {
   salaryMax   Int
   stack       String[]
   categoryId  String?
-  status      JobStatus @default(ACTIVE)
+  status      JobStatus @default(PENDING_REVIEW)
+  // Salaire converti en USD (entier) pour filtrer entre devises ; recalculé chaque jour.
+  salaryMinUsd Int?
+  salaryMaxUsd Int?
+  publishedAt DateTime? // validation par la modération
+  rejectionReason String?
   expiresAt   DateTime
+  expiryReminderSentAt DateTime? // rappel J50 (FR-33)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -513,6 +526,8 @@ model JobOffer {
   @@index([status])
   @@index([country, mode])
   @@index([expiresAt])
+  @@index([salaryMaxUsd])
+  @@index([publishedAt])
 }
 
 model JobApplication {
@@ -541,11 +556,19 @@ model JobAlert {
   currency  String?
   salaryMin Int?
   isActive  Boolean  @default(true)
+  lastDigestAt DateTime? // dernier récapitulatif hebdomadaire envoyé (FR-32)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isActive])
+}
+
+// Taux de change par rapport au dollar (open.er-api.com), rafraîchis chaque jour (FR-30).
+model ExchangeRate {
+  currency  String   @id // ISO 4217
+  perUsd    Float    // unités de la devise pour 1 USD
+  updatedAt DateTime @updatedAt
 }
 
 model RecruiterPlan {
