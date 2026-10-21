@@ -14,7 +14,7 @@ export class AdminService {
       totalProjects,
       totalJobs,
       pendingReports,
-      pendingProjects,
+      projectsWithGithubStats,
       totalRevenue,
       forum,
       forumLast30Days,
@@ -25,10 +25,11 @@ export class AdminService {
         where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 3600 * 1000) } },
       }),
       this.prisma.post.count(),                                         // Post has no `status` field
-      this.prisma.project.count({ where: { isApproved: true } }),       // isApproved not status
+      this.prisma.project.count({ where: { isHidden: false } }),
       this.prisma.jobOffer.count({ where: { status: 'ACTIVE' } }),
       this.prisma.report.count({ where: { status: 'PENDING' } }),
-      this.prisma.project.count({ where: { isApproved: false } }),      // pending = not yet approved
+      // SM-6 : projets dont les stats GitHub ont été importées.
+      this.prisma.project.count({ where: { isHidden: false, githubSyncedAt: { not: null } } }),
       this.prisma.commission.aggregate({                                // Commission is a separate model
         where: { payment: { status: 'CAPTURED' } },                    // CAPTURED not COMPLETED
         _sum:  { amount: true },
@@ -41,7 +42,8 @@ export class AdminService {
     return {
       users:        { total: totalUsers, newThisWeek: newUsersThisWeek },
       content:      { posts: totalPosts, projects: totalProjects, jobs: totalJobs },
-      moderation:   { pendingReports, pendingProjects },
+      projects:     { visible: totalProjects, withGithubStats: projectsWithGithubStats },
+      moderation:   { pendingReports },
       revenue:      { totalCommission: totalRevenue._sum.amount ?? 0 }, // _sum.amount not _sum.commission
       forum:        { ...forum, last30Days: forumLast30Days },
       jobs,

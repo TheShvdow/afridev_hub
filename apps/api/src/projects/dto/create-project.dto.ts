@@ -31,6 +31,7 @@ export class CreateProjectDto {
   @Matches(/^[A-Z]{2}$/, { message: 'Le pays doit être un code ISO 3166-1 alpha-2 (ex. SN).' })
   country!: string;
 
+  // Vérifié dans le service : https://github.com/<owner>/<repo>, dépôt existant (FR-22, FR-27).
   @ApiProperty({ example: 'https://github.com/TheShvdow/afridev_hub' })
   @IsUrl()
   repoUrl!: string;
@@ -47,8 +48,8 @@ export class CreateProjectDto {
   @IsString({ each: true })
   tags!: string[];
 
-  @ApiPropertyOptional({ example: 'fintech' })
-  @IsOptional()
+  // FR-22 : catégorie obligatoire, choisie dans la liste prédéfinie (GET /projects/categories).
+  @ApiProperty({ example: 'fintech' })
   @IsString()
-  categorySlug?: string;
+  categorySlug!: string;
 }

@@ -51,7 +51,8 @@ describe('AdminService', () => {
       expect(stats).toEqual({
         users:      { total: 42, newThisWeek: 5 },
         content:    { posts: 10, projects: 7, jobs: 3 },
-        moderation: { pendingReports: 1, pendingProjects: 2 },
+        projects:   { visible: 7, withGithubStats: 2 },
+        moderation: { pendingReports: 1 },
         revenue:    { totalCommission: 0 },
         forum:      expect.any(Object),
         jobs:       expect.any(Object),
@@ -80,11 +81,11 @@ describe('AdminService', () => {
       expect(prisma.post.count).toHaveBeenCalledWith({ where: expect.objectContaining({ isHidden: false }) });
     });
 
-    it('calcule les projets en attente sur isApproved = false et la commission sur les paiements CAPTURED', async () => {
+    it('compte les projets visibles, ceux aux stats GitHub importées (SM-6) et la commission sur les paiements CAPTURED', async () => {
       await service.getDashboardStats();
 
-      expect(prisma.project.count).toHaveBeenCalledWith({ where: { isApproved: true } });
-      expect(prisma.project.count).toHaveBeenCalledWith({ where: { isApproved: false } });
+      expect(prisma.project.count).toHaveBeenCalledWith({ where: { isHidden: false } });
+      expect(prisma.project.count).toHaveBeenCalledWith({ where: { isHidden: false, githubSyncedAt: { not: null } } });
       expect(prisma.commission.aggregate).toHaveBeenCalledWith(
         expect.objectContaining({ where: { payment: { status: 'CAPTURED' } } }),
       );

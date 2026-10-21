@@ -187,10 +187,10 @@ export class UsersService {
         },
       }),
       this.prisma.project.findMany({
-        where:   { userId: user.id },
+        where:   { userId: user.id, isHidden: false },
         orderBy: { createdAt: 'desc' },
         take:    5,
-        select:  { id: true, name: true, createdAt: true, isApproved: true },
+        select:  { id: true, slug: true, name: true, createdAt: true },
       }),
     ]);
 

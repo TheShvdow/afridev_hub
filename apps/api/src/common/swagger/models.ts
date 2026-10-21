@@ -94,14 +94,28 @@ export class VoteResultDto {
   @ApiProperty({ example: 1, description: 'Score net (votes positifs − négatifs)' }) newScore!: number;
 }
 
+export class ProjectOgMetaDto {
+  @ApiProperty({ example: 'AfriPay — AfriDev Hub' }) ogTitle!: string;
+  @ApiProperty() ogDescription!: string;
+  @ApiProperty({ nullable: true }) ogImage!: string | null;
+  @ApiProperty({ example: 'https://afridevhub.com/projects/afripay' }) ogUrl!: string;
+}
+
 export class ProjectDto {
   @ApiProperty() id!: string;
+  @ApiProperty({ example: 'afripay', description: 'Identifiant d\'URL : /projects/<slug>' }) slug!: string;
   @ApiProperty({ example: 'AfriPay' }) name!: string;
   @ApiProperty() description!: string;
   @ApiProperty({ example: 'SN', description: 'ISO 3166-1 alpha-2' }) country!: string;
   @ApiProperty() repoUrl!: string;
   @ApiProperty({ nullable: true }) demoUrl!: string | null;
-  @ApiProperty() isApproved!: boolean;
+  @ApiProperty({ example: 42 }) githubStars!: number;
+  @ApiProperty({ example: 7 }) githubForks!: number;
+  @ApiProperty({ nullable: true, example: 'TypeScript' }) githubLanguage!: string | null;
+  @ApiProperty({ nullable: true, format: 'date-time' }) githubLastPush!: string | null;
+  @ApiProperty({ nullable: true, format: 'date-time', description: 'null : stats GitHub pas encore importées' }) githubSyncedAt!: string | null;
+  @ApiPropertyOptional({ type: ProjectOgMetaDto, description: 'Présent sur le détail' }) ogMeta?: ProjectOgMetaDto;
+  @ApiPropertyOptional({ description: 'Présent sur le détail pour un visiteur connecté' }) starredByViewer?: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
   @ApiProperty({ type: AuthorSummaryDto }) user!: AuthorSummaryDto;
   @ApiProperty({ type: [TagLinkDto] }) projectTags!: TagLinkDto[];
