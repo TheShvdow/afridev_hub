@@ -166,12 +166,17 @@ export interface ProjectTagItem {
 
 export interface ProjectListItem {
   id:          string;
+  slug:        string;
   name:        string;
   description: string;
   country:     string;
   repoUrl:     string;
   demoUrl:     string | null;
-  isApproved:  boolean;
+  githubStars:    number;
+  githubForks:    number;
+  githubLanguage: string | null;
+  githubLastPush: string | null;
+  githubSyncedAt: string | null;   // null : stats GitHub pas encore importées
   createdAt:   string;
   user:        UserSummary;
   projectTags: ProjectTagItem[];
@@ -185,7 +190,7 @@ export interface CreateProjectDto {
   repoUrl:       string;
   demoUrl?:      string;
   tags:          string[];
-  categorySlug?: string;
+  categorySlug:  string;
 }
 
 // ── Jobs ──────────────────────────────────────────────────────────────────────
@@ -344,6 +349,11 @@ export type ErrorCode =
   | 'PROJECTS_PROJECT_NOT_FOUND'
   | 'PROJECTS_CATEGORY_NOT_FOUND'
   | 'PROJECTS_FORBIDDEN'
+  | 'PROJECTS_VERIFIED_BADGE_REQUIRED'
+  | 'PROJECTS_GITHUB_URL_INVALID'
+  | 'PROJECTS_GITHUB_REPO_NOT_FOUND'
+  | 'PROJECTS_REPO_ALREADY_SUBMITTED'
+  | 'PROJECTS_REFRESH_TOO_SOON'
   // Offres
   | 'JOBS_OFFER_NOT_FOUND'
   | 'JOBS_OFFER_CLOSED'

@@ -434,16 +434,19 @@ model ProjectCategory {
 model Project {
   id             String    @id @default(uuid())
   name           String
+  slug           String    @unique // URL publique : /projects/<slug>
   description    String    @db.Text
   country        String    @default("SN") // ISO 3166-1 alpha-2
   repoUrl        String
   demoUrl        String?
   userId         String
   categoryId     String?
-  isApproved     Boolean   @default(false)
+  githubFullName String?   // « owner/repo », extrait de repoUrl
   githubStars    Int       @default(0)
+  githubForks    Int       @default(0)
   githubLanguage String?
   githubLastPush DateTime?
+  githubSyncedAt DateTime? // dernier import réussi des stats GitHub (FR-23)
   isHidden       Boolean   @default(false) // masqué par la modération (FR-21)
   hiddenAt       DateTime?
   createdAt      DateTime  @default(now())
@@ -455,7 +458,9 @@ model Project {
   projectTags ProjectTag[]
 
   @@index([userId])
-  @@index([isApproved])
+  @@index([githubFullName])
+  @@index([githubStars])
+  @@index([country])
   @@index([createdAt])
 }
 
