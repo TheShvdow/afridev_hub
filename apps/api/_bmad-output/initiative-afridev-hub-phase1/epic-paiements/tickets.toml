@@ -1,0 +1,79 @@
+# tickets.toml — epic-paiements (E6)
+# Paiements Bictorys — backend livré le 2026-10-21 (PR #1). Front Angular non construit.
+# Stories créées après coup (2026-10-22) : le travail a été livré directement, hors ticket.
+# Chaque story renvoie aux commits qui la réalisent ; son plan porte le statut « built ».
+# Build order : 1 → 2 → 3, 5 ; 4 indépendant ; 6 après 2 (validation réelle en sandbox).
+
+
+[[entry]]
+id = 1
+type = "story"
+title = "Catalogue de prix côté serveur (correction de la faille de montant)"
+description = """
+POST /payments/initiate prend un code produit ; montant, devise et cible viennent du serveur ; RECRUITER_PREMIUM_MONTHLY à 25 000 FCFA (RECRUITER_PREMIUM_PRICE_XOF) ; profil recruteur requis ; GET /payments/products. Commit b8574f3.
+"""
+covers = ["CAP-6"]
+after = ["epic-job-board"]
+risk = "high"
+hitl = false
+
+[[entry]]
+id = 2
+type = "story"
+title = "Activation du plan premium après paiement (FR-34)"
+description = """
+Statut CAPTURED et activation de 30 jours dans la même transaction ; un renouvellement avant échéance prolonge la période ; jamais activé deux fois. Commit b8574f3.
+"""
+covers = ["CAP-6"]
+after = [1]
+risk = "high"
+hitl = false
+
+[[entry]]
+id = 3
+type = "story"
+title = "Reçu par email et confirmation in-app"
+description = """
+Reçu après chaque paiement réussi, notification in-app ; un échec d'envoi ne défait pas le paiement. Commit b8574f3.
+"""
+covers = ["CAP-6"]
+after = [2]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 4
+type = "story"
+title = "Agrégateur injecté par le jeton PAYMENT_PROVIDER (AD-8)"
+description = """
+PaymentsService dépend de IPaymentProvider, Bictorys lié dans PaymentsModule. Commit b8574f3.
+"""
+covers = ["CAP-6"]
+after = ["epic-job-board"]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 5
+type = "story"
+title = "Indicateur SM-3 dans les stats admin"
+description = """
+Nombre de paiements CAPTURED. Commit b8574f3.
+"""
+covers = ["CAP-6"]
+after = [2]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 6
+type = "story"
+title = "Valider un paiement Bictorys réel en sandbox"
+description = """
+Paiement Wave SN de bout en bout en sandbox : format réel du webhook, confirmation par l'API de statut, plan activé et reçu envoyé. Nécessite les clés sandbox et un paiement fait par le mainteneur.
+"""
+covers = ["CAP-6"]
+after = [2]
+risk = "high"
+hitl = false
+unknown = "Clés Bictorys sandbox absentes de l'environnement local au 2026-10-22."

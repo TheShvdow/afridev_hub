@@ -1,0 +1,151 @@
+# tickets.toml — epic-job-board (E5)
+# Job Board — backend livré le 2026-10-21 (PR #1). Front Angular non construit.
+# Stories créées après coup (2026-10-22) : le travail a été livré directement, hors ticket.
+# Chaque story renvoie aux commits qui la réalisent ; son plan porte le statut « built ».
+# Story 1 : faite le 2026-10-16 dans une autre session, son plan était à la racine de l'initiative.
+# Build order : 1 → 2 → 3, 4, 5 → 6, 7, 8, 9 → 10, 11, 12.
+
+
+[[entry]]
+id = 1
+type = "story"
+title = "Liste fermée de pays et filtre des offres par pays"
+description = """
+COUNTRIES (54 pays africains et 15 de la diaspora) valide le pays des offres ; GET /jobs?country=. Commit 74a9002.
+"""
+covers = ["CAP-5"]
+after = ["epic-auth-profiles"]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 2
+type = "story"
+title = "Schéma job board : validation, profil recruteur, salaires en USD, taux de change"
+description = """
+Migrations 20261021120000 à 20261021120200 : statuts PENDING_REVIEW et REJECTED, salaires USD, publishedAt, rappel J50, isRecruiter, companyName, preferredCurrency, ExchangeRate, stacks en minuscules. Commit 53528b2.
+"""
+covers = ["CAP-5"]
+after = [1]
+risk = "medium"
+hitl = false
+
+[[entry]]
+id = 3
+type = "story"
+title = "Taux de change quotidiens (FR-30)"
+description = """
+CurrencyService : open.er-api.com chaque nuit et au premier démarrage, derniers taux conservés si la source tombe. Commit 75b1a4f.
+"""
+covers = ["CAP-5"]
+after = [2]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 4
+type = "story"
+title = "Profil recruteur et devise préférée"
+description = """
+POST /users/me/recruiter avec le nom de l'entreprise (décision du 2026-10-21) ; preferredCurrency sur PATCH /users/me. Commit 75b1a4f.
+"""
+covers = ["CAP-5"]
+after = [2]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 5
+type = "story"
+title = "Envoi de CV PDF vers R2 (FR-31)"
+description = """
+POST /upload/cv-presign (PDF, 5 Mo), clé vérifiée dans R2, lien signé de 10 min pour le recruteur, jamais d'URL publique. Commit 75b1a4f.
+"""
+covers = ["CAP-5"]
+after = [2]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 6
+type = "story"
+title = "Validation des offres par la modération (FR-28)"
+description = """
+Toute offre attend un modérateur (décision du 2026-10-21) ; approve ou reject avec motif ; les 60 jours partent de la publication ; journal d'audit. Commit a6369c7.
+"""
+covers = ["CAP-5"]
+after = [4]
+risk = "medium"
+hitl = false
+
+[[entry]]
+id = 7
+type = "story"
+title = "Quota du plan gratuit, déclencheur FR-34"
+description = """
+3 offres par mois calendaire puis 402 JOBS_PLAN_LIMIT_REACHED ; profils candidats tronqués en gratuit ; GET /jobs/plan. Commit a6369c7.
+"""
+covers = ["CAP-5"]
+after = [4]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 8
+type = "story"
+title = "Filtres combinables et salaires convertis (FR-29, FR-30)"
+description = """
+Pays, mode, stack, salaire minimum entre devises ; salaire affiché dans la devise demandée ou préférée. Commit a6369c7.
+"""
+covers = ["CAP-5"]
+after = [3]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 9
+type = "story"
+title = "Candidatures avec CV et notification du recruteur (FR-31)"
+description = """
+Clé de CV vérifiée, 409 sur une seconde candidature, refus sur une offre expirée ou sa propre offre, notification in-app et email. Commit a6369c7.
+"""
+covers = ["CAP-5"]
+after = [5]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 10
+type = "story"
+title = "Expiration, rappel J50 et renouvellement (FR-33)"
+description = """
+Passage horaire en EXPIRED, rappel email à J50, PATCH /jobs/:id/renew pour 60 jours. Commit a6369c7.
+"""
+covers = ["CAP-5"]
+after = [6]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 11
+type = "story"
+title = "Alertes emploi (FR-32)"
+description = """
+5 alertes par membre ; notification in-app à la publication d'une offre correspondante ; email récapitulatif chaque lundi (décision du 2026-10-21). Commit a6369c7.
+"""
+covers = ["CAP-5"]
+after = [6]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 12
+type = "story"
+title = "Indicateur SM-5 dans les stats admin"
+description = """
+Offres publiées, publiées sur 60 jours, en attente de validation. Commit c5014e0.
+"""
+covers = ["CAP-5"]
+after = [6]
+risk = "low"
+hitl = false
