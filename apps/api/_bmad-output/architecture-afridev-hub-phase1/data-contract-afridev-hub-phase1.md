@@ -100,7 +100,9 @@ Les contraintes de longueur viennent du glossaire quand il en définit une ; sin
 | | stack | `JobOffer.stack` (String[]) | **requis**, 1–5 | Glossaire « Offre » |
 | | — | `JobOffer.expiresAt` | calculé : now + 60 jours | Glossaire « Offre » (J60) |
 | `ApplyJobDto` | message | `JobApplication.message` | **requis** | — |
-| | cvUrl | `JobApplication.cvUrl` | optionnel, URL | — |
+| | cvKey | `JobApplication.cvUrl` (contient la clé R2, pas une URL) | optionnel, clé `cvs/<userId>/<uuid>.pdf` vérifiée dans R2 | FR-31 |
+| `CreateJobAlertDto` | country, mode, stack, salaryMin, currency | `JobAlert.*` | tous optionnels ; currency requis avec salaryMin ; 5 alertes max | FR-32 |
+| `RecruiterProfileDto` | companyName | `User.companyName` (+ `User.isRecruiter = true`) | 2–100 | Glossaire « Recruteur » |
 
 ### Modération, administration, paiements
 | DTO | Champ | Colonne Prisma | Contrainte |
@@ -158,6 +160,12 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
   - Résoudre ou ignorer un signalement clôt tous les signalements ouverts du même contenu. Ignorer rend le contenu visible. Chaque décision est écrite dans `AuditLog`.
   - Notifications FR-18 (nouvelle réponse, réponse acceptée, nouveau vote positif) en in-app et par email, sauf si `User.emailNotifications` vaut false.
   - Les commentaires sont reportés en phase 2 (absents du PRD, décision du 2026-10-20).
+- (decision) **Job board E5 (2026-10-21)** : migrations `20261021120000_job_board_e5_enums`, `20261021120100_job_board_e5`, `20261021120200_job_stack_lowercase`.
+  - Cycle d'une offre : `PENDING_REVIEW` → `ACTIVE` (validation, `publishedAt`, expiration à +60 jours) ou `REJECTED` (`rejectionReason`). Une offre refusée puis modifiée repart en `PENDING_REVIEW`. `ACTIVE` → `EXPIRED` (tâche horaire) ou `CLOSED`. Une offre active ou expirée se renouvelle pour 60 jours.
+  - `salaryMinUsd` / `salaryMaxUsd` : salaires convertis en USD, recalculés à chaque mise à jour des taux, pour le filtre salaire entre devises.
+  - Quota du plan gratuit : 3 offres par mois calendaire UTC, offres refusées exclues. Plan premium = `RecruiterPlan` PREMIUM actif et non expiré.
+  - Les technologies (`JobOffer.stack`, `JobAlert.stack`) sont stockées en minuscules.
+  - Événements : `jobs.offer.published`, `jobs.offer.reviewed`, `jobs.application.created`, `jobs.alert.matched`, `currency.rates.updated`.
 - (decision) **Build API : `rootDir` = racine du monorepo** (`apps/api/project.json`), pour que l'API puisse importer `libs/shared-types`. `outputFileName` fixé pour que `nx serve` retrouve `main.js`.
 
 ## 6. Écarts connus
