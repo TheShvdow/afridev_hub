@@ -170,6 +170,7 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
   - `Project.isApproved` supprimé : publication immédiate si badge vérifié et dépôt GitHub existant. Les projets existants non approuvés deviennent visibles.
   - `Project.slug` unique (tiré du nom, suffixe aléatoire court en cas de collision), `githubFullName` (« owner/repo » en minuscules, un projet par dépôt), `githubForks`, `githubSyncedAt` (dernier import réussi ; null = pas encore importé).
   - `CreateProjectDto.categorySlug` devient obligatoire (FR-22) ; `UpdateProjectDto` accepte les tags, la catégorie et un nouveau dépôt (revérifié, stats remplacées).
+- (decision) **Paiements E6 (2026-10-21)** : `InitiatePaymentDto` ne contient plus que `product`, `paymentType`, `country`, `customer`. Montant, devise, `entityType` et `entityId` (= le membre qui paie) viennent de `payments/catalog.ts`. Pas de migration : le produit est rangé dans `Payment.metadata.product`. Un paiement `CAPTURED` de type `RECRUITER_PLAN` crée ou prolonge `RecruiterPlan` (PREMIUM, +30 jours) dans la même transaction.
 - (decision) **Build API : `rootDir` = racine du monorepo** (`apps/api/project.json`), pour que l'API puisse importer `libs/shared-types`. `outputFileName` fixé pour que `nx serve` retrouve `main.js`.
 
 ## 6. Écarts connus
