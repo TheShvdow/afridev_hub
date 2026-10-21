@@ -21,6 +21,7 @@ import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { ProjectDto } from '../common/swagger/models';
+import { ProjectCategoryDto, StarResultDto } from '../common/swagger/models-extra';
 
 @ApiTags('Projects')
 @Controller('projects')
@@ -37,7 +38,7 @@ export class ProjectsController {
   // Avant :idOrSlug pour ne pas être capturée par le paramètre.
   @Get('categories')
   @ApiOperation({ summary: 'Catégories de projets (liste prédéfinie)' })
-  @ApiData({ description: 'Catégories : name, slug, icon' })
+  @ApiData({ type: ProjectCategoryDto, array: true, description: 'Catégories de projets' })
   listCategories() {
     return this.projectsService.listCategories();
   }
@@ -93,7 +94,7 @@ export class ProjectsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Étoiler / retirer son étoile (toggle)' })
-  @ApiData({ description: '{ starred, stars }' })
+  @ApiData({ type: StarResultDto, status: 201, description: 'Étoile ajoutée ou retirée, nouveau total' })
   star(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,

@@ -31,6 +31,7 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { AuthTokensDto, UserMeDto } from './dto/auth-tokens.dto';
+import { MessageDto } from '../common/swagger/models-extra';
 
 interface AuthUser {
   id: string;
@@ -127,9 +128,9 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Confirmer son adresse email avec le code à 6 caractères reçu' })
-  @ApiResponse({ status: 200, description: 'Email vérifié' })
   @ApiResponse({ status: 400, description: 'Code invalide ou expiré' })
   @ApiResponse({ status: 429, description: '5 essais erronés : le code est invalidé, en demander un nouveau' })
+  @ApiData({ type: MessageDto, description: 'Email vérifié' })
   verifyEmail(@CurrentUser('id') userId: string, @Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(userId, dto.code);
   }
@@ -141,6 +142,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Recevoir un nouveau code de vérification par email' })
   @ApiResponse({ status: 409, description: 'Email déjà vérifié' })
+  @ApiData({ type: MessageDto, description: 'Nouveau code envoyé par email' })
   resendVerification(@CurrentUser('id') userId: string) {
     return this.authService.resendVerification(userId);
   }

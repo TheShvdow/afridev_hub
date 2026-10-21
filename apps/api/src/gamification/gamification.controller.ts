@@ -10,6 +10,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { GamificationService } from './gamification.service';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { ApiPaginationQuery } from '../common/swagger/api-pagination.decorator';
+import { BadgeDto, LeaderboardEntryDto, ReputationDto } from '../common/swagger/models-extra';
 
 @ApiTags('Gamification')
 @Controller('gamification')
@@ -18,8 +19,8 @@ export class GamificationController {
 
   @Get('leaderboard')
   @ApiOperation({ summary: 'Classement par réputation' })
-  @ApiData({ array: true, description: 'Classement par réputation' })
   @ApiPaginationQuery({ defaultLimit: 50 })
+  @ApiData({ type: LeaderboardEntryDto, array: true, description: 'Classement par réputation' })
   leaderboard(
     @Query('page', new DefaultValuePipe(1), new PositiveIntPipe()) page: number,
     @Query('limit', new DefaultValuePipe(50), new PositiveIntPipe(MAX_PAGE_LIMIT)) limit: number,
@@ -29,14 +30,14 @@ export class GamificationController {
 
   @Get('badges')
   @ApiOperation({ summary: 'Liste de tous les badges' })
-  @ApiData({ array: true, description: 'Badges disponibles' })
+  @ApiData({ type: BadgeDto, array: true, description: 'Badges disponibles' })
   listBadges() {
     return this.gamificationService.listBadges();
   }
 
   @Get('users/:userId/reputation')
   @ApiOperation({ summary: 'Réputation et historique d\'un utilisateur' })
-  @ApiData({ description: 'Réputation et historique' })
+  @ApiData({ type: ReputationDto, description: 'Réputation et 20 derniers mouvements' })
   userReputation(@Param('userId') userId: string) {
     return this.gamificationService.getUserReputation(userId);
   }

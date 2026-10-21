@@ -54,6 +54,10 @@ export class UserProfileDto {
   @ApiProperty({ enum: UserRole }) role!: UserRole;
   @ApiProperty() isVerified!: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
+  @ApiPropertyOptional({ description: 'Compteurs (profil public)', example: { posts: 4, answers: 12, projects: 2, receivedBadges: 3 } })
+  _count?: { posts: number; answers: number; projects: number; receivedBadges: number };
+  @ApiPropertyOptional({ description: 'Métadonnées Open Graph (profil public)', example: { ogTitle: 'Idrissa Wade — AfriDev Hub', ogDescription: '…', ogImage: null, ogUrl: 'https://afridevhub.com/@idy_dev' } })
+  ogMeta?: { ogTitle: string; ogDescription: string; ogImage: string | null; ogUrl: string };
 }
 
 export class PostDto {

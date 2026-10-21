@@ -4,6 +4,7 @@ title: Authentification & Profils
 parent: ../initiative-afridev-hub-phase1.md
 covers: ["CAP-2"]
 created: 2026-10-13
+status: in-progress
 ---
 
 # Authentification & Profils
@@ -49,6 +50,12 @@ Authentification complète (email + OAuth, JWT access/refresh), profil public av
 - Upload R2 presigned URL côté serveur uniquement, jamais credentials exposés au client (AD-6).
 
 **Open question héritée :** Recruteur sans compte — flow séparé ou compte Membre d'abord ? (impacte le rôle RECRUITER scaffoldé ici, décision requise avant E5 au plus tard).
+
+**État 2026-10-22 :**
+- Story 3 (OAuth GitHub + Google) débloquée : les deux connexions fonctionnent en prod sur Render (callbacks enregistrées chez GitHub et Google). Callbacks durcies : `HEAD` sans effet, échec redirigé vers `/auth/login`, jetons absents des logs.
+- Vérification d'email : le lien est remplacé par un code de 6 caractères (décision du 2026-10-21), 5 essais, empreinte seule en base.
+- Pays du profil : table `Country` et liste déroulante `GET /api/countries` (décision du 2026-10-22).
+- Reste : story 9, partie Angular SSR des balises OG (le front n'est pas construit), et `WEB_URL` de prod qui pointe encore vers localhost.
 
 ## References
 
