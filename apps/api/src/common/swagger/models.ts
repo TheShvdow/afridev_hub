@@ -122,16 +122,47 @@ export class JobDto {
   @ApiProperty({ example: 500000, description: 'Unités de base (entier)' }) salaryMin!: number;
   @ApiProperty({ example: 800000 }) salaryMax!: number;
   @ApiProperty({ example: 'XOF' }) currency!: string;
+  @ApiPropertyOptional({ type: () => ConvertedSalaryDto, nullable: true, description: 'Salaire dans la devise demandée, absent si même devise ou taux inconnu' })
+  converted?: ConvertedSalaryDto | null;
+  @ApiProperty({ format: 'date-time', nullable: true, description: 'Date de validation par la modération' }) publishedAt!: string | null;
+  @ApiPropertyOptional({ nullable: true, description: 'Motif du refus, visible du recruteur' }) rejectionReason?: string | null;
   @ApiProperty({ format: 'date-time' }) expiresAt!: string;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
   @ApiProperty({ type: AuthorSummaryDto }) recruiter!: AuthorSummaryDto;
 }
 
+export class ConvertedSalaryDto {
+  @ApiProperty({ example: 'NGN' }) currency!: string;
+  @ApiProperty({ example: 1250000 }) salaryMin!: number;
+  @ApiProperty({ example: 2000000 }) salaryMax!: number;
+  @ApiProperty({ format: 'date-time', nullable: true }) ratesAt!: string | null;
+}
+
 export class JobApplicationDto {
   @ApiProperty() id!: string;
   @ApiProperty() message!: string;
-  @ApiProperty({ nullable: true }) cvUrl!: string | null;
+  @ApiPropertyOptional({ nullable: true, description: 'Lien signé vers le CV, valable 10 min (recruteur)' }) cvDownloadUrl?: string | null;
+  @ApiPropertyOptional({ description: 'Profil candidat tronqué (plan gratuit)' }) profileTruncated?: boolean;
   @ApiProperty({ enum: ApplicationStatus }) status!: ApplicationStatus;
+  @ApiProperty({ format: 'date-time' }) createdAt!: string;
+}
+
+export class RecruiterPlanDto {
+  @ApiProperty({ enum: ['FREE', 'PREMIUM'] }) planType!: 'FREE' | 'PREMIUM';
+  @ApiProperty() isPremium!: boolean;
+  @ApiProperty({ format: 'date-time', nullable: true }) premiumUntil!: string | null;
+  @ApiProperty({ example: 2 }) offersThisMonth!: number;
+  @ApiProperty({ example: 3, nullable: true, description: 'null : illimité' }) monthlyLimit!: number | null;
+}
+
+export class JobAlertDto {
+  @ApiProperty() id!: string;
+  @ApiProperty({ nullable: true, example: 'SN' }) country!: string | null;
+  @ApiProperty({ enum: JobMode, nullable: true }) mode!: JobMode | null;
+  @ApiProperty({ type: [String], example: ['angular'] }) stack!: string[];
+  @ApiProperty({ nullable: true, example: 300000 }) salaryMin!: number | null;
+  @ApiProperty({ nullable: true, example: 'XOF' }) currency!: string | null;
+  @ApiProperty() isActive!: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
 }
 

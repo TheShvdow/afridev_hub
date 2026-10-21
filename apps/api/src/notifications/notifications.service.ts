@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { escapeHtml } from '../mail/escape-html';
 import { NotificationsGateway } from './notifications.gateway';
 import { NotificationType } from '@prisma/client';
 
@@ -18,10 +19,8 @@ interface CreateNotificationInput {
 }
 
 // Types envoyés aussi par email (FR-18), sauf si le membre a désactivé les emails.
-const EMAIL_TYPES: NotificationType[] = ['NEW_ANSWER', 'ANSWER_ACCEPTED', 'VOTE_RECEIVED'];
-
-const escapeHtml = (value: string) =>
-  value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] ?? c);
+// JOB_ALERT reste in-app : les alertes ont leur propre récapitulatif hebdomadaire (FR-32).
+const EMAIL_TYPES: NotificationType[] = ['NEW_ANSWER', 'ANSWER_ACCEPTED', 'VOTE_RECEIVED', 'JOB_APPLICATION', 'JOB_REVIEWED'];
 
 @Injectable()
 export class NotificationsService {
@@ -168,6 +167,46 @@ export class NotificationsService {
       targetId,
       actorId,
       ...(postId && { link: `/forum/${postId}` }),
+    });
+  }
+
+  // FR-31 : le recruteur est prévenu de chaque candidature.
+  async notifyJobApplication(recruiterId: string, applicationId: string, jobId: string, jobTitle: string, applicantId: string) {
+    return this.create({
+      userId:     recruiterId,
+      type:       'JOB_APPLICATION',
+      title:      'Nouvelle candidature',
+      message:    `Nouvelle candidature pour votre offre « ${jobTitle} ».`,
+      targetType: 'JOB_APPLICATION',
+      targetId:   applicationId,
+      actorId:    applicantId,
+      link:       `/jobs/${jobId}`,
+    });
+  }
+
+  async notifyJobReviewed(recruiterId: string, jobId: string, jobTitle: string, approved: boolean, reason?: string) {
+    return this.create({
+      userId:     recruiterId,
+      type:       'JOB_REVIEWED',
+      title:      approved ? 'Votre offre est publiée' : 'Votre offre n\'a pas été validée',
+      message:    approved
+        ? `Votre offre « ${jobTitle} » est maintenant visible.`
+        : `Votre offre « ${jobTitle} » a été refusée${reason ? ` : ${reason}` : '.'} Modifiez-la pour la soumettre de nouveau.`,
+      targetType: 'JOB_OFFER',
+      targetId:   jobId,
+      link:       `/jobs/${jobId}`,
+    });
+  }
+
+  async notifyJobAlert(userId: string, jobId: string, jobTitle: string) {
+    return this.create({
+      userId,
+      type:       'JOB_ALERT',
+      title:      'Nouvelle offre pour vous',
+      message:    `« ${jobTitle} » correspond à l'une de vos alertes emploi.`,
+      targetType: 'JOB_OFFER',
+      targetId:   jobId,
+      link:       `/jobs/${jobId}`,
     });
   }
 }

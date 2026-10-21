@@ -1,10 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import type { ForumAnswerCreatedEvent, ForumAnswerAcceptedEvent, VotesVoteChangedEvent } from '@afridev/shared-types';
+import type {
+  ForumAnswerCreatedEvent,
+  ForumAnswerAcceptedEvent,
+  VotesVoteChangedEvent,
+  JobsApplicationCreatedEvent,
+  JobsOfferReviewedEvent,
+  JobsAlertMatchedEvent,
+} from '@afridev/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from './notifications.service';
 
-// FR-18 : notifications d'activité du forum, déclenchées par les événements de domaine.
+// Notifications déclenchées par les événements de domaine : forum (FR-18) et job board (FR-28, FR-31, FR-32).
 @Injectable()
 export class NotificationsListener {
   private readonly logger = new Logger(NotificationsListener.name);
@@ -38,6 +45,25 @@ export class NotificationsListener {
         : (await this.prisma.answer.findUnique({ where: { id: event.entityId }, select: { postId: true } }))?.postId ?? null;
       return this.notifications.notifyUpvote(event.targetOwnerId, event.entityType, event.entityId, postId, event.voterId);
     });
+  }
+
+  @OnEvent('jobs.application.created')
+  onJobApplication(event: JobsApplicationCreatedEvent) {
+    return this.safely('JOB_APPLICATION', () =>
+      this.notifications.notifyJobApplication(event.recruiterId, event.applicationId, event.jobId, event.jobTitle, event.applicantId),
+    );
+  }
+
+  @OnEvent('jobs.offer.reviewed')
+  onJobReviewed(event: JobsOfferReviewedEvent) {
+    return this.safely('JOB_REVIEWED', () =>
+      this.notifications.notifyJobReviewed(event.recruiterId, event.jobId, event.title, event.approved, event.reason),
+    );
+  }
+
+  @OnEvent('jobs.alert.matched')
+  onJobAlertMatched(event: JobsAlertMatchedEvent) {
+    return this.safely('JOB_ALERT', () => this.notifications.notifyJobAlert(event.userId, event.jobId, event.jobTitle));
   }
 
   // L'action métier est déjà faite : une notification perdue ne doit pas la faire échouer.
