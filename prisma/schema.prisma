@@ -114,12 +114,6 @@ enum PaymentEntityType {
   COURSE_ENROLLMENT
 }
 
-enum RefundStatus {
-  PENDING
-  PROCESSED
-  REJECTED
-}
-
 enum NotificationType {
   NEW_ANSWER
   ANSWER_ACCEPTED
@@ -172,7 +166,6 @@ model User {
   email              String           @unique
   username           String           @unique
   passwordHash       String?
-  name               String?
   displayName        String?
   avatarUrl          String?
   bio                String?          @db.Text
@@ -180,8 +173,6 @@ model User {
   country            String? // code de la table Country (critère du badge vérifié)
   stack              String[]         @default([]) // technologies déclarées (critère du badge vérifié)
   level              ExperienceLevel? // niveau d'expérience déclaré (onboarding)
-  githubUrl          String?
-  linkedinUrl        String?
   websiteUrl         String?
   githubUsername     String?
   linkedinUsername   String?
@@ -214,7 +205,6 @@ model User {
   jobAlerts         JobAlert[]
   recruiterPlan     RecruiterPlan?
   payments          Payment[]
-  refunds           Refund[]           @relation("AdminRefunds")
   notifications     Notification[]
   notificationsSent Notification[]     @relation("NotificationActor")
   auditLogs         AuditLog[]
@@ -225,16 +215,10 @@ model User {
 }
 
 model Account {
-  id                String  @id @default(uuid())
+  id                String @id @default(uuid())
   userId            String
   provider          String
   providerAccountId String
-  accessToken       String? @db.Text
-  refreshToken      String? @db.Text
-  expiresAt         Int?
-  tokenType         String?
-  scope             String?
-  idToken           String? @db.Text
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -517,14 +501,6 @@ model ProjectTag {
 // JOB BOARD
 // ─────────────────────────────────────────────────────────────────
 
-model JobCategory {
-  id   String @id @default(uuid())
-  name String @unique
-  slug String @unique
-
-  jobOffers JobOffer[]
-}
-
 model JobOffer {
   id                   String    @id @default(uuid())
   title                String
@@ -538,7 +514,6 @@ model JobOffer {
   salaryMin            Int
   salaryMax            Int
   stack                String[]
-  categoryId           String?
   status               JobStatus @default(PENDING_REVIEW)
   // Salaire converti en USD (entier) pour filtrer entre devises ; recalculé chaque jour.
   salaryMinUsd         Int?
@@ -552,7 +527,6 @@ model JobOffer {
 
   countryRef   Country          @relation(fields: [country], references: [code], onUpdate: Cascade, onDelete: Restrict)
   recruiter    User             @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
-  category     JobCategory?     @relation(fields: [categoryId], references: [id])
   applications JobApplication[]
 
   @@index([recruiterId])
@@ -635,7 +609,6 @@ model Payment {
 
   user       User        @relation(fields: [userId], references: [id])
   commission Commission?
-  refunds    Refund[]
 
   @@index([userId])
   @@index([status])
@@ -651,22 +624,6 @@ model Commission {
   createdAt DateTime @default(now())
 
   payment Payment @relation(fields: [paymentId], references: [id])
-}
-
-model Refund {
-  id        String       @id @default(uuid())
-  paymentId String
-  amount    Int
-  reason    String
-  status    RefundStatus @default(PENDING)
-  adminId   String?
-  createdAt DateTime     @default(now())
-
-  payment Payment @relation(fields: [paymentId], references: [id])
-  admin   User?   @relation("AdminRefunds", fields: [adminId], references: [id])
-
-  @@index([paymentId])
-  @@index([status])
 }
 
 // ─────────────────────────────────────────────────────────────────

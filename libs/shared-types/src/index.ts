@@ -26,7 +26,6 @@ export type PlanType = 'FREE' | 'PREMIUM';
 export type PaymentProvider = 'BICTORYS';  // agrégateur unique (décision 2026-10-14)
 export type PaymentStatus = 'PENDING' | 'AUTHORIZED' | 'CAPTURED' | 'FAILED' | 'REFUNDED';
 export type PaymentEntityType = 'MENTOR_SESSION' | 'RECRUITER_PLAN' | 'COURSE_ENROLLMENT';
-export type RefundStatus = 'PENDING' | 'PROCESSED' | 'REJECTED';
 export type NotificationType =
   | 'NEW_ANSWER'
   | 'ANSWER_ACCEPTED'
