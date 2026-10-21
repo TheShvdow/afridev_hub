@@ -29,6 +29,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { JobDto, JobApplicationDto, JobAlertDto, RecruiterPlanDto } from '../common/swagger/models';
+import { ApiPaginationQuery } from '../common/swagger/api-pagination.decorator';
 
 @ApiTags('Jobs')
 @Controller('jobs')
@@ -72,6 +73,7 @@ export class JobsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Offres en attente de validation [MODERATOR]' })
   @ApiData({ type: JobDto, paginated: true })
+  @ApiPaginationQuery()
   listPendingReview(
     @Query('page', new DefaultValuePipe(1), new PositiveIntPipe()) page: number,
     @Query('limit', new DefaultValuePipe(20), new PositiveIntPipe(MAX_PAGE_LIMIT)) limit: number,

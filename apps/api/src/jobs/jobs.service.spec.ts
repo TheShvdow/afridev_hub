@@ -187,3 +187,27 @@ describe('JobsService — liste publique (FR-29, FR-30)', () => {
     await expect(service.findOne('j1', { id: 'owner', role: 'MEMBER' })).resolves.toMatchObject({ id: 'j1' });
   });
 });
+
+describe('JobsService — liste filtrée par pays', () => {
+  it('restricts the published offers to the chosen country', async () => {
+    const { service, prisma } = build();
+    await service.list({ country: 'CI' } as never, null);
+    expect(prisma.jobOffer.count).toHaveBeenCalledWith({
+      where: { status: 'ACTIVE', expiresAt: { gt: expect.any(Date) }, country: 'CI' },
+    });
+  });
+
+  it('combines the country with the other filters', async () => {
+    const { service, prisma } = build();
+    await service.list({ type: 'FULL_TIME', mode: 'REMOTE', search: 'angular', country: 'SN' } as never, null);
+    expect(prisma.jobOffer.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({ status: 'ACTIVE', type: 'FULL_TIME', mode: 'REMOTE', country: 'SN' }),
+    });
+  });
+
+  it('returns every country when none is chosen', async () => {
+    const { service, prisma } = build();
+    await service.list({} as never, null);
+    expect(prisma.jobOffer.count).toHaveBeenCalledWith({ where: { status: 'ACTIVE', expiresAt: { gt: expect.any(Date) } } });
+  });
+});

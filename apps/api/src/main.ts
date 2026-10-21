@@ -46,8 +46,11 @@ async function bootstrap() {
     })
   );
 
-  // ── Swagger (désactivé en production) ────────────────────────────
-  if (process.env['NODE_ENV'] !== 'production') {
+  // ── Swagger (désactivé en production sauf SWAGGER_ENABLED=true) ──
+  const swaggerEnabled =
+    process.env['NODE_ENV'] !== 'production' ||
+    process.env['SWAGGER_ENABLED'] === 'true';
+  if (swaggerEnabled) {
     const config = new DocumentBuilder()
       .setTitle('AfriDev Hub API')
       .setDescription('API REST — Communauté des développeurs africains')
@@ -80,7 +83,11 @@ async function bootstrap() {
 
   const logger = app.get(Logger);
   logger.log({ port }, '🚀 AfriDev Hub API ready');
-  logger.log({ url: `http://localhost:${port}/api/docs` }, '📚 Swagger docs');
+  if (swaggerEnabled) {
+    logger.log({ path: '/api/docs' }, '📚 Swagger docs');
+  } else {
+    logger.log('Swagger disabled (set SWAGGER_ENABLED=true to expose /api/docs)');
+  }
 }
 
 bootstrap();

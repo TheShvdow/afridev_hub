@@ -22,6 +22,8 @@ export const configValidationSchema = Joi.object({
   // Jeton GitHub (lecture seule, sans scope) : relève la limite de 60 à 5 000 requêtes/heure
   // pour l'import des stats des projets (FR-23). Optionnel.
   GITHUB_API_TOKEN:              Joi.string().optional().allow(''),
+  // Expose /api/docs en production (toujours actif hors production)
+  SWAGGER_ENABLED:               Joi.string().valid('true', 'false').optional(),
   RESEND_API_KEY:                Joi.string().optional().allow(''),
   CLOUDFLARE_R2_ACCESS_KEY_ID:   Joi.string().optional().allow(''),
   CLOUDFLARE_R2_SECRET_ACCESS_KEY: Joi.string().optional().allow(''),

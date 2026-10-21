@@ -1,8 +1,9 @@
-import { IsEnum, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IsEnum, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { JobMode, JobType } from '@prisma/client';
 import { MAX_PAGE_LIMIT } from '../../common/pipes/positive-int.pipe';
+import { COUNTRY_CODES, CountryCode } from '../../common/countries';
 
 // FR-29 : filtres combinables, tous dans l'URL pour pouvoir la partager.
 export class ListJobsDto {
@@ -31,10 +32,12 @@ export class ListJobsDto {
   @IsEnum(JobMode)
   mode?: JobMode;
 
-  @ApiPropertyOptional({ example: 'SN', description: 'Code pays ISO 3166-1 alpha-2' })
+  // Liste fermée des pays acceptés (common/countries.ts), casse ignorée : `sn` → `SN`.
+  @ApiPropertyOptional({ enum: COUNTRY_CODES, example: 'SN', description: 'Code pays ISO 3166-1 alpha-2' })
   @IsOptional()
-  @Matches(/^[A-Z]{2}$/)
-  country?: string;
+  @Transform(({ value }) => (typeof value === 'string' && /^[a-z]{2}$/i.test(value.trim()) ? value.trim().toUpperCase() : value))
+  @IsIn(COUNTRY_CODES, { message: 'Le pays doit être un code de la liste des pays acceptés (ex. SN).' })
+  country?: CountryCode;
 
   @ApiPropertyOptional({ example: 'angular,nestjs', description: 'Technologies séparées par des virgules (au moins une en commun)' })
   @IsOptional()

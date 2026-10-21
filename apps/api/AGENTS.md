@@ -17,7 +17,7 @@ NestJS 10 REST + WebSocket API for AfriDev Hub. TypeScript, Prisma 5, PostgreSQL
 
 ## Where things are
 
-- Entry point `src/main.ts` (raw request bodies enabled, needed for webhook signatures); module wiring `src/app.module.ts`. Global prefix `/api` except `/health`. Swagger at `/api/docs`, outside production only.
+- Entry point `src/main.ts` (raw request bodies enabled, needed for webhook signatures); module wiring `src/app.module.ts`. Global prefix `/api` except `/health`. Swagger at `/api/docs`, outside production only unless `SWAGGER_ENABLED=true`.
 - Domain modules under `src/{auth,users,forum,votes,projects,jobs,payments,gamification,notifications,moderation,admin,health,upload}/`. Cross-cutting code in `src/common/`: error codes, response envelope, Swagger models, tag helper.
 - Payments provider and webhook: `src/payments/providers/` (Bictorys client, signature rules, status mapping).
 - Prisma schema, migrations and seed: `prisma/schema.prisma`, `prisma/migrations/`, `prisma/seed.ts`.
@@ -52,6 +52,7 @@ NestJS 10 REST + WebSocket API for AfriDev Hub. TypeScript, Prisma 5, PostgreSQL
 - Identifiers are UUID v4 (`@default(uuid())`). Money is stored as integer base units, never float.
 - Use injected services only: `PrismaService` for all database access, `RedisService` for Redis, `ConfigService` for configuration.
 - Swagger: a controller's `@ApiTags` name must match the spelling in `main.ts`'s `addTag` list, or tags duplicate. Responses use `@ApiData`.
+- Swagger marks every `@Query('…')` parameter required unless it has an `@ApiQuery({ required: false })`. Document optional filters with `@ApiQuery`, and `page`/`limit` with `@ApiPaginationQuery()` from `src/common/swagger/`.
 
 ## Known pitfalls
 

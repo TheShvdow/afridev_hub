@@ -102,7 +102,6 @@ export class JobsService {
         ? { salaryMaxUsd: { gte: minUsd } }
         : { currency: displayCurrency, salaryMax: { gte: dto.salaryMin } });
     }
-
     if (dto.search) {
       and.push({ OR: [
         { title:       { contains: dto.search, mode: 'insensitive' } },

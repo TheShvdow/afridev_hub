@@ -9,7 +9,7 @@ import {
   DefaultValuePipe,
 } from '@nestjs/common';
 import { PositiveIntPipe } from '../common/pipes/positive-int.pipe';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -17,6 +17,7 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { ApiPaginationQuery } from '../common/swagger/api-pagination.decorator';
 
 @ApiTags('Admin')
 @Controller('admin')
@@ -36,6 +37,8 @@ export class AdminController {
   @Get('users')
   @ApiOperation({ summary: 'Lister tous les utilisateurs [ADMIN]' })
   @ApiData({ paginated: true, description: 'Utilisateurs paginés' })
+  @ApiPaginationQuery({ defaultLimit: false })
+  @ApiQuery({ name: 'search', required: false })
   listUsers(
     @Query('page', new DefaultValuePipe(1), new PositiveIntPipe()) page: number,
     @Query('search') search?: string,
@@ -57,6 +60,7 @@ export class AdminController {
   @Get('audit-log')
   @ApiOperation({ summary: 'Journal d\'audit [ADMIN]' })
   @ApiData({ paginated: true, description: 'Entrées du journal d\'audit' })
+  @ApiPaginationQuery({ defaultLimit: false })
   getAuditLog(@Query('page', new DefaultValuePipe(1), new PositiveIntPipe()) page: number) {
     return this.adminService.getAuditLog(page);
   }

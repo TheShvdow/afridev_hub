@@ -1,13 +1,14 @@
-import { ArrayMaxSize, IsArray, IsEnum, IsInt, IsOptional, IsString, Matches, Min, MaxLength, ValidateIf } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsEnum, IsIn, IsInt, IsOptional, IsString, Matches, Min, MaxLength, ValidateIf } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { JobMode } from '@prisma/client';
+import { COUNTRY_CODES, CountryCode } from '../../common/countries';
 
 // FR-32 : critères d'une alerte emploi. Un critère absent accepte toutes les valeurs.
 export class CreateJobAlertDto {
-  @ApiPropertyOptional({ example: 'SN', description: 'Code pays ISO 3166-1 alpha-2' })
+  @ApiPropertyOptional({ enum: COUNTRY_CODES, example: 'SN', description: 'Code pays ISO 3166-1 alpha-2' })
   @IsOptional()
-  @Matches(/^[A-Z]{2}$/)
-  country?: string;
+  @IsIn(COUNTRY_CODES, { message: 'Le pays doit être un code de la liste des pays acceptés (ex. SN).' })
+  country?: CountryCode;
 
   @ApiPropertyOptional({ enum: JobMode })
   @IsOptional()
