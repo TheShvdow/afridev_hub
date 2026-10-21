@@ -54,7 +54,14 @@ describe('AdminService', () => {
         moderation: { pendingReports: 1, pendingProjects: 2 },
         revenue:    { totalCommission: 0 },
         forum:      expect.any(Object),
+        jobs:       expect.any(Object),
       });
+    });
+
+    it('compte les offres publiées pour SM-5 sur la date de validation', async () => {
+      await service.getDashboardStats();
+      expect(prisma.jobOffer.count).toHaveBeenCalledWith({ where: { publishedAt: { not: null } } });
+      expect(prisma.jobOffer.count).toHaveBeenCalledWith({ where: { status: 'PENDING_REVIEW' } });
     });
 
     it('calcule les indicateurs forum SM-2 et SM-7 hors contenus masqués', async () => {

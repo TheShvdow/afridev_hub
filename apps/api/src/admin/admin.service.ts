@@ -18,6 +18,7 @@ export class AdminService {
       totalRevenue,
       forum,
       forumLast30Days,
+      jobs,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({
@@ -34,6 +35,7 @@ export class AdminService {
       }),
       this.forumStats(),
       this.forumStats(new Date(Date.now() - 30 * 24 * 3600 * 1000)),
+      this.jobStats(),
     ]);
 
     return {
@@ -42,7 +44,20 @@ export class AdminService {
       moderation:   { pendingReports, pendingProjects },
       revenue:      { totalCommission: totalRevenue._sum.amount ?? 0 }, // _sum.amount not _sum.commission
       forum:        { ...forum, last30Days: forumLast30Days },
+      jobs,
     };
+  }
+
+  // SM-5 : offres publiées (validées par la modération). Le salaire est obligatoire sur
+  // chaque offre, toutes comptent donc comme « offres avec salaire ».
+  private async jobStats() {
+    const since = new Date(Date.now() - 60 * 24 * 3600 * 1000);
+    const [published, publishedLast60Days, pendingReview] = await Promise.all([
+      this.prisma.jobOffer.count({ where: { publishedAt: { not: null } } }),
+      this.prisma.jobOffer.count({ where: { publishedAt: { gte: since } } }),
+      this.prisma.jobOffer.count({ where: { status: 'PENDING_REVIEW' } }),
+    ]);
+    return { published, publishedLast60Days, pendingReview };
   }
 
   // SM-2 (questions avec au moins une réponse) et SM-7 (taux de réponses acceptées).
