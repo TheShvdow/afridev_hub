@@ -19,6 +19,7 @@ export class AdminService {
       forum,
       forumLast30Days,
       jobs,
+      capturedPayments,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({
@@ -37,6 +38,8 @@ export class AdminService {
       this.forumStats(),
       this.forumStats(new Date(Date.now() - 30 * 24 * 3600 * 1000)),
       this.jobStats(),
+      // SM-3 : paiements réussis de bout en bout (webhook ou réconciliation confirmés).
+      this.prisma.payment.count({ where: { status: 'CAPTURED' } }),
     ]);
 
     return {
@@ -44,7 +47,7 @@ export class AdminService {
       content:      { posts: totalPosts, projects: totalProjects, jobs: totalJobs },
       projects:     { visible: totalProjects, withGithubStats: projectsWithGithubStats },
       moderation:   { pendingReports },
-      revenue:      { totalCommission: totalRevenue._sum.amount ?? 0 }, // _sum.amount not _sum.commission
+      revenue:      { totalCommission: totalRevenue._sum.amount ?? 0, capturedPayments }, // _sum.amount not _sum.commission
       forum:        { ...forum, last30Days: forumLast30Days },
       jobs,
     };

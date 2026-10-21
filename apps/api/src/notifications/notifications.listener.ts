@@ -7,6 +7,7 @@ import type {
   JobsApplicationCreatedEvent,
   JobsOfferReviewedEvent,
   JobsAlertMatchedEvent,
+  PaymentsPaymentCapturedEvent,
 } from '@afridev/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from './notifications.service';
@@ -64,6 +65,12 @@ export class NotificationsListener {
   @OnEvent('jobs.alert.matched')
   onJobAlertMatched(event: JobsAlertMatchedEvent) {
     return this.safely('JOB_ALERT', () => this.notifications.notifyJobAlert(event.userId, event.jobId, event.jobTitle));
+  }
+
+  // Le reçu part par email depuis PaymentsService ; ici, la confirmation in-app.
+  @OnEvent('payments.payment.captured')
+  onPaymentCaptured(event: PaymentsPaymentCapturedEvent) {
+    return this.safely('SYSTEM', () => this.notifications.notifyPaymentCaptured(event.userId, event.paymentId, event.validUntil));
   }
 
   // L'action métier est déjà faite : une notification perdue ne doit pas la faire échouer.

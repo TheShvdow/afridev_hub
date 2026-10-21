@@ -1,4 +1,9 @@
-// Interface d'agrégateur de paiement (AD-4). Une implémentation en Phase 1 : Bictorys.
+import type { PaymentProvider } from '@prisma/client';
+
+// Interface d'agrégateur de paiement (AD-4, AD-8). Une implémentation en Phase 1 : Bictorys.
+// PaymentsService la reçoit par le jeton PAYMENT_PROVIDER : changer d'agrégateur = changer
+// la liaison dans PaymentsModule, sans toucher aux modules métier.
+export const PAYMENT_PROVIDER = Symbol('PAYMENT_PROVIDER');
 
 export interface ChargeCustomer {
   name?:    string;
@@ -27,6 +32,7 @@ export interface ChargeResponse {
 }
 
 export interface IPaymentProvider {
+  readonly name: PaymentProvider;
   initiate(request: ChargeRequest): Promise<ChargeResponse>;
   getStatus(transactionId: string): Promise<string>;
   refund(transactionId: string): Promise<void>;

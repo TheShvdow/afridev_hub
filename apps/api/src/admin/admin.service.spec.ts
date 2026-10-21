@@ -14,6 +14,7 @@ describe('AdminService', () => {
     jobOffer: { count: Mock };
     report: { count: Mock };
     commission: { aggregate: Mock };
+    payment: { count: Mock };
     auditLog: { findMany: Mock; count: Mock; create: Mock };
   };
 
@@ -25,6 +26,7 @@ describe('AdminService', () => {
       jobOffer:   { count: jest.fn().mockResolvedValue(0) },
       report:     { count: jest.fn().mockResolvedValue(0) },
       commission: { aggregate: jest.fn().mockResolvedValue({ _sum: { amount: null } }) },
+      payment:    { count: jest.fn().mockResolvedValue(0) },
       auditLog:   { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0), create: jest.fn() },
     };
 
@@ -53,7 +55,7 @@ describe('AdminService', () => {
         content:    { posts: 10, projects: 7, jobs: 3 },
         projects:   { visible: 7, withGithubStats: 2 },
         moderation: { pendingReports: 1 },
-        revenue:    { totalCommission: 0 },
+        revenue:    { totalCommission: 0, capturedPayments: 0 },
         forum:      expect.any(Object),
         jobs:       expect.any(Object),
       });

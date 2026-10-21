@@ -264,12 +264,14 @@ export interface PaymentItem {
   updatedAt:   string;
 }
 
+export type PaymentProductCode = 'RECRUITER_PREMIUM_MONTHLY';
+
+// Le montant et la cible viennent du catalogue côté serveur (GET /payments/products).
 export interface InitiatePaymentDto {
-  amount:     number;
-  currency:   string;
-  provider:   PaymentProvider;
-  entityType: PaymentEntityType;
-  entityId:   string;
+  product:     PaymentProductCode;
+  paymentType: string;   // wave_money, orange_money, …
+  country:     string;   // SN, CI, …
+  customer?:   { name?: string; phone?: string; email?: string };
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
@@ -376,6 +378,7 @@ export type ErrorCode =
   | 'PAYMENTS_PROVIDER_NOT_CONFIGURED'
   | 'PAYMENTS_PROVIDER_ERROR'
   | 'PAYMENTS_WEBHOOK_INVALID_SIGNATURE'
+  | 'PAYMENTS_RECRUITER_REQUIRED'
   | 'UPLOAD_NOT_CONFIGURED'
   | 'UPLOAD_KEY_INVALID'
   | 'UPLOAD_OBJECT_NOT_FOUND';
@@ -442,6 +445,15 @@ export interface JobsAlertMatchedEvent {
   userId:   string;
   jobId:    string;
   jobTitle: string;
+}
+
+export interface PaymentsPaymentCapturedEvent {
+  paymentId:   string;
+  userId:      string;
+  product:     PaymentProductCode;
+  amount:      number;
+  currency:    string;
+  validUntil?: string;   // fin du plan activé, ISO 8601
 }
 
 export interface VotesVoteChangedEvent {

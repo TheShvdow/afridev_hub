@@ -209,4 +209,18 @@ export class NotificationsService {
       link:       `/jobs/${jobId}`,
     });
   }
+
+  async notifyPaymentCaptured(userId: string, paymentId: string, validUntil?: string) {
+    const until = validUntil
+      ? ` jusqu'au ${new Date(validUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`
+      : '';
+    return this.create({
+      userId,
+      type:       'SYSTEM',
+      title:      'Paiement confirmé',
+      message:    `Votre plan recruteur premium est actif${until}. Le reçu vous a été envoyé par email.`,
+      targetType: 'PAYMENT',
+      targetId:   paymentId,
+    });
+  }
 }

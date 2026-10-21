@@ -40,4 +40,6 @@ export const configValidationSchema = Joi.object({
   BICTORYS_PRIVATE_KEY:           Joi.string().optional().allow(''),
   BICTORYS_WEBHOOK_SECRET:        Joi.string().optional().allow(''),
   BICTORYS_MERCHANT_SECRET_CODE:  Joi.string().optional().allow(''),
+  // FR-34 : prix du plan recruteur premium mensuel, en FCFA (défaut 25 000).
+  RECRUITER_PREMIUM_PRICE_XOF:    Joi.number().integer().min(100).optional(),
 });

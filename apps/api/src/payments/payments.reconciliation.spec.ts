@@ -9,8 +9,12 @@ function build(pending: Array<Record<string, unknown>>, statuses: Record<string,
       findMany: jest.fn().mockResolvedValue(pending),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
-    commission: { create: jest.fn() },
+    commission:    { create: jest.fn() },
+    recruiterPlan: { findUnique: jest.fn().mockResolvedValue(null), upsert: jest.fn().mockResolvedValue({}) },
+    user:          { findUnique: jest.fn().mockResolvedValue({ email: 'u1@x.io' }) },
+    $transaction:  jest.fn(),
   };
+  prisma.$transaction.mockImplementation((fn: (tx: typeof prisma) => unknown) => fn(prisma));
   const bictorys = {
     getStatus: jest.fn().mockImplementation((ref: string) => {
       const value = statuses[ref];
@@ -18,7 +22,8 @@ function build(pending: Array<Record<string, unknown>>, statuses: Record<string,
     }),
   };
   const config = { get: jest.fn((_k: string, d?: unknown) => d) };
-  const service = new PaymentsService(prisma as never, config as never, bictorys as never);
+  const mail = { send: jest.fn().mockResolvedValue(undefined) };
+  const service = new PaymentsService(prisma as never, config as never, bictorys as never, mail as never, { emit: jest.fn() } as never);
   return { service, prisma, bictorys };
 }
 
