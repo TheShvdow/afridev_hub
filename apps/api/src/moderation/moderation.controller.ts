@@ -25,6 +25,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { ReportDto, SuccessDto } from '../common/swagger/models';
 import { ApiPaginationQuery } from '../common/swagger/api-pagination.decorator';
+import { ModerationActionDto } from '../common/swagger/models-extra';
 
 @ApiTags('Moderation')
 @Controller('moderation')
@@ -106,7 +107,7 @@ export class ModerationController {
   @Roles('MODERATOR', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Bannir un utilisateur [MODERATOR]' })
-  @ApiData({ description: 'Utilisateur banni' })
+  @ApiData({ type: ModerationActionDto, status: 201, description: 'Action de ban enregistrée' })
   banUser(@CurrentUser('id') moderatorId: string, @Body() dto: BanUserDto) {
     // `until` removed — no bannedUntil on User; ModerationAction tracks the ban
     return this.moderationService.banUser(dto.userId, moderatorId, dto.reason);
@@ -117,7 +118,7 @@ export class ModerationController {
   @Roles('MODERATOR', 'ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Débannir un utilisateur [MODERATOR]' })
-  @ApiData({ description: 'Utilisateur débanni' })
+  @ApiData({ type: ModerationActionDto, description: 'Action de levée du ban enregistrée' })
   unbanUser(
     @Param('userId') userId: string,
     @CurrentUser('id') moderatorId: string,   // needed — service now requires moderatorId

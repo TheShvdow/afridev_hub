@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { UserProfileDto } from '../common/swagger/models';
+import { MyProfileDto, OnboardingResultDto, RecruiterProfileResultDto, UserActivityDto, UserBadgeDto } from '../common/swagger/models-extra';
 
 
 @ApiTags('Users')
@@ -37,12 +38,14 @@ export class UsersController {
 
   @Get(':username/activity')
   @ApiOperation({ summary: 'Activité récente d\'un utilisateur' })
+  @ApiData({ type: UserActivityDto, description: 'Activité récente : questions, réponses, projets' })
   async getActivity(@Param('username') username: string) {
     return this.usersService.getActivity(username);
   }
 
   @Get(':username/badges')
   @ApiOperation({ summary: 'Badges d\'un utilisateur' })
+  @ApiData({ type: UserBadgeDto, array: true, description: 'Badges obtenus, du plus récent au plus ancien' })
   async getBadges(@Param('username') username: string) {
     return this.usersService.getBadges(username);
   }
@@ -51,7 +54,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Mettre à jour son profil' })
-  @ApiData({ type: UserProfileDto, description: 'Profil mis à jour' })
+  @ApiData({ type: MyProfileDto, description: 'Profil complet mis à jour' })
   async updateProfile(
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateUserDto,
@@ -63,7 +66,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Activer ou modifier son profil recruteur (nom de l\'entreprise)' })
-  @ApiData({ description: 'Profil recruteur activé' })
+  @ApiData({ type: RecruiterProfileResultDto, description: 'Profil recruteur activé' })
   enableRecruiter(@CurrentUser('id') userId: string, @Body() dto: RecruiterProfileDto) {
     return this.usersService.enableRecruiter(userId, dto.companyName);
   }
@@ -72,6 +75,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Compléter son profil à l\'onboarding (champs vides uniquement)' })
+  @ApiData({ type: OnboardingResultDto, description: 'Champs du profil après onboarding' })
   completeOnboarding(@CurrentUser('id') userId: string, @Body() dto: OnboardingDto) {
     return this.usersService.completeOnboarding(userId, dto);
   }
