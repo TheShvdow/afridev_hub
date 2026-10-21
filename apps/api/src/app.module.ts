@@ -24,7 +24,7 @@ import { UploadModule } from './upload/upload.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
-import { serializeRequest } from './common/logging/request-serializer';
+import { serializeRequest, serializeResponse } from './common/logging/request-serializer';
 
 @Module({
   imports: [
@@ -50,7 +50,7 @@ import { serializeRequest } from './common/logging/request-serializer';
     // ── Logging ───────────────────────────────────────────────────
     LoggerModule.forRoot({
       pinoHttp: {
-        serializers: { req: serializeRequest },
+        serializers: { req: serializeRequest, res: serializeResponse },
         level: process.env['NODE_ENV'] !== 'production' ? 'debug' : 'info',
         transport: process.env['NODE_ENV'] !== 'production'
           ? { target: 'pino-pretty', options: { singleLine: true, colorize: true } }

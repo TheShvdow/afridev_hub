@@ -9,9 +9,12 @@ import {
   HttpCode,
   HttpStatus,
   Query,
+  Head,
+  UseFilters,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiNoContentResponse, ApiResponse, ApiExcludeEndpoint, ApiQuery } from '@nestjs/swagger';
 import { Request, Response } from 'express';
+import { OAuthCallbackFilter } from './filters/oauth-callback.filter';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
@@ -150,8 +153,19 @@ export class AuthController {
     // Passport redirige vers GitHub automatiquement
   }
 
+  // Express sert aussi HEAD avec la route GET : sans cette route dédiée, une requête HEAD
+  // (préchargement du navigateur, sonde) consommerait le code à usage unique de GitHub.
+  // Déclarée avant le GET pour être appariée en premier.
+  @Head(['github/callback', 'google/callback'])
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiExcludeEndpoint()
+  oauthCallbackHead() {
+    // Rien à faire : le code OAuth n'est utilisé que par la requête GET.
+  }
+
   @Get('github/callback')
   @UseGuards(GithubAuthGuard)
+  @UseFilters(OAuthCallbackFilter)
   @ApiOperation({ summary: 'Callback GitHub OAuth' })
   @ApiExcludeEndpoint()
   githubCallback(@Req() req: Request & { user: OAuthLoginResult }, @Res() res: Response) {
@@ -170,6 +184,7 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
+  @UseFilters(OAuthCallbackFilter)
   @ApiOperation({ summary: 'Callback Google OAuth' })
   @ApiExcludeEndpoint()
   googleCallback(@Req() req: Request & { user: OAuthLoginResult }, @Res() res: Response) {
