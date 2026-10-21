@@ -1,5 +1,5 @@
 ---
 title: "Onboarding profil — 3 étapes"
 ticket: 4
-status: built
+status: done
 ---

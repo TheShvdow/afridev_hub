@@ -3,7 +3,7 @@ title: 'Health check — probe DB & Redis'
 type: 'feature'
 ticket: '1'
 created: '2026-10-13'
-status: 'built'
+status: done
 baseline_revision: 'NO_VCS'
 route: 'full'
 route_source: 'auto'

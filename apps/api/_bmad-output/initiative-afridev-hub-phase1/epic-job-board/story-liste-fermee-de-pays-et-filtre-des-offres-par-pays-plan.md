@@ -3,7 +3,7 @@ title: 'Offres d''emploi : liste fermée de pays et filtre par pays'
 type: 'feature'
 ticket: '1'
 created: '2026-10-16'
-status: 'built'
+status: done
 baseline_revision: '06c343b8576c9eb9393806d69c9257678d1b1985'
 route: 'oneshot'
 route_source: 'pinned'
