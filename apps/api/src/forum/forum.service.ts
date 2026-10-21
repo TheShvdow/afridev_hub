@@ -16,7 +16,7 @@ export const HIDDEN_CONTENT = '[Contenu masqué]';
 const SIMILAR_MIN_SIMILARITY = 0.6;
 const SIMILAR_MAX_RESULTS = 3;
 
-const MODERATOR_ROLES = ['ADMIN', 'MODERATOR'];
+const MODERATOR_ROLES = new Set(['ADMIN', 'MODERATOR']);
 
 export interface ForumViewer {
   id:   string;
@@ -99,10 +99,9 @@ export class ForumService {
     }
     const where = Prisma.join(filters, ' AND ');
 
-    const order =
-      dto.sort === 'votes'  ? Prisma.sql`p."voteScore" DESC, p."createdAt" DESC` :
-      dto.sort === 'active' ? Prisma.sql`p."lastActivityAt" DESC` :
-      Prisma.sql`ts_rank(${document}, ${query}) DESC, p."createdAt" DESC`;
+    let order = Prisma.sql`ts_rank(${document}, ${query}) DESC, p."createdAt" DESC`;
+    if (dto.sort === 'votes')  order = Prisma.sql`p."voteScore" DESC, p."createdAt" DESC`;
+    if (dto.sort === 'active') order = Prisma.sql`p."lastActivityAt" DESC`;
 
     const [rows, [{ count }]] = await Promise.all([
       this.prisma.$queryRaw<{ id: string }[]>`
@@ -123,7 +122,7 @@ export class ForumService {
   }
 
   // FR-14 : questions au titre proche, proposées avant de publier.
-  async findSimilar(title: string) {
+  findSimilar(title: string) {
     return this.prisma.$queryRaw<{ id: string; title: string; isResolved: boolean; similarity: number }[]>`
       SELECT p."id", p."title", p."isResolved",
              similarity(lower(f_unaccent(p."title")), lower(f_unaccent(${title})))::float AS similarity
@@ -162,7 +161,7 @@ export class ForumService {
       .catch(() => null);
 
     // La modération voit le contenu masqué ; les autres voient le texte de remplacement.
-    if (viewer && MODERATOR_ROLES.includes(viewer.role)) return post;
+    if (viewer && MODERATOR_ROLES.has(viewer.role)) return post;
 
     return {
       ...post,
@@ -238,7 +237,7 @@ export class ForumService {
     const post = await this.prisma.post.findUnique({ where: { id: postId } });
     if (!post) throw new DomainException('FORUM_QUESTION_NOT_FOUND', 'Question introuvable.', 404);
 
-    if (post.userId !== userId && !MODERATOR_ROLES.includes(userRole)) {
+    if (post.userId !== userId && !MODERATOR_ROLES.has(userRole)) {
       throw new DomainException('FORUM_FORBIDDEN', 'Non autorisé.', 403);
     }
 
@@ -333,7 +332,7 @@ export class ForumService {
     const answer = await this.prisma.answer.findUnique({ where: { id: answerId } });
     if (!answer) throw new DomainException('FORUM_ANSWER_NOT_FOUND', 'Réponse introuvable.', 404);
 
-    if (answer.userId !== userId && !MODERATOR_ROLES.includes(userRole)) {
+    if (answer.userId !== userId && !MODERATOR_ROLES.has(userRole)) {
       throw new DomainException('FORUM_FORBIDDEN', 'Non autorisé.', 403);
     }
 

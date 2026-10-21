@@ -19,7 +19,7 @@ import { getRecruiterPlan } from './recruiter-plan';
 export const JOB_LIFETIME_DAYS = 60; // glossaire « Offre » : expiration à J60
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_DISPLAY_CURRENCY = 'XOF';
-const MODERATOR_ROLES = ['ADMIN', 'MODERATOR'];
+const MODERATOR_ROLES = new Set(['ADMIN', 'MODERATOR']);
 
 export interface JobsViewer {
   id:   string;
@@ -136,7 +136,7 @@ export class JobsService {
     });
     if (!job) throw new DomainException('JOBS_OFFER_NOT_FOUND', 'Offre introuvable.', 404);
 
-    const canSeeAll = !!viewer && (viewer.id === job.recruiterId || MODERATOR_ROLES.includes(viewer.role));
+    const canSeeAll = !!viewer && (viewer.id === job.recruiterId || MODERATOR_ROLES.has(viewer.role));
     const isPublic = job.status === 'ACTIVE' && job.expiresAt > new Date();
     if (!isPublic && !canSeeAll) throw new DomainException('JOBS_OFFER_NOT_FOUND', 'Offre introuvable.', 404);
 
@@ -153,7 +153,7 @@ export class JobsService {
     return getRecruiterPlan(this.prisma, userId);
   }
 
-  async listMine(userId: string) {
+  listMine(userId: string) {
     return this.prisma.jobOffer.findMany({
       where:   { recruiterId: userId },
       orderBy: { createdAt: 'desc' },

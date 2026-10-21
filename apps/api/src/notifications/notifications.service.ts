@@ -20,7 +20,7 @@ interface CreateNotificationInput {
 
 // Types envoyés aussi par email (FR-18), sauf si le membre a désactivé les emails.
 // JOB_ALERT reste in-app : les alertes ont leur propre récapitulatif hebdomadaire (FR-32).
-const EMAIL_TYPES: NotificationType[] = ['NEW_ANSWER', 'ANSWER_ACCEPTED', 'VOTE_RECEIVED', 'JOB_APPLICATION', 'JOB_REVIEWED'];
+const EMAIL_TYPES = new Set<NotificationType>(['NEW_ANSWER', 'ANSWER_ACCEPTED', 'VOTE_RECEIVED', 'JOB_APPLICATION', 'JOB_REVIEWED']);
 
 @Injectable()
 export class NotificationsService {
@@ -55,7 +55,7 @@ export class NotificationsService {
     this.gateway.sendToUser(input.userId, 'notification', notification);
 
     // Email en arrière-plan : son échec n'annule pas la notification in-app.
-    if (EMAIL_TYPES.includes(input.type)) {
+    if (EMAIL_TYPES.has(input.type)) {
       this.sendEmail(input).catch((error) =>
         this.logger.error(`Email de notification non envoyé (${input.type})`, error instanceof Error ? error.stack : String(error)),
       );
@@ -185,13 +185,14 @@ export class NotificationsService {
   }
 
   async notifyJobReviewed(recruiterId: string, jobId: string, jobTitle: string, approved: boolean, reason?: string) {
+    const refusal = reason ? ` : ${reason}` : '.';
     return this.create({
       userId:     recruiterId,
       type:       'JOB_REVIEWED',
       title:      approved ? 'Votre offre est publiée' : 'Votre offre n\'a pas été validée',
       message:    approved
         ? `Votre offre « ${jobTitle} » est maintenant visible.`
-        : `Votre offre « ${jobTitle} » a été refusée${reason ? ` : ${reason}` : '.'} Modifiez-la pour la soumettre de nouveau.`,
+        : `Votre offre « ${jobTitle} » a été refusée${refusal} Modifiez-la pour la soumettre de nouveau.`,
       targetType: 'JOB_OFFER',
       targetId:   jobId,
       link:       `/jobs/${jobId}`,

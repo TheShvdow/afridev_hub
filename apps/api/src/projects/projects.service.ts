@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { Prisma, Project } from '@prisma/client';
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { GithubService, GithubRepoStats } from '../github/github.service';
 import { resolveTagIds } from '../common/tags/resolve-tags';
@@ -12,7 +12,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { ListProjectsDto } from './dto/list-projects.dto';
 import { DomainException } from '../common/errors/domain.exception';
 
-const MODERATOR_ROLES = ['ADMIN', 'MODERATOR'];
+const MODERATOR_ROLES = new Set(['ADMIN', 'MODERATOR']);
 const REFRESH_COOLDOWN_MS = 60 * 60 * 1000; // bouton « rafraîchir » : une fois par heure
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -115,7 +115,7 @@ export class ProjectsService {
     });
     if (!project) throw new DomainException('PROJECTS_PROJECT_NOT_FOUND', 'Projet introuvable.', 404);
 
-    const canSeeHidden = !!viewer && (viewer.id === project.userId || MODERATOR_ROLES.includes(viewer.role));
+    const canSeeHidden = !!viewer && (viewer.id === project.userId || MODERATOR_ROLES.has(viewer.role));
     if (project.isHidden && !canSeeHidden) {
       throw new DomainException('PROJECTS_PROJECT_NOT_FOUND', 'Projet introuvable.', 404);
     }
@@ -211,7 +211,7 @@ export class ProjectsService {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw new DomainException('PROJECTS_PROJECT_NOT_FOUND', 'Projet introuvable.', 404);
 
-    if (project.userId !== userId && !MODERATOR_ROLES.includes(userRole)) {
+    if (project.userId !== userId && !MODERATOR_ROLES.has(userRole)) {
       throw new DomainException('PROJECTS_FORBIDDEN', 'Non autorisé.', 403);
     }
 
@@ -241,7 +241,7 @@ export class ProjectsService {
   async refreshStats(projectId: string, viewer: ProjectsViewer) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw new DomainException('PROJECTS_PROJECT_NOT_FOUND', 'Projet introuvable.', 404);
-    if (project.userId !== viewer.id && !MODERATOR_ROLES.includes(viewer.role)) {
+    if (project.userId !== viewer.id && !MODERATOR_ROLES.has(viewer.role)) {
       throw new DomainException('PROJECTS_FORBIDDEN', 'Non autorisé.', 403);
     }
     if (project.githubSyncedAt && Date.now() - project.githubSyncedAt.getTime() < REFRESH_COOLDOWN_MS) {

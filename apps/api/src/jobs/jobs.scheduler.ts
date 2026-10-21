@@ -47,15 +47,18 @@ export class JobsScheduler {
 
     const webUrl = this.config.get<string>('WEB_URL') ?? 'http://localhost:4200';
     let sent = 0;
+    // Envois un par un, volontairement : chaque échec reste isolé et le fournisseur
+    // d'emails n'est pas sollicité en rafale.
     for (const offer of offers) {
       try {
         const date = offer.expiresAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+        const url = `${webUrl}/jobs/${offer.id}`;
         await this.mail.send(
           offer.recruiter.email,
           `Votre offre « ${offer.title} » expire bientôt`,
           `<p>Votre offre <strong>${escapeHtml(offer.title)}</strong> expirera le ${escapeHtml(date)}.</p>
            <p>Vous pouvez la renouveler pour 60 jours depuis votre tableau de bord :
-           <a href="${escapeHtml(`${webUrl}/jobs/${offer.id}`)}">voir l'offre</a>.</p>`,
+           <a href="${escapeHtml(url)}">voir l'offre</a>.</p>`,
         );
         await this.prisma.jobOffer.update({ where: { id: offer.id }, data: { expiryReminderSentAt: now } });
         sent += 1;

@@ -86,7 +86,7 @@ export class UploadService {
     return key;
   }
 
-  async cvDownloadUrl(key: string): Promise<string> {
+  cvDownloadUrl(key: string): Promise<string> {
     const { client, bucket } = this.requireStorage();
     return getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: key }), {
       expiresIn: CV_DOWNLOAD_TTL_SECONDS,

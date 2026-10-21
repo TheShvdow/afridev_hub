@@ -123,6 +123,8 @@ export class JobAlertsService {
     for (const alert of alerts) byUser.set(alert.userId, [...(byUser.get(alert.userId) ?? []), alert]);
 
     let sent = 0;
+    // Un membre après l'autre, volontairement : un échec d'envoi n'empêche pas les autres
+    // récapitulatifs, et le fournisseur d'emails n'est pas sollicité en rafale.
     for (const [userId, userAlerts] of byUser) {
       // Une offre n'est envoyée qu'une fois : après le dernier récapitulatif de chaque alerte.
       const matching = offers.filter((offer) =>
@@ -154,11 +156,13 @@ export class JobAlertsService {
     const webUrl = this.config.get<string>('WEB_URL') ?? 'http://localhost:4200';
     const items = offers.slice(0, DIGEST_MAX_OFFERS).map((offer) => {
       const salary = `${offer.salaryMin.toLocaleString('fr-FR')} – ${offer.salaryMax.toLocaleString('fr-FR')} ${offer.currency}`;
-      return `<li><a href="${escapeHtml(`${webUrl}/jobs/${offer.id}`)}">${escapeHtml(offer.title)}</a>
+      const url = `${webUrl}/jobs/${offer.id}`;
+      return `<li><a href="${escapeHtml(url)}">${escapeHtml(offer.title)}</a>
         — ${escapeHtml(offer.company)} (${escapeHtml(offer.country)}, ${escapeHtml(salary)})</li>`;
     });
+    const listUrl = `${webUrl}/jobs`;
     const more = offers.length > DIGEST_MAX_OFFERS
-      ? `<p><a href="${escapeHtml(`${webUrl}/jobs`)}">Voir les ${offers.length - DIGEST_MAX_OFFERS} autres offres</a></p>`
+      ? `<p><a href="${escapeHtml(listUrl)}">Voir les ${offers.length - DIGEST_MAX_OFFERS} autres offres</a></p>`
       : '';
     return `<p>Voici les offres publiées cette semaine qui correspondent à vos alertes :</p>
       <ul>${items.join('')}</ul>${more}

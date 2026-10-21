@@ -108,7 +108,7 @@ export class UsersService {
   }
 
   // Le profil recruteur s'ajoute au rôle du membre (MEMBER, MODERATOR ou ADMIN), sans le remplacer.
-  async enableRecruiter(userId: string, companyName: string) {
+  enableRecruiter(userId: string, companyName: string) {
     return this.prisma.user.update({
       where:  { id: userId },
       data:   { isRecruiter: true, companyName },
