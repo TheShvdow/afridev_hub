@@ -110,13 +110,13 @@ async function main() {
 
   // Pays : la liste de apps/api/src/common/countries.ts fait foi (noms et codes à jour).
   console.log('  → Countries');
-  for (const country of COUNTRY_RECORDS) {
-    await prisma.country.upsert({
+  await prisma.$transaction(COUNTRY_RECORDS.map((country) =>
+    prisma.country.upsert({
       where:  { code: country.code },
       update: { alpha3: country.alpha3, name: country.name, region: country.region },
       create: country,
-    });
-  }
+    }),
+  ));
   console.log(`     ✓ ${COUNTRY_RECORDS.length} countries`);
 
   // Project categories
