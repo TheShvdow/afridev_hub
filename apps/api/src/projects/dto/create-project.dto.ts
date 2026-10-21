@@ -3,13 +3,15 @@ import {
   IsOptional,
   IsArray,
   IsUrl,
-  Matches,
+  IsIn,
   MinLength,
   MaxLength,
   ArrayMinSize,
   ArrayMaxSize,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { COUNTRY_CODES, CountryCode, toCountryCode } from '../../common/countries';
+import { Transform } from 'class-transformer';
 
 // Règles : BMAD glossaire « Projet » — description ≥ 50, stack 1 à 5 tags, lien GitHub requis.
 // Champs alignés sur le modèle Prisma Project : name, description, country, repoUrl, demoUrl
@@ -27,9 +29,10 @@ export class CreateProjectDto {
   @MaxLength(10000)
   description!: string;
 
-  @ApiProperty({ example: 'SN', description: 'Code pays ISO 3166-1 alpha-2' })
-  @Matches(/^[A-Z]{2}$/, { message: 'Le pays doit être un code ISO 3166-1 alpha-2 (ex. SN).' })
-  country!: string;
+  @ApiProperty({ enum: COUNTRY_CODES, example: 'SN', description: 'Code pays de la liste GET /api/countries' })
+  @Transform(({ value }) => toCountryCode(value))
+  @IsIn(COUNTRY_CODES, { message: 'Le pays doit être un code de la liste des pays (GET /api/countries), ex. SN.' })
+  country!: CountryCode;
 
   // Vérifié dans le service : https://github.com/<owner>/<repo>, dépôt existant (FR-22, FR-27).
   @ApiProperty({ example: 'https://github.com/TheShvdow/afridev_hub' })

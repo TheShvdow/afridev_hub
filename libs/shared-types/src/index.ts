@@ -39,6 +39,16 @@ export type NotificationType =
   | 'SYSTEM'
   | 'BADGE_AWARDED';
 
+export type CountryRegion = 'AFRICA' | 'DIASPORA';
+
+// Élément de GET /api/countries : la liste déroulante envoie `code` (ex. SN).
+export interface CountryItem {
+  code:   string;   // ISO 3166-1 alpha-2
+  alpha3: string;   // ISO 3166-1 alpha-3
+  name:   string;   // nom en français
+  region: CountryRegion;
+}
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
 export interface LoginDto {

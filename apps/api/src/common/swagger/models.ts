@@ -11,6 +11,13 @@ export class PaginationMetaDto {
   @ApiProperty({ example: 3 }) totalPages!: number;
 }
 
+export class CountryDto {
+  @ApiProperty({ example: 'SN', description: 'Code ISO 3166-1 alpha-2, stocké dans User.country, JobOffer.country, Project.country' }) code!: string;
+  @ApiProperty({ example: 'SEN', description: 'Code ISO 3166-1 alpha-3' }) alpha3!: string;
+  @ApiProperty({ example: 'Sénégal' }) name!: string;
+  @ApiProperty({ enum: ['AFRICA', 'DIASPORA'] }) region!: 'AFRICA' | 'DIASPORA';
+}
+
 export class SuccessDto {
   @ApiProperty({ example: true }) success!: boolean;
 }

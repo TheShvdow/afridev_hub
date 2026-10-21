@@ -19,6 +19,7 @@ import { ModerationModule } from './moderation/moderation.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { AdminModule } from './admin/admin.module';
 import { HealthModule } from './health/health.module';
+import { CountriesModule } from './countries/countries.module';
 import { MailModule } from './mail/mail.module';
 import { UploadModule } from './upload/upload.module';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -63,6 +64,7 @@ import { serializeRequest, serializeResponse } from './common/logging/request-se
     RedisModule,
     HealthModule,
     MailModule,
+    CountriesModule,
 
     // ── Domaines métier ───────────────────────────────────────────
     AuthModule,
