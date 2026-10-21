@@ -3,7 +3,7 @@ title: 'Config validation — Joi schema'
 type: 'feature'
 ticket: '3'
 created: '2026-10-13'
-status: 'built'
+status: done
 baseline_revision: 'NO_VCS'
 route: 'oneshot'
 route_source: 'auto'
