@@ -134,6 +134,29 @@ enum NotificationType {
 }
 
 // ─────────────────────────────────────────────────────────────────
+// PAYS — liste fermée proposée en liste déroulante (GET /api/countries)
+// Remplie par la migration et le seed depuis apps/api/src/common/countries.ts.
+// ─────────────────────────────────────────────────────────────────
+
+enum CountryRegion {
+  AFRICA
+  DIASPORA
+}
+
+model Country {
+  code   String        @id // ISO 3166-1 alpha-2 : SN, CI, NG…
+  alpha3 String        @unique // ISO 3166-1 alpha-3 : SEN, CIV, NGA…
+  name   String // nom en français
+  region CountryRegion
+
+  users     User[]
+  jobOffers JobOffer[]
+  projects  Project[]
+
+  @@index([region, name])
+}
+
+// ─────────────────────────────────────────────────────────────────
 // AUTH & USER
 // ─────────────────────────────────────────────────────────────────
 
@@ -145,36 +168,37 @@ enum ExperienceLevel {
 }
 
 model User {
-  id               String    @id @default(uuid())
-  email            String    @unique
-  username         String    @unique
-  passwordHash     String?
-  name             String?
-  displayName      String?
-  avatarUrl        String?
-  bio              String?   @db.Text
-  location         String?
-  country          String?  // ISO 3166-1 alpha-2 (critère du badge vérifié)
-  stack            String[] @default([])  // technologies déclarées (critère du badge vérifié)
-  level            ExperienceLevel?  // niveau d'expérience déclaré (onboarding)
-  githubUrl        String?
-  linkedinUrl      String?
-  websiteUrl       String?
-  githubUsername   String?
-  linkedinUsername String?
-  twitterUsername  String?
-  reputation       Int       @default(0)
-  isVerified       Boolean   @default(false)
-  emailNotifications Boolean @default(true)  // FR-18 : emails d'activité désactivables
-  isRecruiter      Boolean   @default(false) // profil recruteur activé par le membre (glossaire « Recruteur »)
-  companyName      String?
-  preferredCurrency String?  // ISO 4217 : devise d'affichage des salaires (FR-30)
-  role             UserRole  @default(MEMBER)
-  lastSeenAt       DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                 String           @id @default(uuid())
+  email              String           @unique
+  username           String           @unique
+  passwordHash       String?
+  name               String?
+  displayName        String?
+  avatarUrl          String?
+  bio                String?          @db.Text
+  location           String?
+  country            String? // code de la table Country (critère du badge vérifié)
+  stack              String[]         @default([]) // technologies déclarées (critère du badge vérifié)
+  level              ExperienceLevel? // niveau d'expérience déclaré (onboarding)
+  githubUrl          String?
+  linkedinUrl        String?
+  websiteUrl         String?
+  githubUsername     String?
+  linkedinUsername   String?
+  twitterUsername    String?
+  reputation         Int              @default(0)
+  isVerified         Boolean          @default(false)
+  emailNotifications Boolean          @default(true) // FR-18 : emails d'activité désactivables
+  isRecruiter        Boolean          @default(false) // profil recruteur activé par le membre (glossaire « Recruteur »)
+  companyName        String?
+  preferredCurrency  String? // ISO 4217 : devise d'affichage des salaires (FR-30)
+  role               UserRole         @default(MEMBER)
+  lastSeenAt         DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
   // Relations
+  countryRef        Country?           @relation(fields: [country], references: [code], onUpdate: Cascade, onDelete: Restrict)
   accounts          Account[]
   posts             Post[]
   answers           Answer[]
@@ -297,18 +321,18 @@ model Tag {
 // ─────────────────────────────────────────────────────────────────
 
 model Post {
-  id         String   @id @default(uuid())
-  title      String
-  body       String   @db.Text
-  userId     String
-  isResolved Boolean  @default(false)
-  viewCount  Int      @default(0)
-  voteScore  Int      @default(0)   // upvotes − downvotes, tenu à jour par ForumListener
-  lastActivityAt DateTime @default(now())
-  isHidden   Boolean  @default(false) // masqué par la modération (FR-21)
-  hiddenAt   DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             String    @id @default(uuid())
+  title          String
+  body           String    @db.Text
+  userId         String
+  isResolved     Boolean   @default(false)
+  viewCount      Int       @default(0)
+  voteScore      Int       @default(0) // upvotes − downvotes, tenu à jour par ForumListener
+  lastActivityAt DateTime  @default(now())
+  isHidden       Boolean   @default(false) // masqué par la modération (FR-21)
+  hiddenAt       DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   answers  Answer[]
@@ -333,16 +357,16 @@ model PostTag {
 }
 
 model Answer {
-  id         String   @id @default(uuid())
-  body       String   @db.Text
+  id         String    @id @default(uuid())
+  body       String    @db.Text
   postId     String
   userId     String
-  isAccepted Boolean  @default(false)
-  voteScore  Int      @default(0)
-  isHidden   Boolean  @default(false)
+  isAccepted Boolean   @default(false)
+  voteScore  Int       @default(0)
+  isHidden   Boolean   @default(false)
   hiddenAt   DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -405,7 +429,7 @@ enum ModerationTargetType {
 
 model ModerationAction {
   id          String               @id @default(uuid())
-  moderatorId String?  // null : action automatique (masquage au seuil de signalements)
+  moderatorId String? // null : action automatique (masquage au seuil de signalements)
   reportId    String?
   entityType  ModerationTargetType
   entityId    String
@@ -438,12 +462,12 @@ model Project {
   name           String
   slug           String    @unique // URL publique : /projects/<slug>
   description    String    @db.Text
-  country        String    @default("SN") // ISO 3166-1 alpha-2
+  country        String    @default("SN") // code de la table Country
   repoUrl        String
   demoUrl        String?
   userId         String
   categoryId     String?
-  githubFullName String?   // « owner/repo », extrait de repoUrl
+  githubFullName String? // « owner/repo », extrait de repoUrl
   githubStars    Int       @default(0)
   githubForks    Int       @default(0)
   githubLanguage String?
@@ -454,6 +478,7 @@ model Project {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  countryRef  Country          @relation(fields: [country], references: [code], onUpdate: Cascade, onDelete: Restrict)
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   category    ProjectCategory? @relation(fields: [categoryId], references: [id])
   stars       ProjectStar[]
@@ -501,30 +526,31 @@ model JobCategory {
 }
 
 model JobOffer {
-  id          String    @id @default(uuid())
-  title       String
-  description String    @db.Text
-  company     String
-  recruiterId String
-  country     String
-  mode        JobMode
-  type        JobType   @default(FULL_TIME)
-  currency    String
-  salaryMin   Int
-  salaryMax   Int
-  stack       String[]
-  categoryId  String?
-  status      JobStatus @default(PENDING_REVIEW)
+  id                   String    @id @default(uuid())
+  title                String
+  description          String    @db.Text
+  company              String
+  recruiterId          String
+  country              String
+  mode                 JobMode
+  type                 JobType   @default(FULL_TIME)
+  currency             String
+  salaryMin            Int
+  salaryMax            Int
+  stack                String[]
+  categoryId           String?
+  status               JobStatus @default(PENDING_REVIEW)
   // Salaire converti en USD (entier) pour filtrer entre devises ; recalculé chaque jour.
-  salaryMinUsd Int?
-  salaryMaxUsd Int?
-  publishedAt DateTime? // validation par la modération
-  rejectionReason String?
-  expiresAt   DateTime
+  salaryMinUsd         Int?
+  salaryMaxUsd         Int?
+  publishedAt          DateTime? // validation par la modération
+  rejectionReason      String?
+  expiresAt            DateTime
   expiryReminderSentAt DateTime? // rappel J50 (FR-33)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
+  countryRef   Country          @relation(fields: [country], references: [code], onUpdate: Cascade, onDelete: Restrict)
   recruiter    User             @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
   category     JobCategory?     @relation(fields: [categoryId], references: [id])
   applications JobApplication[]
@@ -555,16 +581,16 @@ model JobApplication {
 }
 
 model JobAlert {
-  id        String   @id @default(uuid())
-  userId    String
-  country   String?
-  mode      JobMode?
-  stack     String[]
-  currency  String?
-  salaryMin Int?
-  isActive  Boolean  @default(true)
+  id           String    @id @default(uuid())
+  userId       String
+  country      String?
+  mode         JobMode?
+  stack        String[]
+  currency     String?
+  salaryMin    Int?
+  isActive     Boolean   @default(true)
   lastDigestAt DateTime? // dernier récapitulatif hebdomadaire envoyé (FR-32)
-  createdAt DateTime @default(now())
+  createdAt    DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -574,7 +600,7 @@ model JobAlert {
 // Taux de change par rapport au dollar (open.er-api.com), rafraîchis chaque jour (FR-30).
 model ExchangeRate {
   currency  String   @id // ISO 4217
-  perUsd    Float    // unités de la devise pour 1 USD
+  perUsd    Float // unités de la devise pour 1 USD
   updatedAt DateTime @updatedAt
 }
 

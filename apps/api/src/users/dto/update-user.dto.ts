@@ -1,6 +1,8 @@
-import { IsString, IsOptional, MaxLength, IsUrl, Matches, IsArray, ArrayMaxSize, MinLength, IsEnum, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, MaxLength, IsUrl, Matches, IsArray, ArrayMaxSize, MinLength, IsEnum, IsBoolean, IsIn } from 'class-validator';
 import { ExperienceLevel } from '@prisma/client';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { COUNTRY_CODES, CountryCode, toCountryCode } from '../../common/countries';
+import { Transform } from 'class-transformer';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'Idrissa Wade' })
@@ -21,10 +23,11 @@ export class UpdateUserDto {
   @MaxLength(100)
   location?: string;
 
-  @ApiPropertyOptional({ example: 'SN', description: 'Code pays ISO 3166-1 alpha-2' })
+  @ApiPropertyOptional({ enum: COUNTRY_CODES, example: 'SN', description: 'Code pays de la liste GET /api/countries' })
   @IsOptional()
-  @Matches(/^[A-Z]{2}$/, { message: 'Le pays doit être un code ISO 3166-1 alpha-2 (ex. SN).' })
-  country?: string;
+  @Transform(({ value }) => toCountryCode(value))
+  @IsIn(COUNTRY_CODES, { message: 'Le pays doit être un code de la liste des pays (GET /api/countries), ex. SN.' })
+  country?: CountryCode;
 
   @ApiPropertyOptional({ enum: ExperienceLevel, description: 'Niveau d\'expérience déclaré' })
   @IsOptional()

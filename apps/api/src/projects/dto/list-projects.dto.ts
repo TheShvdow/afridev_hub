@@ -1,7 +1,8 @@
-import { IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { MAX_PAGE_LIMIT } from '../../common/pipes/positive-int.pipe';
+import { COUNTRY_CODES, CountryCode, toCountryCode } from '../../common/countries';
 
 export const PROJECT_SORTS = ['newest', 'stars', 'popular', 'activity'] as const;
 export type ProjectSort = (typeof PROJECT_SORTS)[number];
@@ -38,10 +39,11 @@ export class ListProjectsDto {
   @IsString({ each: true })
   stack?: string[];
 
-  @ApiPropertyOptional({ example: 'SN', description: 'Pays du projet, ISO 3166-1 alpha-2' })
+  @ApiPropertyOptional({ enum: COUNTRY_CODES, example: 'SN', description: 'Pays du projet (liste GET /api/countries)' })
   @IsOptional()
-  @Matches(/^[A-Z]{2}$/)
-  country?: string;
+  @Transform(({ value }) => toCountryCode(value))
+  @IsIn(COUNTRY_CODES, { message: 'Le pays doit être un code de la liste des pays (GET /api/countries), ex. SN.' })
+  country?: CountryCode;
 
   @ApiPropertyOptional({
     enum: PROJECT_SORTS,

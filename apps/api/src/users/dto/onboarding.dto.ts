@@ -1,7 +1,9 @@
-import { IsArray, IsOptional, IsString, Matches, ArrayMaxSize, MaxLength, MinLength } from 'class-validator';
+import { IsArray, IsOptional, IsString, IsIn, ArrayMaxSize, MaxLength, MinLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum } from 'class-validator';
 import { ExperienceLevel } from '@prisma/client';
+import { COUNTRY_CODES, CountryCode, toCountryCode } from '../../common/countries';
+import { Transform } from 'class-transformer';
 
 // Onboarding (story E2-4) : ne remplit que les champs encore vides ; un champ déjà renseigné n'est jamais écrasé.
 export class OnboardingDto {
@@ -9,9 +11,11 @@ export class OnboardingDto {
   @IsOptional() @IsString() @MaxLength(100)
   location?: string;
 
-  @ApiPropertyOptional({ example: 'SN' })
-  @IsOptional() @Matches(/^[A-Z]{2}$/, { message: 'Le pays doit être un code ISO 3166-1 alpha-2 (ex. SN).' })
-  country?: string;
+  @ApiPropertyOptional({ enum: COUNTRY_CODES, example: 'SN', description: 'Code pays de la liste GET /api/countries' })
+  @IsOptional()
+  @Transform(({ value }) => toCountryCode(value))
+  @IsIn(COUNTRY_CODES, { message: 'Le pays doit être un code de la liste des pays (GET /api/countries), ex. SN.' })
+  country?: CountryCode;
 
   @ApiPropertyOptional({ enum: ExperienceLevel, example: ExperienceLevel.SENIOR })
   @IsOptional() @IsEnum(ExperienceLevel)
