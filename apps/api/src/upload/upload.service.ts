@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 import { DomainException } from '../common/errors/domain.exception';
 import { AvatarPresignDto } from './dto/avatar-presign.dto';
+import { CvPresignDto } from './dto/cv-presign.dto';
 
 const UPLOAD_TTL_SECONDS = 300; // 5 min pour envoyer le fichier
 const AVATAR_KEY = /^avatars\/[^/]+\/[0-9a-f-]+\.(jpg|png|webp|gif)$/;
+const CV_KEY = /^cvs\/[^/]+\/[0-9a-f-]+\.pdf$/;
+const CV_DOWNLOAD_TTL_SECONDS = 600; // lien de téléchargement du CV pour le recruteur : 10 min
 const EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -52,6 +55,42 @@ export class UploadService {
     }
 
     return `${publicBase}/${key}`;
+  }
+
+  // CV (FR-31) : jamais d'URL publique. Le recruteur reçoit un lien signé de courte durée.
+  async presignCv(userId: string, dto: CvPresignDto) {
+    const { client, bucket } = this.requireStorage();
+
+    const key = `cvs/${userId}/${randomUUID()}.pdf`;
+    const uploadUrl = await getSignedUrl(
+      client,
+      new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: dto.mimeType, ContentLength: dto.fileSizeBytes }),
+      { expiresIn: UPLOAD_TTL_SECONDS },
+    );
+
+    return { uploadUrl, key, expiresIn: UPLOAD_TTL_SECONDS };
+  }
+
+  // Valide un CV déjà envoyé : clé du candidat, objet présent dans R2.
+  async confirmCv(userId: string, key: string): Promise<string> {
+    if (!CV_KEY.test(key) || !key.startsWith(`cvs/${userId}/`)) {
+      throw new DomainException('UPLOAD_KEY_INVALID', 'Clé de fichier invalide.', 400);
+    }
+
+    const { client, bucket } = this.requireStorage();
+    try {
+      await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+    } catch {
+      throw new DomainException('UPLOAD_OBJECT_NOT_FOUND', 'Fichier introuvable : envoyez-le d\'abord vers le stockage.', 400);
+    }
+    return key;
+  }
+
+  async cvDownloadUrl(key: string): Promise<string> {
+    const { client, bucket } = this.requireStorage();
+    return getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: key }), {
+      expiresIn: CV_DOWNLOAD_TTL_SECONDS,
+    });
   }
 
   private requireStorage() {

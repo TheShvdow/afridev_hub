@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Patch,
+  Post,
   Param,
   Body,
   UseGuards,
@@ -12,6 +13,7 @@ import { UpdateAvatarDto } from './dto/update-avatar.dto';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { OnboardingDto } from './dto/onboarding.dto';
+import { RecruiterProfileDto } from './dto/recruiter-profile.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ApiData } from '../common/swagger/api-data.decorator';
@@ -55,6 +57,15 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
   ) {
     return this.usersService.update(userId, dto);
+  }
+
+  @Post('me/recruiter')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Activer ou modifier son profil recruteur (nom de l\'entreprise)' })
+  @ApiData({ description: 'Profil recruteur activé' })
+  enableRecruiter(@CurrentUser('id') userId: string, @Body() dto: RecruiterProfileDto) {
+    return this.usersService.enableRecruiter(userId, dto.companyName);
   }
 
   @Patch('me/onboarding')

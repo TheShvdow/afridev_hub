@@ -286,6 +286,9 @@ export class AuthService {
         isVerified:  true,
         reputation:  true,
         emailNotifications: true,
+        isRecruiter: true,
+        companyName: true,
+        preferredCurrency: true,
         createdAt:   true,
       },
     });

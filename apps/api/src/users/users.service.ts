@@ -97,11 +97,23 @@ export class UsersService {
         role:            true,
         isVerified:      true,
         emailNotifications: true,
+        isRecruiter:     true,
+        companyName:     true,
+        preferredCurrency: true,
       },
     });
 
     this.emitProfileUpdated(userId);
     return user;
+  }
+
+  // Le profil recruteur s'ajoute au rôle du membre (MEMBER, MODERATOR ou ADMIN), sans le remplacer.
+  async enableRecruiter(userId: string, companyName: string) {
+    return this.prisma.user.update({
+      where:  { id: userId },
+      data:   { isRecruiter: true, companyName },
+      select: { id: true, username: true, isRecruiter: true, companyName: true },
+    });
   }
 
   // Onboarding (E2-4) : un champ déjà renseigné n'est jamais écrasé.
