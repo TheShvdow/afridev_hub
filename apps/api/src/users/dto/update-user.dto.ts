@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MaxLength, IsUrl, Matches, IsArray, ArrayMaxSize, MinLength, IsEnum } from 'class-validator';
+import { IsString, IsOptional, MaxLength, IsUrl, Matches, IsArray, ArrayMaxSize, MinLength, IsEnum, IsBoolean } from 'class-validator';
 import { ExperienceLevel } from '@prisma/client';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -62,4 +62,14 @@ export class UpdateUserDto {
   @IsString()
   @MaxLength(50)
   twitterUsername?: string;
+
+  @ApiPropertyOptional({ example: 'XOF', description: 'Devise d\'affichage des salaires, ISO 4217 (FR-30)' })
+  @IsOptional()
+  @Matches(/^[A-Z]{3}$/, { message: 'La devise doit être un code ISO 4217 (ex. XOF).' })
+  preferredCurrency?: string;
+
+  @ApiPropertyOptional({ example: true, description: 'Recevoir les emails d\'activité du forum (FR-18)' })
+  @IsOptional()
+  @IsBoolean()
+  emailNotifications?: boolean;
 }

@@ -1,6 +1,10 @@
-import { IsEnum, IsString, MinLength, MaxLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ReportEntityType } from '@prisma/client';
+
+// FR-20 : raison choisie dans une liste prédéfinie.
+export const REPORT_REASONS = ['SPAM', 'OFFENSIVE', 'OFF_TOPIC', 'DUPLICATE', 'OTHER'] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number];
 
 // Champs alignés sur le modèle Prisma Report : entityType (enum), entityId, reason.
 export class CreateReportDto {
@@ -12,9 +16,13 @@ export class CreateReportDto {
   @IsString()
   entityId!: string;
 
-  @ApiProperty({ example: 'Contenu hors sujet ou spam' })
+  @ApiProperty({ enum: REPORT_REASONS, example: 'SPAM' })
+  @IsIn(REPORT_REASONS)
+  reason!: ReportReason;
+
+  @ApiPropertyOptional({ example: 'Lien publicitaire répété dans trois questions', maxLength: 500 })
+  @IsOptional()
   @IsString()
-  @MinLength(3)
   @MaxLength(500)
-  reason!: string;
+  details?: string;
 }

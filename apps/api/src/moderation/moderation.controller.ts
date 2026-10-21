@@ -8,20 +8,22 @@ import {
   Query,
   UseGuards,
   DefaultValuePipe,
+  ParseEnumPipe,
 } from '@nestjs/common';
 import { PositiveIntPipe } from '../common/pipes/positive-int.pipe';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { ReportStatus } from '@prisma/client';
+import { ReportEntityType, ReportStatus } from '@prisma/client';
 import { ModerationService } from './moderation.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { ResolveReportDto } from './dto/resolve-report.dto';
 import { BanUserDto } from './dto/ban-user.dto';
+import { ModerationNoteDto } from './dto/moderation-note.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ApiData } from '../common/swagger/api-data.decorator';
-import { ReportDto } from '../common/swagger/models';
+import { ReportDto, SuccessDto } from '../common/swagger/models';
 import { ApiPaginationQuery } from '../common/swagger/api-pagination.decorator';
 
 @ApiTags('Moderation')
@@ -38,10 +40,7 @@ export class ModerationController {
     @CurrentUser('id') userId: string,
     @Body() dto: CreateReportDto,
   ) {
-    return this.moderationService.createReport(
-      userId, dto.entityType, dto.entityId, dto.reason,
-      // description removed — no such field
-    );
+    return this.moderationService.createReport(userId, dto);
   }
 
   @Get('reports')
@@ -71,6 +70,35 @@ export class ModerationController {
     @Body() dto: ResolveReportDto,
   ) {
     return this.moderationService.resolveReport(id, userId, dto.action, dto.note);
+  }
+
+  @Patch('reports/:id/dismiss')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('MODERATOR', 'ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Ignorer un signalement [MODERATOR]' })
+  @ApiData({ type: ReportDto, description: 'Signalement ignoré, contenu de nouveau visible' })
+  dismissReport(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: ModerationNoteDto,
+  ) {
+    return this.moderationService.dismissReport(id, userId, dto.note);
+  }
+
+  @Patch('content/:entityType/:entityId/restore')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('MODERATOR', 'ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Restaurer un contenu masqué [MODERATOR]' })
+  @ApiData({ type: SuccessDto, description: 'Contenu restauré' })
+  restoreContent(
+    @Param('entityType', new ParseEnumPipe(ReportEntityType)) entityType: ReportEntityType,
+    @Param('entityId') entityId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: ModerationNoteDto,
+  ) {
+    return this.moderationService.restoreContent(entityType, entityId, userId, dto.note);
   }
 
   @Post('users/ban')

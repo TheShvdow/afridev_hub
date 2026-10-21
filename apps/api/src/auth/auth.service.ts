@@ -285,6 +285,10 @@ export class AuthService {
         role:        true,
         isVerified:  true,
         reputation:  true,
+        emailNotifications: true,
+        isRecruiter: true,
+        companyName: true,
+        preferredCurrency: true,
         createdAt:   true,
       },
     });

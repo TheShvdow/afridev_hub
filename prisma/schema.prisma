@@ -56,6 +56,7 @@ enum ReportStatus {
 enum ModerationActionType {
   HIDDEN
   RESTORED
+  DISMISSED
   WARNING
   BAN
 }
@@ -75,7 +76,9 @@ enum JobType {
 }
 
 enum JobStatus {
+  PENDING_REVIEW // en attente de validation par la modération (FR-28)
   ACTIVE
+  REJECTED
   EXPIRED
   CLOSED
 }
@@ -124,6 +127,8 @@ enum NotificationType {
   MENTION
   REPORT_RESOLVED
   JOB_ALERT
+  JOB_APPLICATION
+  JOB_REVIEWED
   SYSTEM
   BADGE_AWARDED
 }
@@ -160,6 +165,10 @@ model User {
   twitterUsername  String?
   reputation       Int       @default(0)
   isVerified       Boolean   @default(false)
+  emailNotifications Boolean @default(true)  // FR-18 : emails d'activité désactivables
+  isRecruiter      Boolean   @default(false) // profil recruteur activé par le membre (glossaire « Recruteur »)
+  companyName      String?
+  preferredCurrency String?  // ISO 4217 : devise d'affichage des salaires (FR-30)
   role             UserRole  @default(MEMBER)
   lastSeenAt       DateTime?
   createdAt        DateTime  @default(now())
@@ -292,6 +301,10 @@ model Post {
   userId     String
   isResolved Boolean  @default(false)
   viewCount  Int      @default(0)
+  voteScore  Int      @default(0)   // upvotes − downvotes, tenu à jour par ForumListener
+  lastActivityAt DateTime @default(now())
+  isHidden   Boolean  @default(false) // masqué par la modération (FR-21)
+  hiddenAt   DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -302,6 +315,9 @@ model Post {
   @@index([userId])
   @@index([isResolved])
   @@index([createdAt])
+  @@index([voteScore])
+  @@index([lastActivityAt])
+  @@index([isHidden])
 }
 
 model PostTag {
@@ -320,6 +336,9 @@ model Answer {
   postId     String
   userId     String
   isAccepted Boolean  @default(false)
+  voteScore  Int      @default(0)
+  isHidden   Boolean  @default(false)
+  hiddenAt   DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -368,6 +387,7 @@ model Report {
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   moderationActions ModerationAction[]
 
+  @@unique([userId, entityType, entityId]) // FR-20 : un signalement par membre et par contenu
   @@index([status])
   @@index([entityType, entityId])
   @@index([userId])
@@ -383,7 +403,7 @@ enum ModerationTargetType {
 
 model ModerationAction {
   id          String               @id @default(uuid())
-  moderatorId String
+  moderatorId String?  // null : action automatique (masquage au seuil de signalements)
   reportId    String?
   entityType  ModerationTargetType
   entityId    String
@@ -391,7 +411,7 @@ model ModerationAction {
   note        String?
   createdAt   DateTime             @default(now())
 
-  moderator User    @relation("ModeratorActions", fields: [moderatorId], references: [id])
+  moderator User?   @relation("ModeratorActions", fields: [moderatorId], references: [id])
   report    Report? @relation(fields: [reportId], references: [id])
 
   @@index([moderatorId])
@@ -414,16 +434,21 @@ model ProjectCategory {
 model Project {
   id             String    @id @default(uuid())
   name           String
+  slug           String    @unique // URL publique : /projects/<slug>
   description    String    @db.Text
   country        String    @default("SN") // ISO 3166-1 alpha-2
   repoUrl        String
   demoUrl        String?
   userId         String
   categoryId     String?
-  isApproved     Boolean   @default(false)
+  githubFullName String?   // « owner/repo », extrait de repoUrl
   githubStars    Int       @default(0)
+  githubForks    Int       @default(0)
   githubLanguage String?
   githubLastPush DateTime?
+  githubSyncedAt DateTime? // dernier import réussi des stats GitHub (FR-23)
+  isHidden       Boolean   @default(false) // masqué par la modération (FR-21)
+  hiddenAt       DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -433,7 +458,9 @@ model Project {
   projectTags ProjectTag[]
 
   @@index([userId])
-  @@index([isApproved])
+  @@index([githubFullName])
+  @@index([githubStars])
+  @@index([country])
   @@index([createdAt])
 }
 
@@ -485,8 +512,14 @@ model JobOffer {
   salaryMax   Int
   stack       String[]
   categoryId  String?
-  status      JobStatus @default(ACTIVE)
+  status      JobStatus @default(PENDING_REVIEW)
+  // Salaire converti en USD (entier) pour filtrer entre devises ; recalculé chaque jour.
+  salaryMinUsd Int?
+  salaryMaxUsd Int?
+  publishedAt DateTime? // validation par la modération
+  rejectionReason String?
   expiresAt   DateTime
+  expiryReminderSentAt DateTime? // rappel J50 (FR-33)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -498,6 +531,8 @@ model JobOffer {
   @@index([status])
   @@index([country, mode])
   @@index([expiresAt])
+  @@index([salaryMaxUsd])
+  @@index([publishedAt])
 }
 
 model JobApplication {
@@ -526,11 +561,19 @@ model JobAlert {
   currency  String?
   salaryMin Int?
   isActive  Boolean  @default(true)
+  lastDigestAt DateTime? // dernier récapitulatif hebdomadaire envoyé (FR-32)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isActive])
+}
+
+// Taux de change par rapport au dollar (open.er-api.com), rafraîchis chaque jour (FR-30).
+model ExchangeRate {
+  currency  String   @id // ISO 4217
+  perUsd    Float    // unités de la devise pour 1 USD
+  updatedAt DateTime @updatedAt
 }
 
 model RecruiterPlan {

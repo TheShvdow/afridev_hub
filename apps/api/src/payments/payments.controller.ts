@@ -25,16 +25,23 @@ import { PaymentDto } from '../common/swagger/models';
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
+  @Get('products')
+  @ApiOperation({ summary: 'Produits payants et leurs prix (catalogue côté serveur)' })
+  @ApiData({ description: 'code, label, amount, currency, durationDays' })
+  listProducts() {
+    return this.paymentsService.listProducts();
+  }
+
   @Post('initiate')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Initier un paiement Bictorys (charge)' })
+  @ApiOperation({ summary: 'Payer un produit du catalogue via Bictorys (le prix est fixé par le serveur)' })
   @ApiData({ status: 201, description: 'Paiement initié, redirection ou lien de paiement' })
   initiate(
     @CurrentUser('id') userId: string,
     @Body() dto: InitiatePaymentDto,
   ) {
-    return this.paymentsService.initiatePayment({ ...dto, userId });
+    return this.paymentsService.initiatePayment(userId, dto);
   }
 
   @Get(':id')

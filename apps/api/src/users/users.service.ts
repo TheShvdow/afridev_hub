@@ -96,11 +96,24 @@ export class UsersService {
         reputation:      true,
         role:            true,
         isVerified:      true,
+        emailNotifications: true,
+        isRecruiter:     true,
+        companyName:     true,
+        preferredCurrency: true,
       },
     });
 
     this.emitProfileUpdated(userId);
     return user;
+  }
+
+  // Le profil recruteur s'ajoute au rôle du membre (MEMBER, MODERATOR ou ADMIN), sans le remplacer.
+  enableRecruiter(userId: string, companyName: string) {
+    return this.prisma.user.update({
+      where:  { id: userId },
+      data:   { isRecruiter: true, companyName },
+      select: { id: true, username: true, isRecruiter: true, companyName: true },
+    });
   }
 
   // Onboarding (E2-4) : un champ déjà renseigné n'est jamais écrasé.
@@ -174,10 +187,10 @@ export class UsersService {
         },
       }),
       this.prisma.project.findMany({
-        where:   { userId: user.id },
+        where:   { userId: user.id, isHidden: false },
         orderBy: { createdAt: 'desc' },
         take:    5,
-        select:  { id: true, name: true, createdAt: true, isApproved: true },
+        select:  { id: true, slug: true, name: true, createdAt: true },
       }),
     ]);
 
