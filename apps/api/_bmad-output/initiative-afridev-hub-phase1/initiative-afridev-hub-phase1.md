@@ -3,6 +3,7 @@ type: initiative
 title: AfriDev Hub Phase 1
 created: 2026-10-13
 spec: ../spec-afridev-hub-phase1/spec-afridev-hub-phase1.md
+status: in-progress
 ---
 
 # AfriDev Hub Phase 1

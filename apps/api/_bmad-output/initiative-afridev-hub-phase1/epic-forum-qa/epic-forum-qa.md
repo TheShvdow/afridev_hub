@@ -4,6 +4,7 @@ title: Forum Q&A
 parent: ../initiative-afridev-hub-phase1.md
 covers: ["CAP-3"]
 created: 2026-10-13
+status: in-progress
 ---
 
 # Forum Q&A
