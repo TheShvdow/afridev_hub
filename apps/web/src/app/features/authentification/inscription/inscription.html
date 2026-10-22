@@ -1,0 +1,109 @@
+<app-auth-layout>
+  <form
+    auth-form
+    class="mx-auto flex w-full max-w-[490px] flex-col gap-8"
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    novalidate
+  >
+    <app-auth-close />
+
+    <div class="flex flex-col gap-2.5">
+      <h1 class="font-display text-2xl font-bold leading-8 text-ink">Rejoins la communauté</h1>
+      <p class="text-sm font-medium leading-[22px] tracking-[0.07px] text-slate-500">
+        Crée ton compte et commence à coder avec les meilleurs talents d’Afrique.
+      </p>
+    </div>
+
+    <div class="flex flex-col gap-3">
+      <app-auth-field
+        label="Nom d’utilisateur"
+        placeholder="Ex. Mariama Koné"
+        icon="user"
+        name="username"
+        autocomplete="nickname"
+        formControlName="username"
+      />
+
+      <app-auth-field
+        label="Adresse e-mail"
+        placeholder="toi@exemple.com"
+        icon="mail"
+        name="email"
+        autocomplete="email"
+        formControlName="email"
+      />
+
+      <label class="flex flex-col gap-2">
+        <span class="auth-field__label">Votre spécialité</span>
+
+        <span class="auth-field relative">
+          <app-icon name="user" class="auth-field__icon"></app-icon>
+
+          <select class="auth-field__input appearance-none pr-6" formControlName="speciality">
+            <option value="" disabled>Choisir une spécialité</option>
+            @for (speciality of specialities; track speciality) {
+              <option [value]="speciality">{{ speciality }}</option>
+            }
+          </select>
+
+          <span class="auth-field__required">*</span>
+
+          <app-icon
+            name="chevron-down"
+            class="pointer-events-none absolute right-4 size-5 shrink-0 text-slate-500"
+          ></app-icon>
+        </span>
+      </label>
+
+      <app-auth-password-field
+        label="Mot de passe"
+        placeholder="Entrer votre mot de passe"
+        name="password"
+        autocomplete="new-password"
+        formControlName="password"
+      />
+    </div>
+
+    <app-password-strength [password]="password()" />
+
+    <button type="submit" class="auth-btn">
+      Créer mon compte
+      <app-icon name="arrow-up-right" class="size-6"></app-icon>
+    </button>
+
+    <div class="flex flex-col gap-2.5">
+      <p class="text-center text-base font-normal leading-[26px] tracking-[0.08px] text-slate-500">
+        En continuant, vous acceptez les règles de bienveillance de la communauté.
+      </p>
+
+      <div class="flex flex-wrap items-center justify-center gap-2.5">
+        <span class="text-sm font-normal leading-5 text-slate-500">Vous avez déjà un compte ?</span>
+        <a
+          routerLink="/connexion"
+          class="text-sm font-normal leading-5 text-slate-500 underline-offset-4 transition-colors hover:text-ink hover:underline"
+        >
+          Connectez-vous
+        </a>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-5">
+      <div class="flex items-center gap-4">
+        <span class="h-px flex-1 bg-gray-300"></span>
+        <span class="text-base font-normal leading-[26px] tracking-[0.08px] text-ink">Ou</span>
+        <span class="h-px flex-1 bg-gray-300"></span>
+      </div>
+
+      <app-social-auth />
+    </div>
+  </form>
+
+  <app-auth-side
+    auth-panel
+    eyebrow="La communauté vous attend"
+    title="Rejoindre AfriDev Hub"
+    description="Échangez avec des développeurs du continent, partagez vos projets et trouvez les bonnes opportunités."
+    [steps]="steps"
+  />
+</app-auth-layout>

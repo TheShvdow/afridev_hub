@@ -20,8 +20,21 @@ export class ToastService {
   }
 
   private add(type: Toast['type'], message: string): void {
-    const id = crypto.randomUUID();
+    const id = this.generateId();
     this.toasts.update((list) => [...list, { id, type, message }]);
     setTimeout(() => this.remove(id), 5000);
+  }
+
+  /**
+   * `crypto.randomUUID` n'existe que dans les contextes sécurisés (HTTPS).
+   * Hors de ce contexte (HTTP sur une IP de réseau local), on retombe sur un
+   * identifiant construit localement : sans cela, l'affichage d'un toast
+   * interromprait le traitement de l'erreur d'origine.
+   */
+  private generateId(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    return `toast-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   }
 }

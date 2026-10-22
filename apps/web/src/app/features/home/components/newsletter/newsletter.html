@@ -1,0 +1,67 @@
+<section aria-labelledby="newsletter-title" class="overflow-hidden bg-slate-50">
+  <div class="mx-auto w-full max-w-[1120px] px-6 py-16 sm:px-10 lg:px-0 lg:pb-16 lg:pt-10">
+    <div class="newsletter-stage">
+      <div class="newsletter-card">
+        <svg
+          class="newsletter-vector newsletter-vector--4"
+          viewBox="-107.874271 -120.456568 249.509037 330.538237"
+          aria-hidden="true"
+        >
+          <path
+            fill="#0f612f"
+            transform="matrix(-0.5 0.8660254 -0.8660254 -0.5 141.634766 -69.644531)"
+            d="M3.05168 95.7698C91.1208 -67.4414 306.166 10.613 322.314 90.2396C322.787 92.574 320.919 94.6242 318.537 94.6242L293.039 94.6242C292.048 94.6242 291.074 94.2385 290.336 93.5779C177.16 -7.73319 65.4975 23.3565 61.6048 97.596C61.4892 99.8021 59.7091 101.624 57.5 101.624L6.49211 101.624C3.51377 101.624 1.63733 98.3909 3.05168 95.7698Z"
+          />
+        </svg>
+        <svg
+          class="newsletter-vector newsletter-vector--3"
+          viewBox="879 297 323 101.624062"
+          aria-hidden="true"
+        >
+          <path
+            fill="#0f612f"
+            transform="matrix(1 0 0 1 879 297)"
+            d="M3.05168 95.7698C91.1208 -67.4414 306.166 10.613 322.314 90.2396C322.787 92.574 320.919 94.6242 318.537 94.6242L293.039 94.6242C292.048 94.6242 291.074 94.2385 290.336 93.5779C177.16 -7.73319 65.4975 23.3565 61.6048 97.596C61.4892 99.8021 59.7091 101.624 57.5 101.624L6.49211 101.624C3.51377 101.624 1.63733 98.3909 3.05168 95.7698Z"
+          />
+        </svg>
+        <svg
+          class="newsletter-vector newsletter-vector--5"
+          viewBox="980.000343 -64.485586 330.53825 249.509023"
+          aria-hidden="true"
+        >
+          <path
+            fill="#0f612f"
+            transform="matrix(-0.8660254 -0.5 0.5 -0.8660254 1259.726563 185.023438)"
+            d="M3.05168 95.7698C91.1208 -67.4414 306.166 10.613 322.314 90.2396C322.787 92.574 320.919 94.6242 318.537 94.6242L293.039 94.6242C292.048 94.6242 291.074 94.2385 290.336 93.5779C177.16 -7.73319 65.4975 23.3565 61.6048 97.596C61.4892 99.8021 59.7091 101.624 57.5 101.624L6.49211 101.624C3.51377 101.624 1.63733 98.3909 3.05168 95.7698Z"
+          />
+        </svg>
+
+        <div class="newsletter-content">
+          <h2 id="newsletter-title" class="newsletter-title">
+            Abonnez-vous à notre<br />newsletter pour recevoir des mises à jour
+          </h2>
+
+          <form class="newsletter-form" (submit)="$event.preventDefault()">
+            <label class="sr-only" for="newsletter-email">Votre adresse email</label>
+            <div class="newsletter-field">
+              <app-icon name="sms" class="newsletter-field__icon" />
+              <input
+                id="newsletter-email"
+                class="newsletter-input"
+                type="email"
+                name="email"
+                autocomplete="email"
+                placeholder="Votre adresse email"
+              />
+            </div>
+            <button class="btn-glass" type="submit">S’inscrire</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="newsletter-media" aria-hidden="true">
+        <img src="assets/images/newsletter.png" alt="" />
+      </div>
+    </div>
+  </div>
+</section>

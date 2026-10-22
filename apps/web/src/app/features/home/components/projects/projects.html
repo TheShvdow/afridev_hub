@@ -1,0 +1,39 @@
+<section id="projets" class="bg-[#E2E8F0]">
+  <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-0 lg:pt-10">
+    <app-section-heading label="PROJETS" />
+    <p class="text-[32px] font-bold text-[#141219] lg:mt-[34px]">Projets en vedette</p>
+
+    <div class="mt-[24px] flex flex-wrap gap-[12px] lg:mt-[32px]">
+      @for (tag of tags; track tag) {
+        <button
+          type="button"
+          (click)="toggleTag(tag)"
+          [class]="
+            (selectedTag() === tag
+              ? 'bg-[#141219] text-white '
+              : 'bg-white text-[#141219] border-[#E2E8F0] ') +
+            'rounded-full border px-[16px] py-[4px] text-[16px] font-medium transition-colors'
+          "
+        >
+          {{ tag }}
+        </button>
+      }
+    </div>
+
+    <div class="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2 lg:mt-[60px] lg:grid-cols-3 lg:gap-10">
+      @for (project of filteredProjects(); track project.title) {
+        <app-card-projet [project]="project" ctaLabel="demo" />
+      }
+    </div>
+      <div class="flex justify-center lg:mt-[40px]">
+        <a routerLink="/projets" class="btn-link text-[16px] font-semibold text-[#0F6932] flex gap-[10px]">
+          Consulter tous nos projets
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14.4302 5.92969L20.5002 11.9997L14.4302 18.0697" fill="#0F6932"/>
+            <path d="M14.4302 5.92969L20.5002 11.9997L14.4302 18.0697" stroke="#0F6932" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3.5 12H20.33" stroke="#0F6932" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+  </div>
+</section>

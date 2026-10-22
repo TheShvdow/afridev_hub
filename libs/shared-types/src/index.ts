@@ -55,6 +55,11 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
+/** Réponse simple de l'API : `{ data: { message } }`. */
+export interface AuthMessageResponse {
+  message: string;
+}
+
 // ── User ──────────────────────────────────────────────────────────────────────
 
 /** Sous-ensemble public d'un utilisateur, utilisé dans les relations (`user`, `recruiter`, `actor`…). */

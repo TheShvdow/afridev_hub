@@ -24,31 +24,41 @@ export const authInterceptor: HttpInterceptorFn = (
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      // 401 → tenter un refresh silencieux
-      if (error.status === 401 && !req.url.includes('/auth/') && !isRefreshing) {
-        isRefreshing = true;
-
-        return authService.refreshToken().pipe(
-          switchMap((tokens) => {
-            isRefreshing = false;
-            authStore.setTokens(tokens.accessToken, tokens.refreshToken);
-
-            return next(
-              req.clone({
-                setHeaders: { Authorization: `Bearer ${tokens.accessToken}` },
-              })
-            );
-          }),
-          catchError((refreshError) => {
-            isRefreshing = false;
-            authStore.logout();
-            router.navigate(['/auth/login']);
-            return throwError(() => refreshError);
-          })
-        );
+      // 401 → tenter un refresh silencieux.
+      // Les routes /auth/* sont exclues : leur 401 est une réponse métier
+      // (identifiants incorrects) et non un token expiré.
+      if (error.status !== 401 || req.url.includes('/auth/') || isRefreshing) {
+        return throwError(() => error);
       }
 
-      return throwError(() => error);
+      const refreshToken = authStore.refreshToken();
+      if (!refreshToken) {
+        // Plus de session renouvelable : on renvoie vers la connexion.
+        authStore.logout();
+        router.navigate(['/auth/login']);
+        return throwError(() => error);
+      }
+
+      isRefreshing = true;
+
+      return authService.refreshToken(refreshToken).pipe(
+        switchMap((tokens) => {
+          isRefreshing = false;
+          authStore.setTokens(tokens.accessToken, tokens.refreshToken);
+
+          return next(
+            req.clone({
+              setHeaders: { Authorization: `Bearer ${tokens.accessToken}` },
+            })
+          );
+        }),
+        catchError((refreshError) => {
+          isRefreshing = false;
+          authStore.logout();
+          router.navigate(['/auth/login']);
+          return throwError(() => refreshError);
+        })
+      );
     })
   );
 };

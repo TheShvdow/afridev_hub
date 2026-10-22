@@ -5,8 +5,8 @@ export const PROJECTS_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./project-list/project-list.component').then(
-        (m) => m.ProjectListComponent
+      import('./project-list/projets').then(
+        (m) => m.Projets
       ),
     title: 'Projets — AfriDev Hub',
   },

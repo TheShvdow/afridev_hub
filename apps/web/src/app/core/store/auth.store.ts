@@ -1,4 +1,4 @@
-import { signalStore, withState, withMethods, withComputed } from '@ngrx/signals';
+import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
 import { inject } from '@angular/core';
 import { computed } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
@@ -31,46 +31,70 @@ export const AuthStore = signalStore(
     isAuthenticated: computed(() => !!store.accessToken()),
   })),
 
-  withMethods((store, authService = inject(AuthService), platformId = inject(PLATFORM_ID)) => ({
-    /** Rehydrater depuis localStorage au démarrage (browser only) */
-    initializeAuth(): void {
-      if (!isPlatformBrowser(platformId)) return;
-
-      const at = localStorage.getItem(ACCESS_TOKEN_KEY);
-      const rt = localStorage.getItem(REFRESH_TOKEN_KEY);
-
-      if (at && rt) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (store as any).patchState({ accessToken: at, refreshToken: rt });
-        // Charger le profil courant
-        authService.getMe().subscribe({
-          next: (user) => (store as any).patchState({ currentUser: user }),
-          error: () => this.logout(),
-        });
+  withMethods((store, authService = inject(AuthService), platformId = inject(PLATFORM_ID)) => {
+    const readTokens = (): { accessToken: string | null; refreshToken: string | null } => {
+      if (!isPlatformBrowser(platformId)) {
+        return { accessToken: null, refreshToken: null };
       }
-    },
+      return {
+        accessToken:  localStorage.getItem(ACCESS_TOKEN_KEY),
+        refreshToken: localStorage.getItem(REFRESH_TOKEN_KEY),
+      };
+    };
 
-    setTokens(accessToken: string, refreshToken: string): void {
+    const persistTokens = (accessToken: string, refreshToken: string): void => {
       if (isPlatformBrowser(platformId)) {
         localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
         localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (store as any).patchState({ accessToken, refreshToken });
-    },
+    };
 
-    setUser(user: UserMe): void {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (store as any).patchState({ currentUser: user });
-    },
-
-    logout(): void {
+    const clearTokens = (): void => {
       if (isPlatformBrowser(platformId)) {
         localStorage.removeItem(ACCESS_TOKEN_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (store as any).patchState(initialState);
-    },
-  }))
+    };
+
+    // Réinitialise l'état et efface les tokens persistés.
+    const reset = (): void => {
+      clearTokens();
+      patchState(store, initialState);
+    };
+
+    return {
+      /** Rehydrater depuis localStorage au démarrage (browser only) */
+      initializeAuth(): void {
+        if (!isPlatformBrowser(platformId)) return;
+
+        const { accessToken, refreshToken } = readTokens();
+        if (!accessToken || !refreshToken) return;
+
+        patchState(store, { accessToken, refreshToken });
+
+        // Charger le profil courant
+        authService.getMe().subscribe({
+          next: (user) => patchState(store, { currentUser: user }),
+          error: () => reset(),
+        });
+      },
+
+      setTokens(accessToken: string, refreshToken: string): void {
+        persistTokens(accessToken, refreshToken);
+        patchState(store, { accessToken, refreshToken });
+      },
+
+      setUser(user: UserMe | null): void {
+        patchState(store, { currentUser: user });
+      },
+
+      setLoading(isLoading: boolean): void {
+        patchState(store, { isLoading });
+      },
+
+      logout(): void {
+        reset();
+      },
+    };
+  })
 );

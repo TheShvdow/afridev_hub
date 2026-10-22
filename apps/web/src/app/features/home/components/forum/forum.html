@@ -1,0 +1,157 @@
+<section id="forum" class="bg-white lg:h-[951px]">
+  <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-0 lg:pb-[37px] lg:pt-[40px]">
+    <app-section-heading label="FORUM" />
+    <p class="text-[32px] font-bold text-[#141219] lg:mt-[34px]">Fils actifs</p>
+
+    <div class="mt-[24px] flex flex-wrap gap-[12px] lg:mt-[32px]">
+      @for (tag of tags; track tag) {
+        <button
+          type="button"
+          (click)="toggleTag(tag)"
+          [class]="
+            (selectedTag() === tag
+              ? 'bg-[#141219] text-white '
+              : 'bg-white text-[#141219] border-[#E2E8F0] ') +
+            'rounded-full border px-[16px] py-[4px] text-[16px] font-medium transition-colors'
+          "
+        >
+          {{ tag }}
+        </button>
+      }
+    </div>
+
+    <div class="flex flex-col gap-6 lg:mt-[58px] lg:gap-4">
+      @for (thread of filteredThreads(); track thread.title) {
+        <article
+          (click)="openThread(thread)"
+          class="flex cursor-pointer items-center gap-4 rounded-2xl transition-colors hover:bg-[#F8FAFC] sm:gap-4 lg:h-[130px]"
+        >
+          <span
+            aria-hidden="true"
+            class="w-[64px] h-[64px] flex shrink-0 items-center justify-center rounded-full bg-[#0F1011] text-[24px] font-semibold leading-[38px] text-[#FBBF24] sm:w-[64px] sm:h-[64px] lg:w-[80px] lg:h-[80px]"
+          >
+            {{ thread.initials }}
+          </span>
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap gap-4">
+              @for (tag of thread.tags; track tag) {
+                @if (tag === thread.tags[0]) {
+                  <span class="bg-[#F0FDF4] text-[#0F6932] rounded-[1000px] px-[16px] py-[4px] text-[16px] font-medium">{{ tag }}</span>
+                } @else {
+                  <span class="bg-[#FEFCE8] text-[#A16207] rounded-[1000px] px-[16px] py-[4px] text-[16px] font-medium">{{ tag }}</span>
+                }
+              }
+            </div>
+            <h3 class="mt-[6px] text-[16px] font-normal leading-[26px] text-[#141219]">{{ thread.title }}</h3>
+            <p class="mt-[6px] text-[16px] leading-[26px] text-[#64748B]">{{ thread.meta }}</p>
+          </div>
+          <div class="hidden shrink-0 flex-col items-center justify-center gap-[6px] rounded-2xl bg-[#F8FAFC] sm:flex py-[4px] px-[10px]">
+            <span class="text-[24px] font-semibold leading-[38px] text-[#141219]">{{ thread.votes }}</span>
+            <span class="text-[16px] font-normal leading-[26px] text-[#64748B]">votes</span>
+          </div>
+          <div class="hidden shrink-0 flex-col items-center justify-center gap-[6px] rounded-2xl bg-[#F8FAFC] sm:flex py-[4px] px-[10px]">
+            <span class="text-[24px] font-semibold leading-[38px] text-[#141219]">{{ thread.replies }}</span>
+            <span class="text-[16px] font-normal leading-[26px] text-[#64748B]">réponses</span>
+          </div>
+        </article>
+      }
+    </div>
+
+    <div class="flex justify-center lg:mt-[40px]">
+      <a href="#" class="btn-link text-[16px] font-semibold text-[#0F6932] flex gap-[10px]">
+        Tous les fils
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14.4302 5.92969L20.5002 11.9997L14.4302 18.0697" fill="#0F6932"/>
+          <path d="M14.4302 5.92969L20.5002 11.9997L14.4302 18.0697" stroke="#0F6932" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3.5 12H20.33" stroke="#0F6932" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 transition-opacity duration-300"
+    [class.pointer-events-none]="!isModalOpen()"
+    [class.opacity-0]="!isModalOpen()"
+  >
+    <div class="absolute inset-0 bg-[#0F1011]/50" (click)="closeThread()"></div>
+
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Discussion"
+      class="relative z-10 flex max-h-[85vh] w-full max-w-[720px] flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl transition-all duration-300"
+      [class.scale-95]="!isModalOpen()"
+      [class.opacity-0]="!isModalOpen()"
+    >
+      @if (selectedThread(); as thread) {
+        <div class="flex items-start justify-between gap-4 border-b border-[#E2E8F0] p-[24px]">
+          <div class="min-w-0">
+            <div class="flex flex-wrap gap-3">
+              @for (tag of thread.tags; track tag) {
+                @if (tag === thread.tags[0]) {
+                  <span class="bg-[#F0FDF4] text-[#0F6932] rounded-[1000px] px-[16px] py-[4px] text-[14px] font-medium">{{ tag }}</span>
+                } @else {
+                  <span class="bg-[#FEFCE8] text-[#A16207] rounded-[1000px] px-[16px] py-[4px] text-[14px] font-medium">{{ tag }}</span>
+                }
+              }
+            </div>
+            <h3 class="mt-[10px] text-[22px] font-bold leading-[32px] text-[#141219]">{{ thread.title }}</h3>
+            <p class="mt-[6px] text-[14px] leading-[22px] text-[#64748B]">{{ thread.meta }}</p>
+          </div>
+          <button
+            type="button"
+            (click)="closeThread()"
+            aria-label="Fermer"
+            class="shrink-0 rounded-full p-2 text-[#64748B] transition-colors hover:bg-[#F1F5F9] hover:text-[#141219]"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-[24px]">
+          <article class="flex gap-4">
+            <span
+              aria-hidden="true"
+              class="flex size-[48px] shrink-0 items-center justify-center rounded-full bg-[#0F1011] text-[18px] font-semibold text-[#FBBF24]"
+            >
+              {{ thread.initials }}
+            </span>
+            <div class="min-w-0">
+              <p class="text-[16px] font-semibold leading-[26px] text-[#141219]">{{ thread.meta.split(' · ')[0] }}</p>
+              <p class="mt-1 text-[16px] leading-[26px] text-[#475569]">{{ thread.body }}</p>
+            </div>
+          </article>
+
+          <div class="mt-[24px] flex items-center gap-[10px]">
+            <h4 class="text-[18px] font-bold leading-[28px] text-[#141219]">Discussion</h4>
+            <span class="rounded-full bg-[#F1F5F9] px-[10px] py-[2px] text-[14px] font-medium text-[#64748B]">{{ thread.comments.length }}</span>
+          </div>
+
+          <div class="mt-[16px] flex flex-col gap-[16px]">
+            @for (comment of thread.comments; track comment.id) {
+              <app-comment-item [comment]="comment" />
+            }
+          </div>
+        </div>
+
+        <div class="border-t border-[#E2E8F0] p-[24px]">
+          <form (submit)="$event.preventDefault()" class="flex items-center gap-[12px]">
+            <input
+              type="text"
+              placeholder="Écrire une réponse…"
+              class="min-w-0 flex-1 rounded-full border border-[#E2E8F0] bg-white px-[20px] py-[14px] text-[16px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
+            />
+            <button
+              type="submit"
+              class="shrink-0 rounded-full bg-[#0F1011] px-[24px] py-[14px] text-[16px] font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              Répondre
+            </button>
+          </form>
+        </div>
+      }
+    </div>
+  </div>
+</section>

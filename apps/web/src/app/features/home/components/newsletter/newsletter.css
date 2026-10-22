@@ -1,0 +1,145 @@
+.newsletter-stage {
+  position: relative;
+}
+
+.newsletter-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  background: #0f6932;
+  padding: 32px;
+}
+
+.newsletter-vector {
+  position: absolute;
+  display: block;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.newsletter-vector--4 {
+  left: -107.874271px;
+  top: -120.456568px;
+  width: 249.509037px;
+  height: 330.538237px;
+}
+
+.newsletter-vector--3 {
+  left: 879px;
+  top: 297px;
+  width: 323px;
+  height: 101.624062px;
+}
+
+.newsletter-vector--5 {
+  left: 980.000343px;
+  top: -64.485586px;
+  width: 330.53825px;
+  height: 249.509023px;
+}
+
+.newsletter-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.newsletter-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 38.4px;
+  color: #fff;
+}
+
+.newsletter-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.newsletter-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 56px;
+  padding: 0 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+}
+
+.newsletter-field__icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: #fff;
+}
+
+.newsletter-input {
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 25.6px;
+  letter-spacing: 0.08px;
+}
+
+.newsletter-input::placeholder {
+  color: rgba(226, 232, 240, 0.6);
+}
+
+.newsletter-media {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .newsletter-form {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .newsletter-field {
+    width: 358px;
+    flex: none;
+  }
+}
+
+@media (min-width: 1120px) {
+  .newsletter-card {
+    height: 366px;
+    padding: 0;
+  }
+
+  .newsletter-content {
+    position: absolute;
+    left: 80px;
+    top: 101px;
+    width: 498px;
+  }
+
+  .newsletter-media {
+    display: block;
+    position: absolute;
+    right: 1px;
+    top: -80px;
+    width: 527px;
+    height: 446px;
+    overflow: hidden;
+  }
+
+  .newsletter-media img {
+    position: absolute;
+    left: -22px;
+    top: 0;
+    width: 549px;
+    height: 548.98px;
+    max-width: none;
+  }
+}

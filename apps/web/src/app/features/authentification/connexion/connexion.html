@@ -1,0 +1,81 @@
+<app-auth-layout>
+  <form
+    auth-form
+    class="mx-auto flex w-full max-w-[420px] flex-col gap-8"
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    novalidate
+  >
+    <app-auth-close />
+
+    <div class="flex flex-col gap-2.5">
+      <h1 class="font-display text-2xl font-bold leading-8 text-ink">Content de te revoir</h1>
+      <p class="text-sm font-medium leading-[22px] tracking-[0.07px] text-slate-500">
+        Connecte-toi pour retrouver tes projets et ton mentor.
+      </p>
+    </div>
+
+    <div class="flex flex-col gap-3">
+      <app-auth-field
+        label="Adresse e-mail ou Nom d’utilisateur"
+        placeholder="Ton e-mail ou nom d’utilisateur"
+        icon="user"
+        name="identifier"
+        autocomplete="username"
+        formControlName="identifier"
+      />
+
+      <app-auth-password-field
+        label="Mot de passe"
+        placeholder="Entre ton mot de passe"
+        name="password"
+        autocomplete="current-password"
+        formControlName="password"
+      />
+    </div>
+
+    <div class="flex items-center justify-between gap-4">
+      <label class="flex cursor-pointer items-center gap-2.5">
+        <input type="checkbox" class="auth-checkbox" formControlName="remember" />
+        <span class="text-base font-medium leading-[26px] tracking-[0.08px] text-slate-500">Rester connecté</span>
+      </label>
+
+      <a
+        href="#"
+        class="text-base font-medium leading-[26px] tracking-[0.08px] text-slate-500 transition-colors hover:text-ink"
+        (click)="$event.preventDefault()"
+      >
+        Mot de passe oublié ?
+      </a>
+    </div>
+
+    <button type="submit" class="auth-btn">
+      Se connecter
+      <app-icon name="arrow-up-right" class="size-6"></app-icon>
+    </button>
+
+    <div class="flex flex-wrap items-center justify-center gap-2.5">
+      <span class="text-base font-medium leading-[26px] tracking-[0.08px] text-slate-500">
+        Vous découvrez AfriDev Hub ?
+      </span>
+      <a
+        routerLink="/inscription"
+        class="text-sm font-normal leading-5 text-slate-500 underline-offset-4 transition-colors hover:text-ink hover:underline"
+      >
+        Créez un compte
+      </a>
+    </div>
+
+    <div class="flex flex-col gap-5">
+      <p class="text-center text-base font-normal leading-[26px] tracking-[0.08px] text-ink">Ou</p>
+      <app-social-auth />
+    </div>
+  </form>
+
+  <app-auth-side
+    auth-panel
+    title="Ils codent l’Afrique de demain."
+    description="Rejoins une communauté de développeurs africains : projets, mentors et opportunités, au même endroit."
+    [features]="features"
+  />
+</app-auth-layout>
