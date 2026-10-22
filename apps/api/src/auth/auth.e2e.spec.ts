@@ -50,13 +50,17 @@ runE2E('Auth + profil — parcours complet (E2)', () => {
   it('registers, verifies the email, logs in and reads the profile', async () => {
     const registered = await request(app.getHttpServer()).post('/api/auth/register')
       .send({ username, email, password }).expect(201);
+    expect(registered.body.data).toEqual({ message: expect.any(String), email });
+
+    // Pas de connexion avant la vérification de l'email.
+    await request(app.getHttpServer()).post('/api/auth/login')
+      .send({ email, password }).expect(403);
 
     const mail = sentMails.find((sent) => sent.to === email);
     const code = /^([A-Z0-9]{6}) /.exec(mail?.subject ?? '')?.[1];
     expect(code).toBeDefined();
     await request(app.getHttpServer()).post('/api/auth/verify-email')
-      .set('Authorization', `Bearer ${registered.body.data.accessToken as string}`)
-      .send({ code }).expect(200);
+      .send({ email, code }).expect(200);
 
     const login = await request(app.getHttpServer()).post('/api/auth/login')
       .send({ email, password }).expect(200);

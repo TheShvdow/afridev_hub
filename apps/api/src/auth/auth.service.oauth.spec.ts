@@ -26,10 +26,11 @@ function build(opts: {
         if (where.id) return Promise.resolve(opts.userById ?? null);
         return Promise.resolve(null); // username libre
       }),
-      create: jest.fn().mockResolvedValue({ id: 'new', email: 'g@x.sn', username: 'g', role: 'MEMBER' }),
+      create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'new', email: data.email, username: 'g', role: 'MEMBER', isVerified: data.isVerified })),
       update: jest.fn().mockResolvedValue({}),
     },
     moderationAction: { findFirst: jest.fn().mockResolvedValue(null) }, // aucun ban
+    verificationToken: { deleteMany: jest.fn().mockResolvedValue({}), create: jest.fn().mockResolvedValue({}) },
   };
   const jwt = {
     signAsync: jest.fn().mockImplementation((payload: unknown) =>
@@ -41,10 +42,10 @@ function build(opts: {
   };
   const redis = { saveRefreshToken: jest.fn().mockResolvedValue(undefined) };
   const config = { get: jest.fn((_k: string, d?: string) => d), getOrThrow: jest.fn().mockReturnValue('s'.repeat(40)) };
-  const mail = { send: jest.fn() };
+  const mail = { send: jest.fn().mockResolvedValue(undefined) };
   const events = { emit: jest.fn() };
   const service = new AuthService(prisma as never, redis as never, jwt as never, config as never, mail as never, events as never);
-  return { service, prisma, jwt };
+  return { service, prisma, jwt, mail, events };
 }
 
 const google = {
@@ -57,7 +58,7 @@ jest.setTimeout(20000);
 
 describe('AuthService — connexion OAuth', () => {
   it('logs in directly when the provider account is already linked', async () => {
-    const { service, prisma } = build({ account: { user: { id: 'u1', email: 'g@x.sn', username: 'g', role: 'MEMBER' } } });
+    const { service, prisma } = build({ account: { user: { id: 'u1', email: 'g@x.sn', username: 'g', role: 'MEMBER', isVerified: true } } });
     const result = await service.resolveOAuthLogin(google);
     expect(result.type).toBe('tokens');
     expect(prisma.user.create).not.toHaveBeenCalled();
@@ -78,15 +79,37 @@ describe('AuthService — connexion OAuth', () => {
       data: expect.objectContaining({ email: 'g@x.sn', isVerified: true, accounts: { create: { provider: 'google', providerAccountId: 'g-1' } } }),
     }));
   });
+
+  it('sends a code and opens no session when the provider does not guarantee the email', async () => {
+    const { service, mail } = build();
+    await expect(service.resolveOAuthLogin({ ...google, emailVerified: false }))
+      .rejects.toMatchObject({ code: 'AUTH_EMAIL_NOT_VERIFIED', status: 403 });
+    expect(mail.send).toHaveBeenCalled();
+  });
+
+  it('refuses to log in a linked account whose email is still unverified', async () => {
+    const { service } = build({ account: { user: { id: 'u1', email: 'g@x.sn', username: 'g', role: 'MEMBER', isVerified: false } } });
+    await expect(service.resolveOAuthLogin(google)).rejects.toMatchObject({ code: 'AUTH_EMAIL_NOT_VERIFIED' });
+  });
 });
 
 describe('AuthService.linkOAuthAccount — liaison confirmée', () => {
   it('links the provider account when the password of the existing account is correct', async () => {
-    const { service, prisma } = build({ userById: { id: 'u1', email: 'g@x.sn', username: 'g', role: 'MEMBER', passwordHash: hash } });
+    const { service, prisma } = build({ userById: { id: 'u1', email: 'g@x.sn', username: 'g', role: 'MEMBER', passwordHash: hash, isVerified: true } });
     await service.linkOAuthAccount('link-token', 'Secret123!');
     expect(prisma.account.create).toHaveBeenCalledWith({
       data: { userId: 'u1', provider: 'google', providerAccountId: 'g-1' },
     });
+  });
+
+  it('verifies an unverified account when the provider confirmed the email', async () => {
+    const { service, prisma, events } = build({
+      userById: { id: 'u1', email: 'g@x.sn', username: 'g', role: 'MEMBER', passwordHash: hash, isVerified: false },
+      linkClaims: { typ: 'oauth-link', provider: 'google', providerAccountId: 'g-1', userId: 'u1', emailVerified: true },
+    });
+    await expect(service.linkOAuthAccount('link-token', 'Secret123!')).resolves.toHaveProperty('accessToken');
+    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { isVerified: true } });
+    expect(events.emit).toHaveBeenCalledWith('auth.email.verified', { userId: 'u1' });
   });
 
   it('refuses a wrong password without linking anything', async () => {

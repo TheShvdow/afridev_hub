@@ -8,6 +8,11 @@ export class MessageDto {
   @ApiProperty({ example: 'Email vérifié.' }) message!: string;
 }
 
+export class RegisteredDto {
+  @ApiProperty({ example: 'Compte créé : saisissez le code reçu par email pour l\'activer.' }) message!: string;
+  @ApiProperty({ example: 'amadou@exemple.sn' }) email!: string;
+}
+
 export class CountResultDto {
   @ApiProperty({ example: 3, description: 'Nombre d\'éléments concernés' }) count!: number;
 }

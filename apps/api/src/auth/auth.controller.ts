@@ -18,7 +18,7 @@ import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto, VerifyEmailDto } from './dto/verify-email.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -32,7 +32,7 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { AuthTokensDto, UserMeDto } from './dto/auth-tokens.dto';
-import { MessageDto } from '../common/swagger/models-extra';
+import { MessageDto, RegisteredDto } from '../common/swagger/models-extra';
 
 interface AuthUser {
   id: string;
@@ -53,8 +53,11 @@ export class AuthController {
 
   @Post('register')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @ApiOperation({ summary: 'Créer un compte' })
-  @ApiData({ type: AuthTokensDto, status: 201, description: 'Compte créé, tokens renvoyés' })
+  @ApiOperation({
+    summary: 'Créer un compte',
+    description: 'Aucun token : un code est envoyé par email, à confirmer avec POST /auth/verify-email avant de se connecter.',
+  })
+  @ApiData({ type: RegisteredDto, status: 201, description: 'Compte créé, en attente de vérification' })
   @ApiResponse({ status: 409, description: 'Email ou nom d\'utilisateur déjà utilisé' })
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
@@ -68,6 +71,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Se connecter' })
   @ApiData({ type: AuthTokensDto, description: 'Tokens d\'accès et de rafraîchissement' })
   @ApiResponse({ status: 401, description: 'Email ou mot de passe incorrect' })
+  @ApiResponse({ status: 403, description: 'AUTH_EMAIL_NOT_VERIFIED : email pas encore confirmé (ou compte suspendu)' })
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
@@ -126,26 +130,28 @@ export class AuthController {
   @Post('verify-email')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Confirmer son adresse email avec le code à 6 caractères reçu' })
+  @ApiOperation({
+    summary: 'Confirmer son adresse email avec le code à 6 caractères reçu',
+    description: 'Sans token : étape entre l\'inscription et la première connexion.',
+  })
   @ApiResponse({ status: 400, description: 'Code invalide ou expiré' })
+  @ApiResponse({ status: 409, description: 'Email déjà vérifié' })
   @ApiResponse({ status: 429, description: '5 essais erronés : le code est invalidé, en demander un nouveau' })
-  @ApiData({ type: MessageDto, description: 'Email vérifié' })
-  verifyEmail(@CurrentUser('id') userId: string, @Body() dto: VerifyEmailDto) {
-    return this.authService.verifyEmail(userId, dto.code);
+  @ApiData({ type: MessageDto, description: 'Email vérifié : l\'utilisateur peut se connecter' })
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(dto.email, dto.code);
   }
 
   @Post('resend-verification')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Recevoir un nouveau code de vérification par email' })
-  @ApiResponse({ status: 409, description: 'Email déjà vérifié' })
-  @ApiData({ type: MessageDto, description: 'Nouveau code envoyé par email' })
-  resendVerification(@CurrentUser('id') userId: string) {
-    return this.authService.resendVerification(userId);
+  @ApiOperation({
+    summary: 'Recevoir un nouveau code de vérification par email',
+    description: 'Réponse identique que l\'email ait un compte ou non.',
+  })
+  @ApiData({ type: MessageDto, description: 'Nouveau code envoyé si un compte non vérifié utilise cet email' })
+  resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerification(dto.email);
   }
 
   // ── GitHub OAuth ─────────────────────────────────────────────────────
