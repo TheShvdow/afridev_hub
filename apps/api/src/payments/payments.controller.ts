@@ -19,22 +19,30 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { PaymentDto } from '../common/swagger/models';
+import { PaymentInitiatedDto, PaymentProductDto } from '../common/swagger/models-extra';
 
 @ApiTags('Payments')
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
+  @Get('products')
+  @ApiOperation({ summary: 'Produits payants et leurs prix (catalogue côté serveur)' })
+  @ApiData({ type: PaymentProductDto, array: true, description: 'Produits payants et prix fixés par le serveur' })
+  listProducts() {
+    return this.paymentsService.listProducts();
+  }
+
   @Post('initiate')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Initier un paiement Bictorys (charge)' })
-  @ApiData({ status: 201, description: 'Paiement initié, redirection ou lien de paiement' })
+  @ApiOperation({ summary: 'Payer un produit du catalogue via Bictorys (le prix est fixé par le serveur)' })
+  @ApiData({ type: PaymentInitiatedDto, status: 201, description: 'Paiement initié : rediriger vers redirectUrl' })
   initiate(
     @CurrentUser('id') userId: string,
     @Body() dto: InitiatePaymentDto,
   ) {
-    return this.paymentsService.initiatePayment({ ...dto, userId });
+    return this.paymentsService.initiatePayment(userId, dto);
   }
 
   @Get(':id')

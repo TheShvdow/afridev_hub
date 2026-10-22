@@ -15,12 +15,12 @@ describe('GamificationListener (règles du glossaire)', () => {
   });
 
   it('gives +10 for an answer given', async () => {
-    await listener.onAnswerCreated({ authorId: 'u1', answerId: 'a1', postId: 'p1' });
+    await listener.onAnswerCreated({ authorId: 'u1', answerId: 'a1', postId: 'p1', postAuthorId: 'u0' });
     expect(addReputation).toHaveBeenCalledWith({ userId: 'u1', delta: 10, reason: 'answer_given', entityId: 'a1' });
   });
 
   it('gives +15 to the answer author when accepted', async () => {
-    await listener.onAnswerAccepted({ answerAuthorId: 'u2', answerId: 'a1', postId: 'p1' });
+    await listener.onAnswerAccepted({ answerAuthorId: 'u2', answerId: 'a1', postId: 'p1', acceptedById: 'u0' });
     expect(addReputation).toHaveBeenCalledWith({ userId: 'u2', delta: 15, reason: 'answer_accepted', entityId: 'a1' });
   });
 
@@ -33,14 +33,14 @@ describe('GamificationListener (règles du glossaire)', () => {
     ['upvote changed to downvote', 'UP', 'DOWN', -12],
   ])('computes the delta for %s', async (_label, previous, next, delta) => {
     await listener.onVoteChanged({
-      targetOwnerId: 'owner', entityType: 'POST', entityId: 'p1',
+      voterId: 'voter', targetOwnerId: 'owner', entityType: 'POST', entityId: 'p1',
       previous: previous as never, next: next as never,
     });
     expect(addReputation).toHaveBeenCalledWith({ userId: 'owner', delta, reason: 'vote_changed', entityId: 'p1' });
   });
 
   it('does nothing when the vote change leaves the score unchanged', async () => {
-    await listener.onVoteChanged({ targetOwnerId: 'o', entityType: 'POST', entityId: 'p', previous: null, next: null });
+    await listener.onVoteChanged({ voterId: 'v', targetOwnerId: 'o', entityType: 'POST', entityId: 'p', previous: null, next: null });
     expect(addReputation).not.toHaveBeenCalled();
   });
 

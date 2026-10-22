@@ -6,7 +6,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import { randomBytes } from 'crypto';
+import { createHash, randomInt, timingSafeEqual } from 'node:crypto';
 import { MailService } from '../mail/mail.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { AuthEmailVerifiedEvent } from '@afridev/shared-types';
@@ -15,13 +15,26 @@ import { RedisService } from '../redis/redis.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
-import type { User } from '@prisma/client';
+import { Prisma, type User } from '@prisma/client';
+import { escapeHtml } from '../mail/escape-html';
 import { DomainException } from '../common/errors/domain.exception';
 import { isUserBanned } from '../common/moderation/user-ban';
 
 const BCRYPT_ROUNDS = 12;
 const REFRESH_TTL_S  = 7 * 24 * 60 * 60;         // 7 jours en secondes
-const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;  // lien de vérification : 24 h
+const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;  // code de vérification : 24 h
+const MAX_VERIFICATION_ATTEMPTS = 5;
+// Lettres et chiffres sans les caractères qui se confondent à la lecture (0/O, 1/I).
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const CODE_LENGTH = 6;
+
+export function generateVerificationCode(): string {
+  let code = '';
+  for (let i = 0; i < CODE_LENGTH; i++) code += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
+  return code;
+}
+
+export const hashCode = (code: string) => createHash('sha256').update(code.toUpperCase()).digest('hex');
 
 type SafeUser = Omit<User, 'passwordHash'>;
 
@@ -90,19 +103,39 @@ export class AuthService {
   }
 
   // ── Vérification email ──────────────────────────────────────────────
+  // Code à 6 caractères envoyé par email (décision 2026-10-21). Seule son empreinte est
+  // stockée ; 5 essais erronés invalident le code, un renvoi en génère un nouveau.
 
-  async verifyEmail(token: string): Promise<{ message: string }> {
-    const record = await this.prisma.verificationToken.findUnique({ where: { token } });
+  async verifyEmail(userId: string, code: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { isVerified: true } });
+    if (!user) throw new DomainException('AUTH_USER_NOT_FOUND', 'Utilisateur introuvable.', 401);
+    if (user.isVerified) throw new DomainException('AUTH_ALREADY_VERIFIED', 'Cet email est déjà vérifié.', 409);
+
+    const record = await this.prisma.verificationToken.findFirst({ where: { identifier: userId } });
     if (!record || record.expires.getTime() < Date.now()) {
-      throw new DomainException('AUTH_VERIFICATION_TOKEN_INVALID', 'Lien de vérification invalide ou expiré.', 400);
+      throw new DomainException('AUTH_VERIFICATION_TOKEN_INVALID', 'Code invalide ou expiré : demandez-en un nouveau.', 400);
+    }
+
+    if (!this.sameHash(record.token, hashCode(code))) {
+      const attempts = record.attempts + 1;
+      if (attempts >= MAX_VERIFICATION_ATTEMPTS) {
+        await this.prisma.verificationToken.deleteMany({ where: { identifier: userId } });
+        throw new DomainException(
+          'AUTH_VERIFICATION_TOO_MANY_ATTEMPTS',
+          'Trop d\'essais : ce code n\'est plus valable, demandez-en un nouveau.',
+          429,
+        );
+      }
+      await this.prisma.verificationToken.update({ where: { token: record.token }, data: { attempts } });
+      throw new DomainException('AUTH_VERIFICATION_TOKEN_INVALID', 'Code invalide ou expiré : demandez-en un nouveau.', 400);
     }
 
     await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: record.identifier }, data: { isVerified: true } }),
-      this.prisma.verificationToken.deleteMany({ where: { identifier: record.identifier } }),
+      this.prisma.user.update({ where: { id: userId }, data: { isVerified: true } }),
+      this.prisma.verificationToken.deleteMany({ where: { identifier: userId } }),
     ]);
 
-    const payload: AuthEmailVerifiedEvent = { userId: record.identifier };
+    const payload: AuthEmailVerifiedEvent = { userId };
     this.events.emit('auth.email.verified', payload);
 
     return { message: 'Email vérifié.' };
@@ -116,31 +149,49 @@ export class AuthService {
     }
 
     await this.sendVerificationEmail(user);
-    return { message: 'Email de vérification renvoyé.' };
+    return { message: 'Nouveau code de vérification envoyé.' };
   }
 
   private async sendVerificationEmail(user: User): Promise<void> {
-    // Un seul lien valide à la fois : on remplace les précédents.
+    // Un seul code valide à la fois : on remplace les précédents.
     await this.prisma.verificationToken.deleteMany({ where: { identifier: user.id } });
-
-    const token = randomBytes(32).toString('hex');
-    await this.prisma.verificationToken.create({
-      data: { identifier: user.id, token, expires: new Date(Date.now() + VERIFICATION_TTL_MS) },
-    });
-
-    const webUrl = this.config.get<string>('WEB_URL', 'http://localhost:4200');
-    const link = `${webUrl}/auth/verify-email?token=${token}`;
+    const code = await this.createUniqueCode(user.id);
 
     if (process.env['NODE_ENV'] !== 'production') {
-      // Sandbox : le lien est visible dans les logs pour tester le parcours sans boîte mail.
-      this.logger.log(`Lien de vérification (sandbox) pour ${user.email} : ${link}`);
+      // Sandbox : le code est visible dans les logs pour tester le parcours sans boîte mail.
+      this.logger.log(`Code de vérification (sandbox) pour ${user.email} : ${code}`);
     }
 
     await this.mail.send(
       user.email,
-      'Confirmez votre adresse email',
-      `<p>Bonjour ${user.username},</p><p>Confirmez votre adresse : <a href="${link}">${link}</a></p><p>Ce lien expire dans 24 heures.</p>`,
+      `${code} est votre code de vérification AfriDev Hub`,
+      `<p>Bonjour ${escapeHtml(user.username)},</p>
+       <p>Voici votre code pour confirmer votre adresse email :</p>
+       <p style="font-size:28px;font-weight:bold;letter-spacing:6px;font-family:monospace">${code}</p>
+       <p>Ce code expire dans 24 heures. Si vous n'avez pas créé de compte, ignorez cet email.</p>`,
     );
+  }
+
+  // Code unique parmi les codes en cours : la contrainte d'unicité tranche, on retire en cas de collision.
+  private async createUniqueCode(userId: string): Promise<string> {
+    for (let attempt = 0; ; attempt++) {
+      const code = generateVerificationCode();
+      try {
+        await this.prisma.verificationToken.create({
+          data: { identifier: userId, token: hashCode(code), expires: new Date(Date.now() + VERIFICATION_TTL_MS) },
+        });
+        return code;
+      } catch (error) {
+        const collision = error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+        if (!collision || attempt >= 4) throw error;
+      }
+    }
+  }
+
+  private sameHash(a: string, b: string): boolean {
+    const left = Buffer.from(a, 'hex');
+    const right = Buffer.from(b, 'hex');
+    return left.length === right.length && timingSafeEqual(left, right);
   }
 
   // ── Connexion ────────────────────────────────────────────────────────
@@ -285,6 +336,10 @@ export class AuthService {
         role:        true,
         isVerified:  true,
         reputation:  true,
+        emailNotifications: true,
+        isRecruiter: true,
+        companyName: true,
+        preferredCurrency: true,
         createdAt:   true,
       },
     });

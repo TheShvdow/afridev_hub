@@ -15,3 +15,13 @@ export function serializeRequest(req: LoggableRequest) {
     remoteAddress: req.remoteAddress,
   };
 }
+
+// Réponses : seulement le code de statut. Les en-têtes contiennent des données sensibles,
+// comme le Location d'une redirection OAuth qui porte des jetons dans son fragment.
+export interface LoggableResponse {
+  statusCode?: number;
+}
+
+export function serializeResponse(res: LoggableResponse) {
+  return { statusCode: res.statusCode };
+}

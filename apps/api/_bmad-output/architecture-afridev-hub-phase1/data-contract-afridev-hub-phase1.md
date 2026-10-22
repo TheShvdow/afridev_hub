@@ -31,7 +31,7 @@ Les enums des niveaux 2 à 4 sont **identiques** : les DTO importent les enums d
 | `VoteValue` | UP, DOWN | `VoteDto.value` | `VoteValue` |
 | `ReportEntityType` | POST, ANSWER, PROJECT | `CreateReportDto.entityType` | `ReportEntityType` |
 | `ReportStatus` | PENDING, REVIEWED, RESOLVED, DISMISSED | — | `ReportStatus` |
-| `ModerationActionType` | HIDDEN, RESTORED, WARNING, BAN | `ResolveReportDto.action` | `ModerationActionType` |
+| `ModerationActionType` | HIDDEN, RESTORED, DISMISSED, WARNING, BAN | `ResolveReportDto.action` (HIDDEN, RESTORED, WARNING) | `ModerationActionType` |
 | `ExperienceLevel` | JUNIOR, MID, SENIOR | `OnboardingDto.level`, `UpdateUserDto.level` | `ExperienceLevel` |
 | `JobType` | FULL_TIME, PART_TIME, CONTRACT, FREELANCE, INTERNSHIP | `CreateJobDto.type`, filtre `GET /jobs?type=` | `JobType` |
 | `JobMode` | REMOTE, ONSITE, HYBRID | `CreateJobDto.mode`, filtre `GET /jobs?mode=` | `JobMode` |
@@ -100,15 +100,18 @@ Les contraintes de longueur viennent du glossaire quand il en définit une ; sin
 | | stack | `JobOffer.stack` (String[]) | **requis**, 1–5 | Glossaire « Offre » |
 | | — | `JobOffer.expiresAt` | calculé : now + 60 jours | Glossaire « Offre » (J60) |
 | `ApplyJobDto` | message | `JobApplication.message` | **requis** | — |
-| | cvUrl | `JobApplication.cvUrl` | optionnel, URL | — |
+| | cvKey | `JobApplication.cvUrl` (contient la clé R2, pas une URL) | optionnel, clé `cvs/<userId>/<uuid>.pdf` vérifiée dans R2 | FR-31 |
+| `CreateJobAlertDto` | country, mode, stack, salaryMin, currency | `JobAlert.*` | tous optionnels ; currency requis avec salaryMin ; 5 alertes max | FR-32 |
+| `RecruiterProfileDto` | companyName | `User.companyName` (+ `User.isRecruiter = true`) | 2–100 | Glossaire « Recruteur » |
 
 ### Modération, administration, paiements
 | DTO | Champ | Colonne Prisma | Contrainte |
 | --- | --- | --- | --- |
 | `UpdateRoleDto` (admin) | role | `User.role` | `UserRole` |
 | `CreateReportDto` | entityType | `Report.entityType` | `ReportEntityType` |
-| | entityId, reason | `Report.entityId`, `Report.reason` | string ; reason 3–500 |
-| `ResolveReportDto` | action | `ModerationAction.action` | `ModerationActionType` |
+| | entityId | `Report.entityId` | string ; le contenu doit exister (`MODERATION_TARGET_NOT_FOUND`) |
+| | reason, details | `Report.reason` (`RAISON` ou `RAISON : détails`) | reason ∈ SPAM, OFFENSIVE, OFF_TOPIC, DUPLICATE, OTHER ; details ≤ 500, optionnel |
+| `ResolveReportDto` | action | `ModerationAction.action` | HIDDEN, RESTORED ou WARNING |
 | | note | `ModerationAction.note` | ≤ 1 000 |
 | `BanUserDto` | userId, reason | `ModerationAction` | reason 3–500 |
 | `InitiatePaymentDto` | amount | `Payment.amount` (Int) | entier > 0, unité de base |
@@ -149,6 +152,28 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 - (decision) **Enveloppe AD-7 implémentée** : succès `{ data }` (les listes gardent `{ data, meta }`), erreur `{ error: { code, message, details? } }`. Codes au format `DOMAINE_ENTITE_RAISON`, listés dans `libs/shared-types`. Erreur non prévue : `COMMON_INTERNAL_ERROR`, détail journalisé, jamais renvoyé au client.
 - (decision) **Migrations Prisma avec historique** (remplace `db push`, décision 2026-10-14). Dossier `prisma/migrations/`, verrou `migration_lock.toml`. Baseline `20261014120000_init` (schéma initial), puis `20261014120100_job_type_project_country`. La base dev, créée sans historique, a été marquée à jour avec `migrate resolve --applied`. Règle : aucun `db push` sur une base partagée ; tout changement de schéma passe par `prisma migrate dev` puis commit du dossier de migration.
 - (decision) **Agrégateur de paiement : Bictorys**, implémenté (commit `48a1f52`). `IPaymentProvider` avec une implémentation. Le schéma ne garde que `BICTORYS`. Source de vérité : la documentation Bictorys, consignée dans `bictorys-integration-notes.md`.
+- (decision) **Forum E3 (2026-10-20)** : migration `20261020120000_forum_e3_votes_search_moderation`.
+  - `Post.voteScore` et `Answer.voteScore` (votes positifs − négatifs) sont tenus à jour par `ForumListener` sur `votes.vote.changed`. `Post.lastActivityAt` change à chaque réponse, acceptation ou modification. Ils servent aux tris `votes` et `active`.
+  - Recherche plein texte en français, accents ignorés : index d'expression GIN sur `to_tsvector('french', f_unaccent(title || ' ' || body))`, interrogé par `$queryRaw`. Détection de doublons (FR-14) : index trigramme sur `lower(f_unaccent(title))`, seuil de similarité 0.6. Ces index ne sont pas dans `schema.prisma` ; `prisma migrate diff` ne propose pas de les supprimer (vérifié).
+  - `isHidden` et `hiddenAt` sur Post, Answer et Project. Un contenu masqué disparaît des listes et de la recherche ; au détail, titre et corps valent « [Contenu masqué] », sauf pour MODERATOR et ADMIN.
+  - Un signalement par membre et par contenu (`@@unique`, 409 `MODERATION_REPORT_DUPLICATE`). **Seuil d'auto-masquage : 3 signalements ouverts** (décision du 2026-10-20), réglable par `MODERATION_AUTO_HIDE_THRESHOLD`. L'action automatique a `moderatorId` à null.
+  - Résoudre ou ignorer un signalement clôt tous les signalements ouverts du même contenu. Ignorer rend le contenu visible. Chaque décision est écrite dans `AuditLog`.
+  - Notifications FR-18 (nouvelle réponse, réponse acceptée, nouveau vote positif) en in-app et par email, sauf si `User.emailNotifications` vaut false.
+  - Les commentaires sont reportés en phase 2 (absents du PRD, décision du 2026-10-20).
+- (decision) **Job board E5 (2026-10-21)** : migrations `20261021120000_job_board_e5_enums`, `20261021120100_job_board_e5`, `20261021120200_job_stack_lowercase`.
+  - Cycle d'une offre : `PENDING_REVIEW` → `ACTIVE` (validation, `publishedAt`, expiration à +60 jours) ou `REJECTED` (`rejectionReason`). Une offre refusée puis modifiée repart en `PENDING_REVIEW`. `ACTIVE` → `EXPIRED` (tâche horaire) ou `CLOSED`. Une offre active ou expirée se renouvelle pour 60 jours.
+  - `salaryMinUsd` / `salaryMaxUsd` : salaires convertis en USD, recalculés à chaque mise à jour des taux, pour le filtre salaire entre devises.
+  - Quota du plan gratuit : 3 offres par mois calendaire UTC, offres refusées exclues. Plan premium = `RecruiterPlan` PREMIUM actif et non expiré.
+  - Les technologies (`JobOffer.stack`, `JobAlert.stack`) sont stockées en minuscules.
+  - Événements : `jobs.offer.published`, `jobs.offer.reviewed`, `jobs.application.created`, `jobs.alert.matched`, `currency.rates.updated`.
+- (decision) **Vitrine projets E4 (2026-10-21)** : migration `20261021130000_projects_e4`.
+  - `Project.isApproved` supprimé : publication immédiate si badge vérifié et dépôt GitHub existant. Les projets existants non approuvés deviennent visibles.
+  - `Project.slug` unique (tiré du nom, suffixe aléatoire court en cas de collision), `githubFullName` (« owner/repo » en minuscules, un projet par dépôt), `githubForks`, `githubSyncedAt` (dernier import réussi ; null = pas encore importé).
+  - `CreateProjectDto.categorySlug` devient obligatoire (FR-22) ; `UpdateProjectDto` accepte les tags, la catégorie et un nouveau dépôt (revérifié, stats remplacées).
+- (decision) **Paiements E6 (2026-10-21)** : `InitiatePaymentDto` ne contient plus que `product`, `paymentType`, `country`, `customer`. Montant, devise, `entityType` et `entityId` (= le membre qui paie) viennent de `payments/catalog.ts`. Pas de migration : le produit est rangé dans `Payment.metadata.product`. Un paiement `CAPTURED` de type `RECRUITER_PLAN` crée ou prolonge `RecruiterPlan` (PREMIUM, +30 jours) dans la même transaction.
+- (decision) **Vérification d'email par code (2026-10-21)** : le lien est remplacé par un code de 6 caractères (lettres majuscules et chiffres, sans 0/O/1/I), unique parmi les codes en cours, valable 24 h. `VerificationToken.token` contient l'empreinte SHA-256 du code, jamais le code. `POST /auth/verify-email` exige la connexion (JWT reçu à l'inscription) et prend `{ code }`, casse ignorée. 5 essais erronés invalident le code (429 `AUTH_VERIFICATION_TOO_MANY_ATTEMPTS`) ; `POST /auth/resend-verification` en envoie un nouveau. Migration `20261021150000_email_verification_code` : colonne `attempts`, anciens liens supprimés.
+- (decision) **Table des pays (2026-10-22)** : table `Country` (`code` ISO alpha-2 en clé, `alpha3`, `name` en français, `region` AFRICA ou DIASPORA), 69 pays : les 54 pays africains et 15 de la diaspora. `User.country`, `JobOffer.country` et `Project.country` sont des clés étrangères vers `Country.code` : la base refuse un code inconnu. Le front précharge `GET /api/countries` (public, mis en cache 24 h) pour ses listes déroulantes et envoie le code à 2 lettres. Source unique : `apps/api/src/common/countries.ts`, utilisée par la migration `20261022120000_country_table`, le seed et la validation des DTO (casse ignorée, `sn` → `SN`).
+- (decision) **Nettoyage du schéma (2026-10-22)** : migration `20261022130000_drop_unused_tables`. Supprimés car jamais utilisés par le code et vides : tables `JobCategory` (et `JobOffer.categoryId`) et `Refund` (et l'enum `RefundStatus`, remboursements en phase 2) ; colonnes `User.name`, `User.githubUrl`, `User.linkedinUrl` (doublons de `displayName`, `githubUsername`, `linkedinUsername`) ; colonnes de jetons de `Account` (`accessToken`, `refreshToken`, `expiresAt`, `tokenType`, `scope`, `idToken`) : l'API ne conserve pas les jetons des fournisseurs OAuth.
 - (decision) **Build API : `rootDir` = racine du monorepo** (`apps/api/project.json`), pour que l'API puisse importer `libs/shared-types`. `outputFileName` fixé pour que `nx serve` retrouve `main.js`.
 
 ## 6. Écarts connus

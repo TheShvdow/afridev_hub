@@ -1,5 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
+import { escapeHtml } from '../mail/escape-html';
 import { NotificationsGateway } from './notifications.gateway';
 import { NotificationType } from '@prisma/client';
 
@@ -11,13 +14,23 @@ interface CreateNotificationInput {
   targetType?:  string;
   targetId?:    string;
   actorId?:     string;
+  // Chemin côté web (ex. /forum/<id>) : sert au lien de l'email, n'est pas stocké.
+  link?:        string;
 }
+
+// Types envoyés aussi par email (FR-18), sauf si le membre a désactivé les emails.
+// JOB_ALERT reste in-app : les alertes ont leur propre récapitulatif hebdomadaire (FR-32).
+const EMAIL_TYPES = new Set<NotificationType>(['NEW_ANSWER', 'ANSWER_ACCEPTED', 'VOTE_RECEIVED', 'JOB_APPLICATION', 'JOB_REVIEWED']);
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly gateway: NotificationsGateway,
+    private readonly mail?: MailService,
+    private readonly config?: ConfigService,
   ) {}
 
   async create(input: CreateNotificationInput) {
@@ -41,7 +54,31 @@ export class NotificationsService {
     // Envoyer en temps réel via WebSocket
     this.gateway.sendToUser(input.userId, 'notification', notification);
 
+    // Email en arrière-plan : son échec n'annule pas la notification in-app.
+    if (EMAIL_TYPES.has(input.type)) {
+      this.sendEmail(input).catch((error) =>
+        this.logger.error(`Email de notification non envoyé (${input.type})`, error instanceof Error ? error.stack : String(error)),
+      );
+    }
+
     return notification;
+  }
+
+  private async sendEmail(input: CreateNotificationInput) {
+    if (!this.mail) return;
+    const user = await this.prisma.user.findUnique({
+      where:  { id: input.userId },
+      select: { email: true, emailNotifications: true },
+    });
+    if (!user?.emailNotifications) return;
+
+    const webUrl = this.config?.get<string>('WEB_URL') ?? 'http://localhost:4200';
+    const url = `${webUrl}${input.link ?? '/notifications'}`;
+    const html = `
+      <p>${escapeHtml(input.message)}</p>
+      <p><a href="${escapeHtml(url)}">Voir sur AfriDev Hub</a></p>
+      <p style="color:#666;font-size:12px">Vous pouvez désactiver ces emails dans vos préférences de notification.</p>`;
+    await this.mail.send(user.email, input.title, html);
   }
 
   // API publique exportée (story E2-6) : les autres modules notifient via cette méthode.
@@ -103,10 +140,11 @@ export class NotificationsService {
       targetType: 'ANSWER',
       targetId:   answerId,
       actorId,
+      link:       `/forum/${postId}`,
     });
   }
 
-  async notifyAnswerAccepted(answerAuthorId: string, answerId: string, actorId: string) {
+  async notifyAnswerAccepted(answerAuthorId: string, answerId: string, postId: string, actorId: string) {
     return this.create({
       userId:     answerAuthorId,
       type:       'ANSWER_ACCEPTED',
@@ -115,10 +153,11 @@ export class NotificationsService {
       targetType: 'ANSWER',
       targetId:   answerId,
       actorId,
+      link:       `/forum/${postId}`,
     });
   }
 
-  async notifyUpvote(targetUserId: string, targetType: string, targetId: string, actorId: string) {
+  async notifyUpvote(targetUserId: string, targetType: string, targetId: string, postId: string | null, actorId: string) {
     return this.create({
       userId:     targetUserId,
       type:       'VOTE_RECEIVED',
@@ -127,6 +166,62 @@ export class NotificationsService {
       targetType,
       targetId,
       actorId,
+      ...(postId && { link: `/forum/${postId}` }),
+    });
+  }
+
+  // FR-31 : le recruteur est prévenu de chaque candidature.
+  async notifyJobApplication(recruiterId: string, applicationId: string, jobId: string, jobTitle: string, applicantId: string) {
+    return this.create({
+      userId:     recruiterId,
+      type:       'JOB_APPLICATION',
+      title:      'Nouvelle candidature',
+      message:    `Nouvelle candidature pour votre offre « ${jobTitle} ».`,
+      targetType: 'JOB_APPLICATION',
+      targetId:   applicationId,
+      actorId:    applicantId,
+      link:       `/jobs/${jobId}`,
+    });
+  }
+
+  async notifyJobReviewed(recruiterId: string, jobId: string, jobTitle: string, approved: boolean, reason?: string) {
+    const refusal = reason ? ` : ${reason}` : '.';
+    return this.create({
+      userId:     recruiterId,
+      type:       'JOB_REVIEWED',
+      title:      approved ? 'Votre offre est publiée' : 'Votre offre n\'a pas été validée',
+      message:    approved
+        ? `Votre offre « ${jobTitle} » est maintenant visible.`
+        : `Votre offre « ${jobTitle} » a été refusée${refusal} Modifiez-la pour la soumettre de nouveau.`,
+      targetType: 'JOB_OFFER',
+      targetId:   jobId,
+      link:       `/jobs/${jobId}`,
+    });
+  }
+
+  async notifyJobAlert(userId: string, jobId: string, jobTitle: string) {
+    return this.create({
+      userId,
+      type:       'JOB_ALERT',
+      title:      'Nouvelle offre pour vous',
+      message:    `« ${jobTitle} » correspond à l'une de vos alertes emploi.`,
+      targetType: 'JOB_OFFER',
+      targetId:   jobId,
+      link:       `/jobs/${jobId}`,
+    });
+  }
+
+  async notifyPaymentCaptured(userId: string, paymentId: string, validUntil?: string) {
+    const until = validUntil
+      ? ` jusqu'au ${new Date(validUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`
+      : '';
+    return this.create({
+      userId,
+      type:       'SYSTEM',
+      title:      'Paiement confirmé',
+      message:    `Votre plan recruteur premium est actif${until}. Le reçu vous a été envoyé par email.`,
+      targetType: 'PAYMENT',
+      targetId:   paymentId,
     });
   }
 }

@@ -40,7 +40,7 @@ describe('VotesService', () => {
     expect(result.action).toBe('added');
     expect(prisma.vote.create).toHaveBeenCalled();
     expect(events.emit).toHaveBeenCalledWith('votes.vote.changed', {
-      targetOwnerId: 'owner', entityType: 'POST', entityId: 'p1', previous: null, next: 'UP',
+      voterId: 'voter', targetOwnerId: 'owner', entityType: 'POST', entityId: 'p1', previous: null, next: 'UP',
     });
   });
 

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { PaymentProvider } from '@prisma/client';
 import { DomainException } from '../../common/errors/domain.exception';
 import type { ChargeRequest, ChargeResponse, IPaymentProvider } from './payment-provider.interface';
 
@@ -10,6 +11,7 @@ const WAF_MAX_RETRIES = 3;
 // Clé publique (X-Api-Key) : charges et statut. Remboursement : voir la note dans `refund`.
 @Injectable()
 export class BictorysProvider implements IPaymentProvider {
+  readonly name = PaymentProvider.BICTORYS;
   private readonly logger = new Logger(BictorysProvider.name);
 
   constructor(private readonly config: ConfigService) {}

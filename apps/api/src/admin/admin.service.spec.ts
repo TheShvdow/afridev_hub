@@ -14,6 +14,7 @@ describe('AdminService', () => {
     jobOffer: { count: Mock };
     report: { count: Mock };
     commission: { aggregate: Mock };
+    payment: { count: Mock };
     auditLog: { findMany: Mock; count: Mock; create: Mock };
   };
 
@@ -25,6 +26,7 @@ describe('AdminService', () => {
       jobOffer:   { count: jest.fn().mockResolvedValue(0) },
       report:     { count: jest.fn().mockResolvedValue(0) },
       commission: { aggregate: jest.fn().mockResolvedValue({ _sum: { amount: null } }) },
+      payment:    { count: jest.fn().mockResolvedValue(0) },
       auditLog:   { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0), create: jest.fn() },
     };
 
@@ -51,16 +53,41 @@ describe('AdminService', () => {
       expect(stats).toEqual({
         users:      { total: 42, newThisWeek: 5 },
         content:    { posts: 10, projects: 7, jobs: 3 },
-        moderation: { pendingReports: 1, pendingProjects: 2 },
-        revenue:    { totalCommission: 0 },
+        projects:   { visible: 7, withGithubStats: 2 },
+        moderation: { pendingReports: 1 },
+        revenue:    { totalCommission: 0, capturedPayments: 0 },
+        forum:      expect.any(Object),
+        jobs:       expect.any(Object),
       });
     });
 
-    it('calcule les projets en attente sur isApproved = false et la commission sur les paiements CAPTURED', async () => {
+    it('compte les offres publiées pour SM-5 sur la date de validation', async () => {
+      await service.getDashboardStats();
+      expect(prisma.jobOffer.count).toHaveBeenCalledWith({ where: { publishedAt: { not: null } } });
+      expect(prisma.jobOffer.count).toHaveBeenCalledWith({ where: { status: 'PENDING_REVIEW' } });
+    });
+
+    it('calcule les indicateurs forum SM-2 et SM-7 hors contenus masqués', async () => {
+      // Sans argument : total historique des questions, hors indicateurs forum.
+      prisma.post.count.mockImplementation((args?: { where: { answers?: { some: { isAccepted?: boolean } } } }) => {
+        const answers = args?.where.answers;
+        return Promise.resolve(!answers ? 40 : answers.some.isAccepted ? 13 : 30);
+      });
+
+      const stats = await service.getDashboardStats();
+
+      expect(stats.forum).toEqual(expect.objectContaining({
+        questions: 40, questionsWithAnswer: 30, questionsWithAcceptedAnswer: 13, acceptedAnswerRate: 33,
+      }));
+      expect(stats.forum.last30Days.acceptedAnswerRate).toBe(33);
+      expect(prisma.post.count).toHaveBeenCalledWith({ where: expect.objectContaining({ isHidden: false }) });
+    });
+
+    it('compte les projets visibles, ceux aux stats GitHub importées (SM-6) et la commission sur les paiements CAPTURED', async () => {
       await service.getDashboardStats();
 
-      expect(prisma.project.count).toHaveBeenCalledWith({ where: { isApproved: true } });
-      expect(prisma.project.count).toHaveBeenCalledWith({ where: { isApproved: false } });
+      expect(prisma.project.count).toHaveBeenCalledWith({ where: { isHidden: false } });
+      expect(prisma.project.count).toHaveBeenCalledWith({ where: { isHidden: false, githubSyncedAt: { not: null } } });
       expect(prisma.commission.aggregate).toHaveBeenCalledWith(
         expect.objectContaining({ where: { payment: { status: 'CAPTURED' } } }),
       );

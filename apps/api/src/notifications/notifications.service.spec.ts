@@ -16,3 +16,33 @@ describe('NotificationsService — notify (story E2-6)', () => {
     expect(result).toBe(created);
   });
 });
+
+describe('NotificationsService — email (FR-18)', () => {
+  function build(emailNotifications: boolean) {
+    const prisma = {
+      notification: { create: jest.fn().mockResolvedValue({ id: 'n1' }) },
+      user:         { findUnique: jest.fn().mockResolvedValue({ email: 'dev@afridev.io', emailNotifications }) },
+    };
+    const mail = { send: jest.fn().mockResolvedValue(undefined) };
+    const config = { get: jest.fn().mockReturnValue('https://afridevhub.com') };
+    const service = new NotificationsService(prisma as never, { sendToUser: jest.fn() } as never, mail as never, config as never);
+    return { service, mail };
+  }
+  const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+  it('emails the author of the question with a link to it', async () => {
+    const { service, mail } = build(true);
+    await service.notifyNewAnswer('author', 'a1', 'p1', 'helper');
+    await flush();
+    expect(mail.send).toHaveBeenCalledWith(
+      'dev@afridev.io', 'Nouvelle réponse à votre question', expect.stringContaining('https://afridevhub.com/forum/p1'),
+    );
+  });
+
+  it('sends no email when the member turned emails off', async () => {
+    const { service, mail } = build(false);
+    await service.notifyNewAnswer('author', 'a1', 'p1', 'helper');
+    await flush();
+    expect(mail.send).not.toHaveBeenCalled();
+  });
+});

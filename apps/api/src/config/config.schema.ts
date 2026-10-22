@@ -14,10 +14,17 @@ export const configValidationSchema = Joi.object({
     .valid('development', 'production', 'test')
     .default('development'),
 
+  // Signalements distincts en attente au-delà desquels un contenu est masqué
+  // automatiquement, en attendant la décision d'un modérateur (FR-20/FR-21).
+  MODERATION_AUTO_HIDE_THRESHOLD: Joi.number().integer().min(1).default(3),
+
   // ── Optional ──────────────────────────────────────────────────────────────
+  // Jeton GitHub (lecture seule, sans scope) : relève la limite de 60 à 5 000 requêtes/heure
+  // pour l'import des stats des projets (FR-23). Optionnel.
+  GITHUB_API_TOKEN:              Joi.string().optional().allow(''),
   // Expose /api/docs en production (toujours actif hors production)
   SWAGGER_ENABLED:               Joi.string().valid('true', 'false').optional(),
-  RESEND_API_KEY:               Joi.string().optional().allow(''),
+  RESEND_API_KEY:                Joi.string().optional().allow(''),
   CLOUDFLARE_R2_ACCESS_KEY_ID:   Joi.string().optional().allow(''),
   CLOUDFLARE_R2_SECRET_ACCESS_KEY: Joi.string().optional().allow(''),
   CLOUDFLARE_R2_BUCKET_NAME:     Joi.string().optional().allow(''),
@@ -35,4 +42,6 @@ export const configValidationSchema = Joi.object({
   BICTORYS_PRIVATE_KEY:           Joi.string().optional().allow(''),
   BICTORYS_WEBHOOK_SECRET:        Joi.string().optional().allow(''),
   BICTORYS_MERCHANT_SECRET_CODE:  Joi.string().optional().allow(''),
+  // FR-34 : prix du plan recruteur premium mensuel, en FCFA (défaut 25 000).
+  RECRUITER_PREMIUM_PRICE_XOF:    Joi.number().integer().min(100).optional(),
 });

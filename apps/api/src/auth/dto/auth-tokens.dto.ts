@@ -33,6 +33,18 @@ export class UserMeDto {
   @ApiProperty()
   reputation!: number;
 
+  @ApiProperty({ description: 'Emails d\'activité (FR-18)' })
+  emailNotifications!: boolean;
+
+  @ApiProperty()
+  isRecruiter!: boolean;
+
+  @ApiProperty({ nullable: true, example: 'Acme Dakar' })
+  companyName!: string | null;
+
+  @ApiProperty({ nullable: true, example: 'XOF', description: 'Devise d\'affichage des salaires' })
+  preferredCurrency!: string | null;
+
   @ApiProperty({ format: 'date-time' })
   createdAt!: string;
 }

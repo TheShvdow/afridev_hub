@@ -1,7 +1,7 @@
-import { IsEnum, IsInt, IsOptional, IsPositive, IsString, Matches, Min, ValidateNested, IsEmail, MaxLength } from 'class-validator';
+import { IsEnum, IsIn, IsOptional, IsString, Matches, ValidateNested, IsEmail, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PaymentEntityType } from '@prisma/client';
+import { PRODUCT_CODES, ProductCode } from '../catalog';
 
 // Moyens de paiement et pays tels que nommés par la doc Bictorys (§3 et §8).
 export enum BictorysPaymentType {
@@ -39,16 +39,12 @@ export class ChargeCustomerDto {
   email?: string;
 }
 
+// Le montant, la devise et la cible viennent du catalogue côté serveur (catalog.ts) :
+// le client ne choisit que le produit, le moyen de paiement et le pays.
 export class InitiatePaymentDto {
-  @ApiProperty({ example: 5000, minimum: 100, description: 'Montant en FCFA (entier, sans décimales)' })
-  @IsInt()
-  @IsPositive()
-  @Min(100, { message: 'Le montant minimum est de 100 FCFA.' })
-  amount!: number;
-
-  @ApiProperty({ example: 'XOF', enum: ['XOF'] })
-  @Matches(/^XOF$/, { message: 'Seul le franc CFA (XOF) est accepté.' })
-  currency!: string;
+  @ApiProperty({ enum: PRODUCT_CODES, example: 'RECRUITER_PREMIUM_MONTHLY' })
+  @IsIn(PRODUCT_CODES)
+  product!: ProductCode;
 
   @ApiProperty({ enum: BictorysPaymentType, example: BictorysPaymentType.WAVE_MONEY })
   @IsEnum(BictorysPaymentType)
@@ -57,14 +53,6 @@ export class InitiatePaymentDto {
   @ApiProperty({ enum: BictorysCountry, example: BictorysCountry.SN })
   @IsEnum(BictorysCountry)
   country!: BictorysCountry;
-
-  @ApiProperty({ enum: PaymentEntityType })
-  @IsEnum(PaymentEntityType)
-  entityType!: PaymentEntityType;
-
-  @ApiProperty({ example: 'cmv834jwr000b90svzuzcjamz' })
-  @IsString()
-  entityId!: string;
 
   @ApiPropertyOptional({ type: ChargeCustomerDto })
   @IsOptional()

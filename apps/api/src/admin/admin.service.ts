@@ -14,29 +14,71 @@ export class AdminService {
       totalProjects,
       totalJobs,
       pendingReports,
-      pendingProjects,
+      projectsWithGithubStats,
       totalRevenue,
+      forum,
+      forumLast30Days,
+      jobs,
+      capturedPayments,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({
         where: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 3600 * 1000) } },
       }),
       this.prisma.post.count(),                                         // Post has no `status` field
-      this.prisma.project.count({ where: { isApproved: true } }),       // isApproved not status
+      this.prisma.project.count({ where: { isHidden: false } }),
       this.prisma.jobOffer.count({ where: { status: 'ACTIVE' } }),
       this.prisma.report.count({ where: { status: 'PENDING' } }),
-      this.prisma.project.count({ where: { isApproved: false } }),      // pending = not yet approved
+      // SM-6 : projets dont les stats GitHub ont été importées.
+      this.prisma.project.count({ where: { isHidden: false, githubSyncedAt: { not: null } } }),
       this.prisma.commission.aggregate({                                // Commission is a separate model
         where: { payment: { status: 'CAPTURED' } },                    // CAPTURED not COMPLETED
         _sum:  { amount: true },
       }),
+      this.forumStats(),
+      this.forumStats(new Date(Date.now() - 30 * 24 * 3600 * 1000)),
+      this.jobStats(),
+      // SM-3 : paiements réussis de bout en bout (webhook ou réconciliation confirmés).
+      this.prisma.payment.count({ where: { status: 'CAPTURED' } }),
     ]);
 
     return {
       users:        { total: totalUsers, newThisWeek: newUsersThisWeek },
       content:      { posts: totalPosts, projects: totalProjects, jobs: totalJobs },
-      moderation:   { pendingReports, pendingProjects },
-      revenue:      { totalCommission: totalRevenue._sum.amount ?? 0 }, // _sum.amount not _sum.commission
+      projects:     { visible: totalProjects, withGithubStats: projectsWithGithubStats },
+      moderation:   { pendingReports },
+      revenue:      { totalCommission: totalRevenue._sum.amount ?? 0, capturedPayments }, // _sum.amount not _sum.commission
+      forum:        { ...forum, last30Days: forumLast30Days },
+      jobs,
+    };
+  }
+
+  // SM-5 : offres publiées (validées par la modération). Le salaire est obligatoire sur
+  // chaque offre, toutes comptent donc comme « offres avec salaire ».
+  private async jobStats() {
+    const since = new Date(Date.now() - 60 * 24 * 3600 * 1000);
+    const [published, publishedLast60Days, pendingReview] = await Promise.all([
+      this.prisma.jobOffer.count({ where: { publishedAt: { not: null } } }),
+      this.prisma.jobOffer.count({ where: { publishedAt: { gte: since } } }),
+      this.prisma.jobOffer.count({ where: { status: 'PENDING_REVIEW' } }),
+    ]);
+    return { published, publishedLast60Days, pendingReview };
+  }
+
+  // SM-2 (questions avec au moins une réponse) et SM-7 (taux de réponses acceptées).
+  // Les contenus masqués par la modération ne comptent pas.
+  private async forumStats(since?: Date) {
+    const where: Prisma.PostWhereInput = { isHidden: false, ...(since && { createdAt: { gte: since } }) };
+    const [questions, questionsWithAnswer, questionsWithAcceptedAnswer] = await Promise.all([
+      this.prisma.post.count({ where }),
+      this.prisma.post.count({ where: { ...where, answers: { some: { isHidden: false } } } }),
+      this.prisma.post.count({ where: { ...where, answers: { some: { isAccepted: true, isHidden: false } } } }),
+    ]);
+    return {
+      questions,
+      questionsWithAnswer,
+      questionsWithAcceptedAnswer,
+      acceptedAnswerRate: questions ? Math.round((questionsWithAcceptedAnswer / questions) * 100) : 0,
     };
   }
 

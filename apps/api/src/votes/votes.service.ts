@@ -79,6 +79,7 @@ export class VotesService {
 
     // La réputation n'est pas écrite ici : GamificationModule réagit à l'événement (spine AD-2).
     const payload: VotesVoteChangedEvent = {
+      voterId: userId,
       targetOwnerId,
       entityType: prismaEntityType,
       entityId,

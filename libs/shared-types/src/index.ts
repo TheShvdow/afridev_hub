@@ -16,17 +16,16 @@ export type VoteValue = 'UP' | 'DOWN';
 export type ReportEntityType = 'POST' | 'ANSWER' | 'PROJECT';
 export type ModerationTargetType = 'POST' | 'ANSWER' | 'PROJECT' | 'USER';
 export type ReportStatus = 'PENDING' | 'REVIEWED' | 'RESOLVED' | 'DISMISSED';
-export type ModerationActionType = 'HIDDEN' | 'RESTORED' | 'WARNING' | 'BAN';
+export type ModerationActionType = 'HIDDEN' | 'RESTORED' | 'DISMISSED' | 'WARNING' | 'BAN';
 export type ExperienceLevel = 'JUNIOR' | 'MID' | 'SENIOR';
 export type JobType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'FREELANCE' | 'INTERNSHIP';
 export type JobMode = 'REMOTE' | 'ONSITE' | 'HYBRID';
-export type JobStatus = 'ACTIVE' | 'EXPIRED' | 'CLOSED';
+export type JobStatus = 'PENDING_REVIEW' | 'ACTIVE' | 'REJECTED' | 'EXPIRED' | 'CLOSED';
 export type ApplicationStatus = 'PENDING' | 'REVIEWED' | 'ACCEPTED' | 'REJECTED';
 export type PlanType = 'FREE' | 'PREMIUM';
 export type PaymentProvider = 'BICTORYS';  // agrégateur unique (décision 2026-10-14)
 export type PaymentStatus = 'PENDING' | 'AUTHORIZED' | 'CAPTURED' | 'FAILED' | 'REFUNDED';
 export type PaymentEntityType = 'MENTOR_SESSION' | 'RECRUITER_PLAN' | 'COURSE_ENROLLMENT';
-export type RefundStatus = 'PENDING' | 'PROCESSED' | 'REJECTED';
 export type NotificationType =
   | 'NEW_ANSWER'
   | 'ANSWER_ACCEPTED'
@@ -34,8 +33,20 @@ export type NotificationType =
   | 'MENTION'
   | 'REPORT_RESOLVED'
   | 'JOB_ALERT'
+  | 'JOB_APPLICATION'
+  | 'JOB_REVIEWED'
   | 'SYSTEM'
   | 'BADGE_AWARDED';
+
+export type CountryRegion = 'AFRICA' | 'DIASPORA';
+
+// Élément de GET /api/countries : la liste déroulante envoie `code` (ex. SN).
+export interface CountryItem {
+  code:   string;   // ISO 3166-1 alpha-2
+  alpha3: string;   // ISO 3166-1 alpha-3
+  name:   string;   // nom en français
+  region: CountryRegion;
+}
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -80,6 +91,10 @@ export interface UserMe {
   role:        UserRole;
   isVerified:  boolean;
   reputation:  number;
+  emailNotifications: boolean;
+  isRecruiter: boolean;
+  companyName: string | null;
+  preferredCurrency: string | null;
   createdAt:   string;
 }
 
@@ -122,6 +137,8 @@ export interface PostListItem {
   title:      string;
   viewCount:  number;
   isResolved: boolean;
+  voteScore:  number;
+  lastActivityAt: string;
   createdAt:  string;
   user:       UserSummary;
   postTags:   PostTagItem[];
@@ -130,15 +147,18 @@ export interface PostListItem {
 
 export interface AnswerItem {
   id:         string;
-  body:       string;
+  body:       string;   // « [Contenu masqué] » quand isHidden, sauf pour la modération
   isAccepted: boolean;
+  voteScore:  number;
+  isHidden:   boolean;
   createdAt:  string;
   user:       UserSummary;
 }
 
 export interface PostDetail extends PostListItem {
-  body:    string;
-  answers: AnswerItem[];
+  body:     string;   // « [Contenu masqué] » quand isHidden, sauf pour la modération
+  isHidden: boolean;
+  answers:  AnswerItem[];
 }
 
 // ── Votes ─────────────────────────────────────────────────────────────────────
@@ -160,12 +180,17 @@ export interface ProjectTagItem {
 
 export interface ProjectListItem {
   id:          string;
+  slug:        string;
   name:        string;
   description: string;
   country:     string;
   repoUrl:     string;
   demoUrl:     string | null;
-  isApproved:  boolean;
+  githubStars:    number;
+  githubForks:    number;
+  githubLanguage: string | null;
+  githubLastPush: string | null;
+  githubSyncedAt: string | null;   // null : stats GitHub pas encore importées
   createdAt:   string;
   user:        UserSummary;
   projectTags: ProjectTagItem[];
@@ -179,7 +204,7 @@ export interface CreateProjectDto {
   repoUrl:       string;
   demoUrl?:      string;
   tags:          string[];
-  categorySlug?: string;
+  categorySlug:  string;
 }
 
 // ── Jobs ──────────────────────────────────────────────────────────────────────
@@ -196,9 +221,19 @@ export interface JobListItem {
   salaryMin: number;
   salaryMax: number;
   currency:  string;
+  // Salaire converti dans la devise demandée (?currency= ou devise préférée du membre), si un taux est connu.
+  converted?: ConvertedSalary | null;
+  publishedAt: string | null;
   expiresAt: string;
   createdAt: string;
   recruiter: UserSummary;
+}
+
+export interface ConvertedSalary {
+  currency:  string;
+  salaryMin: number;
+  salaryMax: number;
+  ratesAt:   string;
 }
 
 export interface CreateJobDto {
@@ -216,13 +251,13 @@ export interface CreateJobDto {
 
 export interface ApplyJobDto {
   message: string;
-  cvUrl?:  string;
+  cvKey?:  string;  // clé R2 renvoyée par POST /upload/cv-presign
 }
 
 export interface JobApplicationItem {
   id:        string;
   message:   string;
-  cvUrl:     string | null;
+  cvDownloadUrl: string | null;  // URL signée, valable 10 min
   status:    ApplicationStatus;
   createdAt: string;
   user:      UserSummary;
@@ -243,12 +278,14 @@ export interface PaymentItem {
   updatedAt:   string;
 }
 
+export type PaymentProductCode = 'RECRUITER_PREMIUM_MONTHLY';
+
+// Le montant et la cible viennent du catalogue côté serveur (GET /payments/products).
 export interface InitiatePaymentDto {
-  amount:     number;
-  currency:   string;
-  provider:   PaymentProvider;
-  entityType: PaymentEntityType;
-  entityId:   string;
+  product:     PaymentProductCode;
+  paymentType: string;   // wave_money, orange_money, …
+  country:     string;   // SN, CI, …
+  customer?:   { name?: string; phone?: string; email?: string };
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
@@ -304,11 +341,13 @@ export type ErrorCode =
   | 'AUTH_REFRESH_TOKEN_REVOKED'
   | 'AUTH_ROLE_FORBIDDEN'
   | 'AUTH_VERIFICATION_TOKEN_INVALID'
+  | 'AUTH_VERIFICATION_TOO_MANY_ATTEMPTS'
   | 'AUTH_ALREADY_VERIFIED'
   | 'AUTH_LINK_TOKEN_INVALID'
   | 'AUTH_ACCOUNT_ALREADY_LINKED'
   | 'AUTH_PROVIDER_NOT_CONFIGURED'
   | 'AUTH_OAUTH_EMAIL_MISSING'
+  | 'AUTH_OAUTH_FAILED'
   | 'AUTH_ACCOUNT_BANNED'
   // Utilisateurs
   | 'USERS_USER_NOT_FOUND'
@@ -319,6 +358,7 @@ export type ErrorCode =
   | 'FORUM_FORBIDDEN'
   | 'FORUM_ANSWER_ACCEPT_FORBIDDEN'
   | 'FORUM_SELF_ANSWER_FORBIDDEN'
+  | 'FORUM_ANSWER_FORBIDDEN'
   // Votes
   | 'VOTES_TARGET_NOT_FOUND'
   | 'VOTES_SELF_VOTE_FORBIDDEN'
@@ -327,19 +367,34 @@ export type ErrorCode =
   | 'PROJECTS_PROJECT_NOT_FOUND'
   | 'PROJECTS_CATEGORY_NOT_FOUND'
   | 'PROJECTS_FORBIDDEN'
+  | 'PROJECTS_VERIFIED_BADGE_REQUIRED'
+  | 'PROJECTS_GITHUB_URL_INVALID'
+  | 'PROJECTS_GITHUB_REPO_NOT_FOUND'
+  | 'PROJECTS_REPO_ALREADY_SUBMITTED'
+  | 'PROJECTS_REFRESH_TOO_SOON'
   // Offres
   | 'JOBS_OFFER_NOT_FOUND'
   | 'JOBS_OFFER_CLOSED'
   | 'JOBS_FORBIDDEN'
   | 'JOBS_ALREADY_APPLIED'
   | 'JOBS_SALARY_RANGE_INVALID'
+  | 'JOBS_RECRUITER_REQUIRED'
+  | 'JOBS_PLAN_LIMIT_REACHED'
+  | 'JOBS_OFFER_NOT_PENDING'
+  | 'JOBS_OFFER_NOT_RENEWABLE'
+  | 'JOBS_ALERT_NOT_FOUND'
+  | 'JOBS_ALERT_LIMIT_REACHED'
   // Modération
   | 'MODERATION_REPORT_NOT_FOUND'
+  | 'MODERATION_REPORT_DUPLICATE'
+  | 'MODERATION_REPORT_ALREADY_CLOSED'
+  | 'MODERATION_TARGET_NOT_FOUND'
   // Paiements
   | 'PAYMENTS_PAYMENT_NOT_FOUND'
   | 'PAYMENTS_PROVIDER_NOT_CONFIGURED'
   | 'PAYMENTS_PROVIDER_ERROR'
   | 'PAYMENTS_WEBHOOK_INVALID_SIGNATURE'
+  | 'PAYMENTS_RECRUITER_REQUIRED'
   | 'UPLOAD_NOT_CONFIGURED'
   | 'UPLOAD_KEY_INVALID'
   | 'UPLOAD_OBJECT_NOT_FOUND';
@@ -353,15 +408,17 @@ export interface ForumQuestionCreatedEvent {
 }
 
 export interface ForumAnswerCreatedEvent {
-  authorId: string;
-  answerId: string;
-  postId:   string;
+  authorId:     string;
+  answerId:     string;
+  postId:       string;
+  postAuthorId: string;
 }
 
 export interface ForumAnswerAcceptedEvent {
   answerAuthorId: string;
   answerId:       string;
   postId:         string;
+  acceptedById:   string;
 }
 
 export interface UsersProfileUpdatedEvent {
@@ -379,7 +436,44 @@ export interface GamificationReputationUpdatedEvent {
   reason:     string;
 }
 
+export interface JobsOfferPublishedEvent {
+  jobId:       string;
+  recruiterId: string;
+}
+
+export interface JobsOfferReviewedEvent {
+  jobId:       string;
+  recruiterId: string;
+  title:       string;
+  approved:    boolean;
+  reason?:     string;
+}
+
+export interface JobsApplicationCreatedEvent {
+  applicationId: string;
+  jobId:         string;
+  jobTitle:      string;
+  recruiterId:   string;
+  applicantId:   string;
+}
+
+export interface JobsAlertMatchedEvent {
+  userId:   string;
+  jobId:    string;
+  jobTitle: string;
+}
+
+export interface PaymentsPaymentCapturedEvent {
+  paymentId:   string;
+  userId:      string;
+  product:     PaymentProductCode;
+  amount:      number;
+  currency:    string;
+  validUntil?: string;   // fin du plan activé, ISO 8601
+}
+
 export interface VotesVoteChangedEvent {
+  voterId:       string;
   targetOwnerId: string;
   entityType:    VoteEntityType;
   entityId:      string;

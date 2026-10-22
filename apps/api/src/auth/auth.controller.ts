@@ -8,14 +8,17 @@ import {
   Res,
   HttpCode,
   HttpStatus,
-  Query,
+  Head,
+  UseFilters,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiNoContentResponse, ApiResponse, ApiExcludeEndpoint, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiNoContentResponse, ApiResponse, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { Request, Response } from 'express';
+import { OAuthCallbackFilter } from './filters/oauth-callback.filter';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -28,6 +31,7 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { AuthTokensDto, UserMeDto } from './dto/auth-tokens.dto';
+import { MessageDto } from '../common/swagger/models-extra';
 
 interface AuthUser {
   id: string;
@@ -121,12 +125,14 @@ export class AuthController {
   @Post('verify-email')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Confirmer son adresse email avec le lien reçu' })
-  @ApiQuery({ name: 'token', required: true })
-  @ApiResponse({ status: 200, description: 'Email vérifié' })
-  @ApiResponse({ status: 400, description: 'Lien invalide ou expiré' })
-  verifyEmail(@Query('token') token: string) {
-    return this.authService.verifyEmail(token);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Confirmer son adresse email avec le code à 6 caractères reçu' })
+  @ApiResponse({ status: 400, description: 'Code invalide ou expiré' })
+  @ApiResponse({ status: 429, description: '5 essais erronés : le code est invalidé, en demander un nouveau' })
+  @ApiData({ type: MessageDto, description: 'Email vérifié' })
+  verifyEmail(@CurrentUser('id') userId: string, @Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(userId, dto.code);
   }
 
   @Post('resend-verification')
@@ -134,8 +140,9 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Renvoyer l\'email de vérification' })
+  @ApiOperation({ summary: 'Recevoir un nouveau code de vérification par email' })
   @ApiResponse({ status: 409, description: 'Email déjà vérifié' })
+  @ApiData({ type: MessageDto, description: 'Nouveau code envoyé par email' })
   resendVerification(@CurrentUser('id') userId: string) {
     return this.authService.resendVerification(userId);
   }
@@ -150,8 +157,19 @@ export class AuthController {
     // Passport redirige vers GitHub automatiquement
   }
 
+  // Express sert aussi HEAD avec la route GET : sans cette route dédiée, une requête HEAD
+  // (préchargement du navigateur, sonde) consommerait le code à usage unique de GitHub.
+  // Déclarée avant le GET pour être appariée en premier.
+  @Head(['github/callback', 'google/callback'])
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiExcludeEndpoint()
+  oauthCallbackHead() {
+    // Rien à faire : le code OAuth n'est utilisé que par la requête GET.
+  }
+
   @Get('github/callback')
   @UseGuards(GithubAuthGuard)
+  @UseFilters(OAuthCallbackFilter)
   @ApiOperation({ summary: 'Callback GitHub OAuth' })
   @ApiExcludeEndpoint()
   githubCallback(@Req() req: Request & { user: OAuthLoginResult }, @Res() res: Response) {
@@ -170,6 +188,7 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
+  @UseFilters(OAuthCallbackFilter)
   @ApiOperation({ summary: 'Callback Google OAuth' })
   @ApiExcludeEndpoint()
   googleCallback(@Req() req: Request & { user: OAuthLoginResult }, @Res() res: Response) {

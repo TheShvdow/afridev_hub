@@ -69,6 +69,8 @@ async function bootstrap() {
       .addTag('Gamification', 'Badges & Réputation')
       .addTag('Admin', 'Administration')
       .addTag('Health', 'Santé de l\'API')
+      .addTag('Countries', 'Liste des pays')
+      .addTag('Upload', 'Envoi de fichiers vers R2 (URL présignées)')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);

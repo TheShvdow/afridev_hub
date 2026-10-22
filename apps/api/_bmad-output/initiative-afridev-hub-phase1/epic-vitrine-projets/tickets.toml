@@ -1,0 +1,102 @@
+# tickets.toml — epic-vitrine-projets (E4)
+# Vitrine Projets — backend livré le 2026-10-21 (PR #1). Front Angular non construit.
+# Stories créées après coup (2026-10-22) : le travail a été livré directement, hors ticket.
+# Chaque story renvoie aux commits qui la réalisent ; son plan porte le statut « built ».
+# Build order : 1 et 2 → 3 → 7, 8 ; 4, 5, 6 après 1.
+
+
+[[entry]]
+id = 1
+type = "story"
+title = "Schéma projets : slug, stats GitHub, fin de l'approbation manuelle"
+description = """
+Migration 20261021130000_projects_e4 : slug unique, githubFullName, githubForks, githubSyncedAt ; suppression de isApproved (décision du 2026-10-21). Commit eb503ea.
+"""
+covers = ["CAP-4"]
+after = ["epic-auth-profiles"]
+risk = "medium"
+hitl = false
+
+[[entry]]
+id = 2
+type = "story"
+title = "Client GitHub (GithubModule)"
+description = """
+Lecture de l'API publique GitHub, parsing de l'URL de dépôt, GITHUB_API_TOKEN optionnel. Commit 3827911.
+"""
+covers = ["CAP-4"]
+after = ["epic-auth-profiles"]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 3
+type = "story"
+title = "Soumission avec badge vérifié, dépôt vérifié et import des stats (FR-22, FR-23, FR-27)"
+description = """
+Badge « dev vérifié » requis, catégorie obligatoire, dépôt GitHub existant (422 sinon), un dépôt une seule fois (409) ; étoiles, forks, langage et dernier push importés ; publication sans stats si GitHub est indisponible. Commit 3827911.
+"""
+covers = ["CAP-4"]
+after = [1, 2]
+risk = "medium"
+hitl = false
+
+[[entry]]
+id = 4
+type = "story"
+title = "Page publique par slug avec métadonnées Open Graph (FR-24)"
+description = """
+GET /projects/:slug (les anciens liens par id restent valides), ogMeta avec la carte GitHub du dépôt, starredByViewer. Commit 3827911.
+"""
+covers = ["CAP-4"]
+after = [1]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 5
+type = "story"
+title = "Filtres et tris de la vitrine (FR-26)"
+description = """
+Catégorie, stack, pays combinables ; tris récents, étoiles GitHub, étoiles AfriDev Hub, dernier push ; GET /projects/categories. Commit 3827911.
+"""
+covers = ["CAP-4"]
+after = [1]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 6
+type = "story"
+title = "Étoiles AfriDev Hub (FR-25)"
+description = """
+Toggle d'étoile, nouveau total renvoyé. Commit 3827911.
+"""
+covers = ["CAP-4"]
+after = [1]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 7
+type = "story"
+title = "Rafraîchissement des stats GitHub (nuit et bouton)"
+description = """
+Tâche à 3 h, arrêt propre à la limite de requêtes ; bouton de l'auteur une fois par heure (429 sinon). Commit 3827911.
+"""
+covers = ["CAP-4"]
+after = [3]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 8
+type = "story"
+title = "Indicateur SM-6 dans les stats admin"
+description = """
+Projets visibles et projets aux stats GitHub importées. Commit 3827911.
+"""
+covers = ["CAP-4"]
+after = [3]
+risk = "low"
+hitl = false

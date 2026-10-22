@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { ApiPaginationQuery } from '../common/swagger/api-pagination.decorator';
+import { AdminStatsDto, RoleUpdatedDto } from '../common/swagger/models-extra';
 
 @ApiTags('Admin')
 @Controller('admin')
@@ -29,7 +30,7 @@ export class AdminController {
 
   @Get('stats')
   @ApiOperation({ summary: 'Statistiques du dashboard [ADMIN]' })
-  @ApiData({ description: 'Statistiques du dashboard' })
+  @ApiData({ type: AdminStatsDto, description: 'Statistiques du dashboard et indicateurs SM-2 à SM-7' })
   getStats() {
     return this.adminService.getDashboardStats();
   }
@@ -48,7 +49,7 @@ export class AdminController {
 
   @Patch('users/:id/role')
   @ApiOperation({ summary: 'Modifier le rôle d\'un utilisateur [ADMIN]' })
-  @ApiData({ description: 'Utilisateur mis à jour' })
+  @ApiData({ type: RoleUpdatedDto, description: 'Utilisateur et nouveau rôle' })
   updateRole(
     @CurrentUser('id') actorId: string,
     @Param('id') id: string,

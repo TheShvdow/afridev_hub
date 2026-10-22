@@ -19,12 +19,13 @@ import { ModerationModule } from './moderation/moderation.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { AdminModule } from './admin/admin.module';
 import { HealthModule } from './health/health.module';
+import { CountriesModule } from './countries/countries.module';
 import { MailModule } from './mail/mail.module';
 import { UploadModule } from './upload/upload.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
-import { serializeRequest } from './common/logging/request-serializer';
+import { serializeRequest, serializeResponse } from './common/logging/request-serializer';
 
 @Module({
   imports: [
@@ -50,7 +51,7 @@ import { serializeRequest } from './common/logging/request-serializer';
     // ── Logging ───────────────────────────────────────────────────
     LoggerModule.forRoot({
       pinoHttp: {
-        serializers: { req: serializeRequest },
+        serializers: { req: serializeRequest, res: serializeResponse },
         level: process.env['NODE_ENV'] !== 'production' ? 'debug' : 'info',
         transport: process.env['NODE_ENV'] !== 'production'
           ? { target: 'pino-pretty', options: { singleLine: true, colorize: true } }
@@ -63,6 +64,7 @@ import { serializeRequest } from './common/logging/request-serializer';
     RedisModule,
     HealthModule,
     MailModule,
+    CountriesModule,
 
     // ── Domaines métier ───────────────────────────────────────────
     AuthModule,

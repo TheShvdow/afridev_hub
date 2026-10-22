@@ -4,6 +4,7 @@
  *  or: npm run prisma:seed
  */
 import { PrismaClient } from '@prisma/client';
+import { COUNTRY_RECORDS } from '../apps/api/src/common/countries';
 
 const prisma = new PrismaClient();
 
@@ -106,6 +107,17 @@ async function main() {
     });
   }
   console.log(`     ✓ ${BADGES.length} badges`);
+
+  // Pays : la liste de apps/api/src/common/countries.ts fait foi (noms et codes à jour).
+  console.log('  → Countries');
+  await prisma.$transaction(COUNTRY_RECORDS.map((country) =>
+    prisma.country.upsert({
+      where:  { code: country.code },
+      update: { alpha3: country.alpha3, name: country.name, region: country.region },
+      create: country,
+    }),
+  ));
+  console.log(`     ✓ ${COUNTRY_RECORDS.length} countries`);
 
   // Project categories
   console.log('  → Project categories');

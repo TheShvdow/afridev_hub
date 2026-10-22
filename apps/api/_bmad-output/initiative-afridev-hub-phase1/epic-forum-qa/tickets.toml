@@ -1,0 +1,91 @@
+# tickets.toml — epic-forum-qa (E3)
+# Forum Q&A — backend livré le 2026-10-20 (PR #1). Front Angular non construit.
+# Stories créées après coup (2026-10-22) : le travail a été livré directement, hors ticket.
+# Chaque story renvoie aux commits qui la réalisent ; son plan porte le statut « built ».
+# Build order : 1 (schéma) → 2 à 7 en parallèle.
+# Hors périmètre : commentaires (Phase 2, décision du 2026-10-20).
+
+
+[[entry]]
+id = 1
+type = "story"
+title = "Schéma forum : scores de votes, masquage, index de recherche, unicité des signalements"
+description = """
+Migration 20261020120000_forum_e3_votes_search_moderation : Post/Answer.voteScore, Post.lastActivityAt, isHidden/hiddenAt sur Post, Answer et Project, un signalement par membre et par contenu, ModerationAction.moderatorId optionnel, action DISMISSED, User.emailNotifications, index plein texte et trigramme. Commit 034d390.
+"""
+covers = ["CAP-3"]
+after = ["epic-auth-profiles"]
+risk = "medium"
+hitl = false
+
+[[entry]]
+id = 2
+type = "story"
+title = "Tri des questions par votes et par activité"
+description = """
+voteScore tenu à jour par ForumListener sur votes.vote.changed ; tris votes, active, newest, unanswered. Commit f91fdbd.
+"""
+covers = ["CAP-3"]
+after = [1]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 3
+type = "story"
+title = "Recherche plein texte et détection de doublons (FR-14, FR-19)"
+description = """
+Recherche française sans accents classée par pertinence ; GET /forum/posts/similar propose 3 titres proches (similarité 0,6). Commit f91fdbd.
+"""
+covers = ["CAP-3"]
+after = [1]
+risk = "medium"
+hitl = false
+
+[[entry]]
+id = 4
+type = "story"
+title = "Modification des réponses et des tags"
+description = """
+PATCH /forum/answers/:id par son auteur ; tags d'une question modifiables, compteurs d'usage tenus à jour. Commit f91fdbd.
+"""
+covers = ["CAP-3"]
+after = [1]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 5
+type = "story"
+title = "Modération : masquage, rejet, restauration, auto-masquage (FR-20, FR-21)"
+description = """
+Un signalement par membre (409), raison dans une liste fixe ; masquage automatique à 3 signalements (MODERATION_AUTO_HIDE_THRESHOLD) ; résoudre, rejeter, restaurer ; contenu masqué affiché « [Contenu masqué] » hors modération ; journal d'audit. Commit 21cb6d1.
+"""
+covers = ["CAP-3"]
+after = [1]
+risk = "medium"
+hitl = false
+
+[[entry]]
+id = 6
+type = "story"
+title = "Notifications forum in-app et email (FR-18)"
+description = """
+Nouvelle réponse, réponse acceptée, vote positif : notification in-app et email, désactivable par emailNotifications. Commit e2dd88b.
+"""
+covers = ["CAP-3"]
+after = [1]
+risk = "low"
+hitl = false
+
+[[entry]]
+id = 7
+type = "story"
+title = "Indicateurs SM-2 et SM-7 dans les stats admin"
+description = """
+GET /admin/stats : questions, questions avec réponse, avec réponse acceptée, taux, au total et sur 30 jours. Commit 349bbc5.
+"""
+covers = ["CAP-3"]
+after = [1]
+risk = "low"
+hitl = false
