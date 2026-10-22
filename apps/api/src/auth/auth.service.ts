@@ -17,6 +17,7 @@ import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { Prisma, type User } from '@prisma/client';
 import { escapeHtml } from '../mail/escape-html';
+import { emailCode, emailNote } from '../mail/email-layout';
 import { DomainException } from '../common/errors/domain.exception';
 import { isUserBanned } from '../common/moderation/user-ban';
 
@@ -165,10 +166,12 @@ export class AuthService {
     await this.mail.send(
       user.email,
       `${code} est votre code de vérification AfriDev Hub`,
-      `<p>Bonjour ${escapeHtml(user.username)},</p>
-       <p>Voici votre code pour confirmer votre adresse email :</p>
-       <p style="font-size:28px;font-weight:bold;letter-spacing:6px;font-family:monospace">${code}</p>
-       <p>Ce code expire dans 24 heures. Si vous n'avez pas créé de compte, ignorez cet email.</p>`,
+      `<h1 style="margin:0 0 16px;font-size:22px">Confirmez votre adresse email</h1>
+       <p>Bonjour ${escapeHtml(user.username)},</p>
+       <p>Bienvenue sur AfriDev Hub ! Saisissez ce code dans l'application pour confirmer votre adresse :</p>
+       ${emailCode(code)}
+       <p>Ce code expire dans 24 heures.</p>
+       ${emailNote('Vous n\'avez pas créé de compte ? Ignorez cet email, aucune action ne sera faite.')}`,
     );
   }
 
