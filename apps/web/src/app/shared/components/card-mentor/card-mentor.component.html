@@ -1,0 +1,123 @@
+      <article class="flex flex-col rounded-3xl border border-slate-100 bg-white p-[24px]">
+        <div class="flex flex-col justify-center items-center gap-4">
+          @if (mentor().avatar) {
+            <img [src]="mentor().avatar" [alt]="mentor().name" class="size-16 shrink-0 rounded-full object-cover" />
+          } @else {
+            <span class="flex size-16 shrink-0 items-center justify-center rounded-full bg-night text-2xl font-semibold leading-[38px] text-amber-400">
+              {{ mentor().initials }}
+            </span>
+          }
+          <div class="min-w-0 flex flex-col justify-center items-center gap-[7px]">
+            <h3 class="truncate text-[20px] font-bold leading-[32px] text-ink">{{ mentor().name }}</h3>
+            <p class="truncate text-[16px] leading-[26px] text-[#141219] font-normal">{{ mentor().role }}</p>
+            <p class="flex">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16.7499 7.17422C18.4499 7.45755 18.8499 8.69089 17.6249 9.90755L15.5583 11.9742C15.2083 12.3242 15.0166 12.9992 15.1249 13.4826L15.7166 16.0409C16.1833 18.0659 15.1083 18.8492 13.3166 17.7909L10.8249 16.3159C10.3749 16.0492 9.63326 16.0492 9.17492 16.3159L6.68326 17.7909C4.89992 18.8492 3.81659 18.0576 4.28326 16.0409L4.87492 13.4826C4.98326 12.9992 4.79159 12.3242 4.44159 11.9742L2.37492 9.90755C1.15826 8.69089 1.54992 7.45755 3.24992 7.17422L5.90826 6.73255C6.34992 6.65755 6.88326 6.26589 7.08326 5.85755L8.54992 2.92422C9.34159 1.33255 10.6416 1.33255 11.4416 2.92422L12.9083 5.85755C12.9916 6.03255 13.1416 6.20755 13.3166 6.34922" stroke="#FBBF24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              {{ mentor().start }}
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-4">
+          @for (tag of mentor().tags; track tag) {
+            <span class="bg-[#F0FDF4] text-[#0F6932] rounded-[1000px] px-[16px] py-[4px] text-[16px] font-medium">{{ tag }}</span>
+          }
+        </div>
+
+        <div class="bg-[#F8FAFC] mt-[16px] px-[16px] py-[8px] rounded-[12px]">
+          <p class="mt-4 flex items-center gap-[6px] text-[16px] py-[8px] font-medium leading-[26px] text-[#141219]">
+            <span class="h-[10px] w-[10px] shrink-0 rounded-full bg-[#0F6932]"></span>
+            <span class="min-w-0 flex-1 truncate">
+              {{ mentor().availability }}
+            </span>
+          </p>
+          <p class="text-[18px] font-bold text-[#141219] border-y border-[#E2E8F0] py-[8px]">{{ mentor().price }}</p>
+
+          <p class="mt-4 flex items-center justify-between text-[16px] font-medium py-[8px] leading-[26px] text-[#64748B]">
+            Nationalité
+            <span class="inline-flex h-[15px] w-5 overflow-hidden rounded-[2px] shadow-sm">
+              @switch (mentor().flag) {
+                @case ('sn') {
+                  <svg width="20" height="15" viewBox="0 0 20 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g clip-path="url(#clip0_222_1244)">
+                    <rect width="20" height="15" fill="white"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M6.25 0H13.75V15H6.25V0Z" fill="#FBCD17"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M10.047 9.05471L7.86847 10.5658L8.56459 7.97768L6.96533 6.32441L9.13082 6.23502L10.047 3.67578L10.9632 6.23502H13.125L11.5294 7.97768L12.3285 10.413L10.047 9.05471Z" fill="#006923"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M13.75 0H20V15H13.75V0Z" fill="#E11C1B"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M0 0H6.25V15H0V0Z" fill="#006923"/>
+                    </g>
+                    <defs>
+                    <clipPath id="clip0_222_1244">
+                    <rect width="20" height="15" fill="white"/>
+                    </clipPath>
+                    </defs>
+                  </svg>
+                }
+                @case ('gh') {
+                  <svg width="20" height="15" viewBox="0 0 20 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g clip-path="url(#clip0_222_109)">
+                    <rect width="20" height="15" fill="white"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M0 10H20V15H0V10Z" fill="#5EAA22"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M0 5H20V10H0V5Z" fill="#FECA00"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M0 0H20V5H0V0Z" fill="#E11C1B"/>
+                    <path opacity="0.9" fill-rule="evenodd" clip-rule="evenodd" d="M10.047 9.05471L7.86847 10.5658L8.56459 7.97768L6.96533 6.32441L9.13082 6.23502L10.047 3.67578L10.9632 6.23502H13.125L11.5294 7.97768L12.3285 10.413L10.047 9.05471Z" fill="#1D1D1D"/>
+                    </g>
+                    <defs>
+                    <clipPath id="clip0_222_109">
+                    <rect width="20" height="15" fill="white"/>
+                    </clipPath>
+                    </defs>
+                  </svg>
+                }
+                @case ('mr') {
+                  <svg width="20" height="15" viewBox="0 0 20 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g clip-path="url(#clip0_222_800)">
+                    <rect width="20" height="15" fill="white"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M0 0V15H20V0H0Z" fill="#1C7B4D"/>
+                    <mask id="mask0_222_800" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="20" height="15">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M0 0V15H20V0H0Z" fill="white"/>
+                    </mask>
+                    <g mask="url(#mask0_222_800)">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M0 0V3.75H20V0H0Z" fill="#E31D1C"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M0 11.25V15H20V11.25H0Z" fill="#E31D1C"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M10.1511 8.98714C13.3919 9.00511 14.3046 6.29124 14.3046 6.29124C14.121 8.61301 12.8369 10.1875 10.1511 10.1875C7.46528 10.1875 6.47905 8.14802 5.99756 6.11353C5.99756 6.11353 6.91028 8.96918 10.1511 8.98714Z" fill="#FECA00"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M11.0232 6.13483L11.2337 7.36203L10.1316 6.78263L9.02949 7.36203L9.23997 6.13483L8.34836 5.1762L9.58054 5.1762L10.1316 3.97013L10.6826 5.1762L11.9148 5.1762L11.0232 6.13483Z" fill="#FECA00"/>
+                    </g>
+                    </g>
+                    <defs>
+                    <clipPath id="clip0_222_800">
+                    <rect width="20" height="15" fill="white"/>
+                    </clipPath>
+                    </defs>
+                  </svg>
+                }
+                @case ('cm') {
+                  <svg width="20" height="15" viewBox="0 0 20 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g clip-path="url(#clip0_222_513)">
+                    <rect width="20" height="15" fill="white"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M6 0H14V15H6V0Z" fill="#E11C1B"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M10.0472 9.05471L7.86872 10.5658L8.56483 7.97768L6.96558 6.32441L9.13106 6.23502L10.0472 3.67578L10.9634 6.23502H13.1252L11.5296 7.97768L12.3287 10.413L10.0472 9.05471Z" fill="#FECA00"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M14 0H20V15H14V0Z" fill="#FBCD17"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M0 0H6V15H0V0Z" fill="#0B9E7A"/>
+                    </g>
+                    <defs>
+                    <clipPath id="clip0_222_513">
+                    <rect width="20" height="15" fill="white"/>
+                    </clipPath>
+                    </defs>
+                  </svg>
+                }
+              }
+            </span>
+          </p>
+        </div>
+
+        <button
+          type="button"
+          (click)="booked.emit(mentor())"
+          class="btn-outline mt-[47px] w-full py-[14px] flex items-center justify-center text-[#141219] border border-[#141219] rounded-[1000px] text-[16px] font-semibold leading-[26px] transition-colors hover:bg-[#141219] hover:text-white"
+        >
+          {{ ctaLabel() }}
+        </button>
+      </article>

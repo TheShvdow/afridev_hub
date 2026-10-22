@@ -3,10 +3,10 @@
     <input
       #digit
       type="text"
-      inputmode="numeric"
+      inputmode="text"
       autocomplete="one-time-code"
       maxlength="1"
-      [attr.aria-label]="'Chiffre ' + (box + 1)"
+      [attr.aria-label]="'Caractère ' + (box + 1)"
       class="font-display h-[50px] w-full max-w-[50px] rounded-2xl border border-slate-200 bg-transparent text-center text-xl font-semibold leading-[30px] tracking-[0.1px] text-ink outline-none transition-colors focus:border-primary"
       [value]="values()[box] ?? ''"
       (input)="onInput(box, $event)"

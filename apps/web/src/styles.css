@@ -176,3 +176,111 @@ code[class*='language-'] {
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
 }
+
+/* ── Authentification — primitives de formulaire ──────────────────────
+   Ces classes sont partagées par les écrans de connexion, d'inscription et
+   de vérification : elles vivent dans la feuille globale pour n'être
+   dupliquées dans le style de chaque composant.
+   ──────────────────────────────────────────────────────────────────── */
+@layer components {
+  .auth-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .auth-field__label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    line-height: 20px;
+    color: var(--color-surface-900);
+  }
+
+  .auth-field__icon {
+    position: absolute;
+    left: 1rem;
+    height: 1.25rem;
+    width: 1.25rem;
+    flex-shrink: 0;
+    pointer-events: none;
+    color: #64748B;
+  }
+
+  .auth-field__input {
+    height: 50px;
+    width: 100%;
+    border-radius: 1rem;
+    border: 1px solid #E2E8F0;
+    background-color: transparent;
+    padding-left: 3rem;
+    padding-right: 2.5rem;
+    font-size: var(--font-size-base);
+    line-height: 26px;
+    color: #141219;
+    outline: none;
+    transition: border-color var(--transition-fast);
+  }
+
+  .auth-field__input::placeholder {
+    color: #94A3B8;
+  }
+
+  .auth-field__input:focus {
+    border-color: #0F6932;
+  }
+
+  .auth-field__input.auth-field__input--invalid {
+    border-color: #FB2C36;
+  }
+
+  .auth-field__input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .auth-field__required {
+    position: absolute;
+    right: 1rem;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    line-height: 20px;
+    pointer-events: none;
+    color: #FB2C36;
+  }
+
+  .auth-btn {
+    display: flex;
+    height: 50px;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 1rem;
+    background-color: #141219;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    line-height: 26px;
+    color: #ffffff;
+    cursor: pointer;
+    transition: opacity var(--transition-fast);
+  }
+
+  .auth-btn:hover:not(:disabled) {
+    opacity: 0.88;
+  }
+
+  .auth-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .auth-checkbox {
+    height: 1.25rem;
+    width: 1.25rem;
+    flex-shrink: 0;
+    border-radius: 0.375rem;
+    border: 1px solid #CBD5E1;
+    accent-color: #0F6932;
+    cursor: pointer;
+  }
+}

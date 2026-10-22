@@ -88,4 +88,41 @@ describe('authInterceptor', () => {
     // Aucun appel à /auth/refresh ne doit partir.
     controller.expectNone((req) => req.url.endsWith('/auth/refresh'));
   });
+
+  it('rafraîchit le token sur /api/auth/me après un 401', () => {
+    store.setTokens('expired-at', 'rt-1');
+
+    http.get('/api/auth/me').subscribe();
+
+    controller
+      .expectOne('/api/auth/me')
+      .flush({ error: { code: 'AUTH_TOKEN_INVALID', message: 'Token invalide.' } }, {
+        status: 401,
+        statusText: 'Unauthorized',
+      });
+
+    const refreshRequest = controller.expectOne((req) => req.url.endsWith('/auth/refresh'));
+    refreshRequest.flush({ data: { accessToken: 'new-at', refreshToken: 'new-rt' } });
+
+    const replayed = controller.expectOne('/api/auth/me');
+    expect(replayed.request.headers.get('Authorization')).toBe('Bearer new-at');
+    replayed.flush({ data: { id: 'user-1' } });
+  });
+
+  it('ne tente pas de refresh sur /api/auth/register', () => {
+    store.setTokens('at-1', 'rt-1');
+
+    http
+      .post('/api/auth/register', { username: 'idrissa', email: 'a@b.c', password: 'x' })
+      .subscribe({ error: () => undefined });
+
+    controller
+      .expectOne('/api/auth/register')
+      .flush({ error: { code: 'AUTH_EMAIL_TAKEN', message: 'E-mail déjà utilisé.' } }, {
+        status: 401,
+        statusText: 'Unauthorized',
+      });
+
+    controller.expectNone((req) => req.url.endsWith('/auth/refresh'));
+  });
 });

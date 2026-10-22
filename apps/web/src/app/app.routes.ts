@@ -22,15 +22,28 @@ export const appRoutes: Routes = [
       import('./features/communities/communautes').then((m) => m.Communautes),
     title: 'Communautés — AfriDev Hub',
   },
+  {
+    path: 'mentorat',
+    loadComponent: () =>
+      import('./features/mentorat/mentor-list/mentor-list.component').then(
+        (m) => m.MentorListComponent,
+      ),
+    title: 'Mentorat — AfriDev Hub',
+  },
 
   // ── Auth ─────────────────────────────────────────────────────────
+  // L'implémentation vit dans `features/authentification` (design connexion,
+  // inscription et vérification d'e-mail). L'URL reste `/auth` : l'API y
+  // redirige les callbacks OAuth.
   // `noAuthGuard` est posé sur les pages login/register, pas sur le parent :
   // la page de vérification d'email doit rester accessible à un utilisateur
   // déjà connecté (il vient de s'inscrire et l'API l'a déjà authentifié).
   {
     path: 'auth',
     loadChildren: () =>
-      import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES),
+      import('./features/authentification/authentification.routes').then(
+        (m) => m.AUTHENTIFICATION_ROUTES
+      ),
   },
 
   // ── Forum Q&A ────────────────────────────────────────────────────

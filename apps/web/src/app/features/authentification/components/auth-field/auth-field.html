@@ -6,6 +6,7 @@
 
     <input
       class="auth-field__input"
+      [class.auth-field__input--invalid]="invalid()"
       [type]="type()"
       [name]="name()"
       [attr.autocomplete]="autocomplete()"

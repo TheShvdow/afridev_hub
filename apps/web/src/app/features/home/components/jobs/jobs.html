@@ -3,113 +3,23 @@
     <app-section-heading label="EMPLOIS" />
     <p class="text-[32px] font-bold text-[#141219] lg:mt-[34px]">Offres d'emploi locales</p>
 
-    <div class="mt-[24px] flex flex-col gap-[16px] lg:mt-[32px] lg:flex-row lg:items-center lg:justify-between">
-      <div class="flex flex-wrap items-center gap-[12px]">
-        <select
-          [value]="selectedCountry()"
-          (change)="setCountry($any($event.target).value)"
-          class="rounded-full border border-[#E2E8F0] bg-white px-[16px] py-[4px] text-[16px] font-medium text-[#141219]"
-        >
-          @for (country of countries; track country) {
-            <option [value]="country">{{ country }}</option>
-          }
-        </select>
-        @for (workType of workTypes; track workType) {
-          <button
-            type="button"
-            (click)="setWorkType(workType)"
-            [class]="
-              (selectedWorkType() === workType
-                ? 'bg-[#141219] text-white '
-                : 'bg-white text-[#141219] border-[#E2E8F0] ') +
-              'rounded-full border px-[16px] py-[4px] text-[16px] font-medium transition-colors'
-            "
-          >
-            {{ workType }}
-          </button>
-        }
-      </div>
-
-      <div class="flex flex-wrap items-center gap-[12px]">
-        <span class="text-[16px] font-medium text-[#64748B]">Devise</span>
-        @for (currency of currencies; track currency) {
-          <button
-            type="button"
-            (click)="toggleCurrency(currency)"
-            [class]="
-              (selectedCurrency() === currency
-                ? 'bg-[#141219] text-white '
-                : 'bg-white text-[#141219] border-[#E2E8F0] ') +
-              'rounded-full border px-[16px] py-[4px] text-[16px] font-medium transition-colors'
-            "
-          >
-            {{ currency }}
-          </button>
-        }
-      </div>
-    </div>
+    <app-job-filters
+      class="mt-[24px] lg:mt-[32px]"
+      [countries]="countries"
+      [workTypes]="workTypes"
+      [currencies]="currencies"
+      [(selectedCountry)]="selectedCountry"
+      [(selectedWorkType)]="selectedWorkType"
+      [(selectedCurrency)]="selectedCurrency"
+    />
 
     <div class="mt-10 grid grid-cols-1 gap-8 lg:mt-[60px] lg:grid-cols-2 lg:gap-10">
       @for (job of filteredJobs(); track job.title) {
-        <article
-          (click)="openJob(job)"
-          class="flex cursor-pointer flex-col rounded-[14px] bg-[#F8FAFC] py-[16px] px-[20px] transition-shadow hover:shadow-md"
-        >
-          <div class="flex items-center gap-[16px]">
-            <img [src]="job.logo" [alt]="job.company" class="size-[50px] shrink-0 rounded-full object-cover" />
-            <div class="min-w-0">
-              <div class="flex w-max max-w-full flex-wrap items-center gap-2.5">
-                <p class="text-[16px] leading-[26px] text-[#64748B]">{{ job.company }}</p>
-                <span class="rounded-full bg-[#FBBF24] px-[16px] py-[4px] text-[14px] font-medium leading-[22px] text-[#141219]">Nouveau</span>
-              </div>
-              <h3 class="text-[20px] font-bold leading-[32px] text-[#141219]">{{ job.title }}</h3>
-            </div>
-          </div>
-
-          <div class="mt-4 flex flex-wrap items-center gap-[16px]">
-            <span class="inline-flex items-center gap-[6px] text-[16px] leading-[26px] text-[#64748B]">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C10.0109 2 8.10322 2.79018 6.6967 4.1967C5.29018 5.60322 4.5 7.51088 4.5 9.5C4.5 11.432 5.564 13.3 6.768 14.816C7.988 16.353 9.446 17.645 10.423 18.438C11.349 19.188 12.651 19.188 13.577 18.438C14.554 17.645 16.012 16.353 17.232 14.816C18.436 13.301 19.5 11.432 19.5 9.5C19.5 7.51088 18.7098 5.60322 17.3033 4.1967C15.8968 2.79018 13.9891 2 12 2ZM14.5 9.5C14.5 10.163 14.2366 10.7989 13.7678 11.2678C13.2989 11.7366 12.663 12 12 12C11.337 12 10.7011 11.7366 10.2322 11.2678C9.76339 10.7989 9.5 10.163 9.5 9.5C9.5 8.83696 9.76339 8.20107 10.2322 7.73223C10.7011 7.26339 11.337 7 12 7C12.663 7 13.2989 7.26339 13.7678 7.73223C14.2366 8.20107 14.5 8.83696 14.5 9.5ZM17.682 15.847C17.318 16.279 16.942 16.689 16.568 17.07C16.9247 17.17 17.2547 17.28 17.558 17.4C18.254 17.674 18.765 17.98 19.09 18.284C19.415 18.586 19.5 18.828 19.5 19C19.5 19.172 19.415 19.414 19.09 19.716C18.765 20.019 18.254 20.326 17.559 20.6C16.173 21.146 14.209 21.5 12 21.5C9.791 21.5 7.827 21.146 6.441 20.6C5.746 20.327 5.235 20.02 4.909 19.716C4.585 19.414 4.5 19.172 4.5 19C4.5 18.828 4.585 18.586 4.91 18.284C5.235 17.981 5.746 17.674 6.441 17.4C6.74567 17.28 7.07567 17.17 7.431 17.07C7.0448 16.6764 6.67354 16.2685 6.318 15.847C6.172 15.897 6.02967 15.9493 5.891 16.004C5.093 16.319 4.397 16.711 3.887 17.186C3.377 17.662 3 18.274 3 19C3 19.726 3.376 20.338 3.887 20.814C4.397 21.289 5.093 21.682 5.891 21.996C7.492 22.626 9.652 23 12 23C14.348 23 16.508 22.627 18.108 21.996C18.907 21.682 19.603 21.289 20.113 20.814C20.623 20.338 21 19.726 21 19C21 18.274 20.624 17.662 20.113 17.186C19.603 16.712 18.907 16.319 18.108 16.004C17.97 15.95 17.828 15.8977 17.682 15.847Z" fill="#FF383C"/>
-              </svg>
-              {{ job.location }}
-            </span>
-            <span class="inline-flex items-center gap-[6px] text-[16px] leading-[26px] text-[#64748B]">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M10 2C9.20435 2 8.44129 2.31607 7.87868 2.87868C7.31607 3.44129 7 4.20435 7 5V6H5C4.20435 6 3.44129 6.31607 2.87868 6.87868C2.31607 7.44129 2 8.20435 2 9V11.382L3.447 12.105L3.452 12.108L3.479 12.121L3.599 12.177C3.70767 12.2283 3.86967 12.299 4.085 12.389C4.514 12.566 5.141 12.805 5.919 13.044C7.481 13.524 9.63 14 12 14C14.372 14 16.52 13.525 18.08 13.044C18.86 12.804 19.486 12.566 19.915 12.389C20.1191 12.3045 20.3211 12.2151 20.521 12.121L20.548 12.108L20.553 12.106L22 11.381V9C22 8.20435 21.6839 7.44129 21.1213 6.87868C20.5587 6.31607 19.7956 6 19 6H17V5C17 4.20435 16.6839 3.44129 16.1213 2.87868C15.5587 2.31607 14.7956 2 14 2H10ZM15 6V5C15 4.73478 14.8946 4.48043 14.7071 4.29289C14.5196 4.10536 14.2652 4 14 4H10C9.73478 4 9.48043 4.10536 9.29289 4.29289C9.10536 4.48043 9 4.73478 9 5V6H15ZM21.447 13.894L22 13.618V19C22 19.7956 21.6839 20.5587 21.1213 21.1213C20.5587 21.6839 19.7956 22 19 22H5C4.20435 22 3.44129 21.6839 2.87868 21.1213C2.31607 20.5587 2 19.7956 2 19V13.618L2.553 13.894L2.555 13.896L2.559 13.898L2.572 13.904L2.613 13.924L2.764 13.994C2.894 14.054 3.082 14.138 3.321 14.236C3.799 14.434 4.484 14.696 5.331 14.956C7.019 15.476 9.37 16 12 16C14.628 16 16.98 15.475 18.67 14.956C19.3508 14.7472 20.0215 14.507 20.68 14.236C20.9181 14.1377 21.1539 14.0337 21.387 13.924L21.428 13.904L21.441 13.898L21.445 13.896L21.447 13.894ZM12 10C11.7348 10 11.4804 10.1054 11.2929 10.2929C11.1054 10.4804 11 10.7348 11 11C11 11.2652 11.1054 11.5196 11.2929 11.7071C11.4804 11.8946 11.7348 12 12 12H12.01C12.2752 12 12.5296 11.8946 12.7171 11.7071C12.9046 11.5196 13.01 11.2652 13.01 11C13.01 10.7348 12.9046 10.4804 12.7171 10.2929C12.5296 10.1054 12.2752 10 12.01 10H12Z" fill="#633B48"/>
-              </svg>
-              {{ job.type }}
-            </span>
-            <span class="inline-flex items-center gap-[6px] text-[16px] leading-[26px] text-[#64748B]">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 21C13.1819 21 14.3522 20.7672 15.4442 20.3149C16.5361 19.8626 17.5282 19.1997 18.364 18.364C19.1997 17.5282 19.8626 16.5361 20.3149 15.4442C20.7672 14.3522 21 13.1819 21 12C21 10.8181 20.7672 9.64778 20.3149 8.55585C19.8626 7.46392 19.1997 6.47177 18.364 5.63604C17.5282 4.80031 16.5361 4.13738 15.4442 3.68508C14.3522 3.23279 13.1819 3 12 3C9.61305 3 7.32387 3.94821 5.63604 5.63604C3.94821 7.32387 3 9.61305 3 12C3 14.3869 3.94821 16.6761 5.63604 18.364C7.32387 20.0518 9.61305 21 12 21ZM13 6.5C13 6.23478 12.8946 5.98043 12.7071 5.79289C12.5196 5.60536 12.2652 5.5 12 5.5C11.7348 5.5 11.4804 5.60536 11.2929 5.79289C11.1054 5.98043 11 6.23478 11 6.5V11.75C11 12.44 11.56 13 12.25 13H15.5C15.7652 13 16.0196 12.8946 16.2071 12.7071C16.3946 12.5196 16.5 12.2652 16.5 12C16.5 11.7348 16.3946 11.4804 16.2071 11.2929C16.0196 11.1054 15.7652 11 15.5 11H13V6.5Z" fill="#64748B"/>
-              </svg>
-              {{ job.experience }}
-            </span>
-          </div>
-
-          <div class="mt-4 flex flex-wrap gap-4 border-b border-[#E2E8F0] py-[16px]">
-            @for (skill of job.skills; track skill) {
-              <span class="bg-[#F0FDF4] text-[#0F6932] rounded-[1000px] px-[16px] py-[4px] text-[16px] font-medium">{{ skill }}</span>
-            }
-          </div>
-
-          <div class="mt-auto flex flex-wrap items-end justify-between gap-4 pt-4">
-            <div>
-              <p class="text-[20px] font-bold leading-[32px] text-[#141219]">{{ job.salary }}</p>
-              <span class="mt-0.5 block text-[18px] leading-[26px] text-[#64748B]">{{ job.posted }}</span>
-            </div>
-            <button
-              type="button"
-              class="text-[16px] font-semibold px-[19px] py-[14px] rounded-full border border-[#141219] text-[#141219]"
-            >
-              Voir les détails
-            </button>
-          </div>
-        </article>
+        <app-card-job [job]="job" (selected)="openJob($event)" />
       }
     </div>
     <div class="flex justify-center lg:mt-[40px]">
-      <a href="#" class="btn-link text-[16px] font-semibold text-[#0F6932] flex gap-[10px]">
+      <a routerLink="/jobs" class="btn-link text-[16px] font-semibold text-[#0F6932] flex gap-[10px]">
         Tous les offres
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M14.4302 5.92969L20.5002 11.9997L14.4302 18.0697" fill="#0F6932"/>
@@ -119,135 +29,5 @@
       </a>
     </div>
   </div>
-  <div
-    class="fixed inset-0 z-50 overflow-hidden transition-opacity duration-300"
-    [class.pointer-events-none]="!isPanelOpen()"
-    [class.opacity-0]="!isPanelOpen()"
-  >
-    <div class="absolute inset-0 bg-[#0F1011]/50" (click)="closeJob()"></div>
-
-    <aside
-      role="dialog"
-      aria-modal="true"
-      aria-label="Détails de l'offre"
-      class="absolute right-0 top-0 flex h-full w-full max-w-[520px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out"
-      [class.translate-x-full]="!isPanelOpen()"
-    >
-      @if (selectedJob(); as job) {
-        <div class="flex items-start justify-between gap-4 border-b border-[#E2E8F0] p-[24px]">
-          <div class="flex min-w-0 items-center gap-[16px]">
-            <img [src]="job.logo" [alt]="job.company" class="size-[56px] shrink-0 rounded-full object-cover" />
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2.5">
-                <p class="text-[16px] leading-[26px] text-[#64748B]">{{ job.company }}</p>
-                <span class="rounded-full bg-[#FBBF24] px-[16px] py-[4px] text-[14px] font-medium leading-[22px] text-[#141219]">Nouveau</span>
-              </div>
-              <h3 class="text-[22px] font-bold leading-[32px] text-[#141219]">{{ job.title }}</h3>
-            </div>
-          </div>
-          <button
-            type="button"
-            (click)="closeJob()"
-            aria-label="Fermer"
-            class="shrink-0 rounded-full p-2 text-[#64748B] transition-colors hover:bg-[#F1F5F9] hover:text-[#141219]"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>
-          </button>
-        </div>
-
-        <div class="flex-1 overflow-y-auto p-[24px]">
-          <div class="flex flex-col gap-[17px]">
-            <div class="flex  items-center justify-between gap-[17px]">
-              <div class="w-full bg-[#F8FAFC] flex flex-col items-start gap-[4px] rounded-[8px] border border-[#E2E8F0] px-[16px] py-[8px] text-[16px] leading-[26px] text-[#64748B]">
-                <span class="font-medium text-[20px] text-[#64748B]" class="font-medium text-[20px] text-[#64748B]">Contrat</span>
-                <span class="font-medium text-[20px] text-[#141219]">{{ job.type }}</span>
-              </div>
-              <div class="w-full bg-[#F8FAFC] flex flex-col items-start gap-[4px] rounded-[8px] border border-[#E2E8F0] px-[16px] py-[8px] text-[16px] leading-[26px] text-[#64748B]">
-                <span class="font-medium text-[20px] text-[#64748B]">Mode</span>
-                <span class="font-medium text-[20px] text-[#141219]">{{ job.mode }}</span>
-              </div>
-            </div>
-            <div class="flex  items-center justify-between gap-[17px]">
-              <div class="w-full bg-[#F8FAFC] flex flex-col items-start gap-[4px] rounded-[8px] border border-[#E2E8F0] px-[16px] py-[8px] text-[16px] leading-[26px] text-[#64748B]">
-                <span class="font-medium text-[20px] text-[#64748B]">Expérience</span>
-                <span class="font-medium text-[20px] text-[#141219]">{{ job.experience }}</span>
-              </div>
-              <div class="w-full bg-[#F8FAFC] flex flex-col items-start gap-[4px] rounded-[8px] border border-[#E2E8F0] px-[16px] py-[8px] text-[16px] leading-[26px] text-[#64748B]">
-                <span class="font-medium text-[20px] text-[#64748B]">Remunération</span>
-                <span class="font-medium text-[20px] text-[#141219]">{{ job.salary }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-[24px] flex flex-wrap gap-4 border-b border-[#E2E8F0] pb-[24px]">
-            @for (skill of job.skills; track skill) {
-              <span class="bg-[#F0FDF4] text-[#0F6932] rounded-[1000px] px-[16px] py-[4px] text-[16px] font-medium">{{ skill }}</span>
-            }
-          </div>
-
-          <section class="mt-[24px]">
-            <h4 class="text-[18px] font-bold leading-[28px] text-[#141219]">Description du poste</h4>
-            <p class="mt-2 text-[16px] leading-[26px] text-[#64748B]">{{ job.description }}</p>
-          </section>
-
-          <section class="mt-[24px]">
-            <h4 class="text-[18px] font-bold leading-[28px] text-[#141219]">Missions</h4>
-            <ul class="mt-2 flex flex-col gap-2">
-              @for (mission of job.missions; track mission) {
-                <li class="flex items-start gap-[10px] text-[16px] leading-[26px] text-[#64748B]">
-                  <svg class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 12.5L10 17.5L19 7" stroke="#0F6932" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span>{{ mission }}</span>
-                </li>
-              }
-            </ul>
-          </section>
-
-          <section class="mt-[24px]">
-            <h4 class="text-[18px] font-bold leading-[28px] text-[#141219]">Profil recherché</h4>
-            <ul class="mt-2 flex flex-col gap-2">
-              @for (item of job.profile; track item) {
-                <li class="flex items-start gap-[10px] text-[16px] leading-[26px] text-[#64748B]">
-                  <svg class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 12.5L10 17.5L19 7" stroke="#0F6932" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span>{{ item }}</span>
-                </li>
-              }
-            </ul>
-          </section>
-
-          <section class="mt-[24px]">
-            <h4 class="text-[18px] font-bold leading-[28px] text-[#141219]">Avantages</h4>
-            <ul class="mt-2 flex flex-col gap-2">
-              @for (benefit of job.benefits; track benefit) {
-                <li class="flex items-start gap-[10px] text-[16px] leading-[26px] text-[#64748B]">
-                  <svg class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 12.5L10 17.5L19 7" stroke="#0F6932" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span>{{ benefit }}</span>
-                </li>
-              }
-            </ul>
-          </section>
-
-          <section class="mt-[24px]">
-            <span class="text-[14px] leading-[22px] text-[#64748B]">{{ job.posted }}</span>
-          </section>
-        </div>
-
-        <div class="border-t border-[#E2E8F0] p-[24px]">
-          <button
-            type="button"
-            class="w-full rounded-full bg-[#0F1011] px-[20px] py-[14px] text-[16px] font-semibold text-white transition-opacity hover:opacity-90"
-          >
-            Postuler
-          </button>
-        </div>
-      }
-    </aside>
-  </div>
+  <app-job-detail-panel [job]="selectedJob()" (closed)="closeJob()" />
 </section>

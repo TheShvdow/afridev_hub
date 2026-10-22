@@ -18,6 +18,10 @@ const user: UserMe = {
   role: 'MEMBER',
   isVerified: false,
   reputation: 0,
+  emailNotifications: true,
+  isRecruiter: false,
+  companyName: null,
+  preferredCurrency: null,
   createdAt: '2026-10-20T16:53:59.632Z',
 };
 

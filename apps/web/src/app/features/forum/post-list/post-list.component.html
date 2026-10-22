@@ -1,0 +1,47 @@
+<!-- Hero -->
+<app-page-hero
+  title="Forum"
+  subtitle="Posez vos questions, partagez vos retours d'expérience et aidez la communauté de développeurs africains à avancer ensemble."
+/>
+
+<!-- Main section -->
+<section class="bg-white">
+  <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-0 lg:py-10">
+    <div class="flex flex-col gap-10">
+      <!-- Header row: filters + CTA -->
+      <div class="flex flex-col gap-[24px] lg:flex-row lg:items-center lg:justify-between">
+        <app-forum-filters [tags]="tags" [(selectedTag)]="selectedTag" />
+
+        <a
+          routerLink="/forum/ask"
+          class="inline-flex h-14 shrink-0 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold leading-[26px] text-white transition-opacity hover:opacity-90"
+        >
+          Poser une question
+        </a>
+      </div>
+
+      <!-- Threads list -->
+      <div class="flex flex-col gap-6 lg:gap-4">
+        @for (thread of filteredThreads(); track thread.title) {
+          <app-card-thread [thread]="thread" (opened)="openThread($event)" />
+        }
+      </div>
+
+      <!-- Empty state -->
+      @if (filteredThreads().length === 0) {
+        <p class="py-10 text-center text-[16px] text-[#64748B]">
+          Aucun fil ne correspond à ce tag. Essayez d'en choisir un autre.
+        </p>
+      }
+
+      <!-- Load more -->
+      <div class="flex justify-center">
+        <button type="button" class="inline-flex h-14 items-center justify-center gap-2.5 rounded-full border border-ink px-5 text-base font-semibold leading-[26px] text-ink">
+          Charger plus
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<app-thread-modal [thread]="selectedThread()" (closed)="closeThread()" />

@@ -1,0 +1,36 @@
+<div class="flex flex-col gap-[16px] lg:flex-row lg:items-center lg:justify-between">
+  <div class="flex flex-wrap items-center gap-[12px]">
+    @for (specialty of specialties(); track specialty) {
+      <button
+        type="button"
+        (click)="selectedSpecialty.set(specialty)"
+        [class]="
+          (selectedSpecialty() === specialty
+            ? 'bg-[#141219] text-white '
+            : 'bg-white text-[#141219] border-[#E2E8F0] ') +
+          'rounded-full border px-[16px] py-[4px] text-[16px] font-medium transition-colors'
+        "
+      >
+        {{ specialty }}
+      </button>
+    }
+  </div>
+
+  <div class="flex flex-wrap items-center gap-[12px]">
+    <span class="text-[16px] font-medium text-[#64748B]">Disponibilité</span>
+    @for (slot of slots(); track slot.value) {
+      <button
+        type="button"
+        (click)="selectedSlot.set(slot.value)"
+        [class]="
+          (selectedSlot() === slot.value
+            ? 'bg-[#141219] text-white '
+            : 'bg-white text-[#141219] border-[#E2E8F0] ') +
+          'rounded-full border px-[16px] py-[4px] text-[16px] font-medium transition-colors'
+        "
+      >
+        {{ slot.label }}
+      </button>
+    }
+  </div>
+</div>

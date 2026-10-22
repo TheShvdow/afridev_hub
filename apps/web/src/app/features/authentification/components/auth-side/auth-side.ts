@@ -1,4 +1,5 @@
 import { Component, input } from '@angular/core';
+import { NgClass } from '@angular/common';
 import { Icon } from '../../../home/components/icon/icon';
 
 export interface AuthStep {
@@ -16,7 +17,8 @@ export interface AuthFeature {
 
 @Component({
   selector: 'app-auth-side',
-  imports: [Icon],
+  standalone: true,
+  imports: [Icon, NgClass],
   templateUrl: './auth-side.html',
   styleUrl: './auth-side.css',
 })

@@ -5,10 +5,7 @@
   ></div>
   <div class="pointer-events-none absolute inset-y-0 right-0 w-px bg-slate-200/40" aria-hidden="true"></div>
 
-  <div class="relative flex items-center gap-3">
-    <img src="assets/images/logo-mark.png" alt="" aria-hidden="true" class="size-11" />
-    <span class="font-display text-lg font-semibold tracking-tight text-white">AfriDev Hub</span>
-  </div>
+  <img src="assets/images/logo.png" alt="" aria-hidden="true" class="w-[155px]" />
 
   <div class="relative flex flex-col">
     @if (eyebrow()) {
@@ -33,10 +30,9 @@
               } @else {
                 <span
                   class="flex size-10 items-center justify-center rounded-full font-outfit text-xs font-bold leading-[19px] shadow-[0_1px_10px_rgba(0,0,0,0.35)]"
-                  [class.bg-white]="step.state === 'active'"
-                  [class.bg-white/20]="step.state === 'todo'"
-                  [class.text-night]="step.state === 'active'"
-                  [class.text-slate-500]="step.state === 'todo'"
+                  [ngClass]="
+                    step.state === 'active' ? 'bg-white text-night' : 'bg-white/20 text-slate-500'
+                  "
                 >
                   {{ step.number }}
                 </span>

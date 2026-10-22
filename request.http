@@ -76,6 +76,17 @@ Authorization: Bearer {{login.response.body.$.data.accessToken}}
 
 ###
 
+### Connexion GitHub (OAuth)
+# À ouvrir dans le navigateur, PAS avec « Try it out » : la route répond par une
+# redirection (302) vers la page d'autorisation de GitHub. Au retour, l'API
+# redirige vers le front avec les tokens dans le fragment de l'URL
+# (#at=…&rt=…), que l'écran « /auth/github/callback » récupère.
+# Nécessite GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET et GITHUB_CALLBACK_URL
+# (http://localhost:3000/api/auth/github/callback) dans le .env de l'API.
+GET http://localhost:3000/api/auth/github
+
+###
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # USERS / PROFILES

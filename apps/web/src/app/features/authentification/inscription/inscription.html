@@ -15,15 +15,31 @@
       </p>
     </div>
 
+    @if (errorMessage()) {
+      <p
+        role="alert"
+        class="rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium leading-5 text-[#FB2C36]"
+      >
+        {{ errorMessage() }}
+      </p>
+    }
+
     <div class="flex flex-col gap-3">
       <app-auth-field
         label="Nom d’utilisateur"
-        placeholder="Ex. Mariama Koné"
+        placeholder="Ex. mariama_kone"
         icon="user"
         name="username"
         autocomplete="nickname"
+        [invalid]="form.controls.username.invalid && form.controls.username.touched"
         formControlName="username"
       />
+
+      @if (form.controls.username.invalid && form.controls.username.touched) {
+        <p class="text-xs font-medium leading-4 text-[#FB2C36]">
+          3 à 30 caractères : lettres, chiffres, tirets et underscores uniquement.
+        </p>
+      }
 
       <app-auth-field
         label="Adresse e-mail"
@@ -31,16 +47,27 @@
         icon="mail"
         name="email"
         autocomplete="email"
+        [invalid]="form.controls.email.invalid && form.controls.email.touched"
         formControlName="email"
       />
+
+      @if (form.controls.email.invalid && form.controls.email.touched) {
+        <p class="text-xs font-medium leading-4 text-[#FB2C36]">
+          Saisis une adresse e-mail valide.
+        </p>
+      }
 
       <label class="flex flex-col gap-2">
         <span class="auth-field__label">Votre spécialité</span>
 
-        <span class="auth-field relative">
-          <app-icon name="user" class="auth-field__icon"></app-icon>
+        <span class="auth-field">
+          <app-icon name="code" class="auth-field__icon"></app-icon>
 
-          <select class="auth-field__input appearance-none pr-6" formControlName="speciality">
+          <select
+            class="auth-field__input appearance-none pr-16"
+            [class.auth-field__input--invalid]="form.controls.speciality.invalid && form.controls.speciality.touched"
+            formControlName="speciality"
+          >
             <option value="" disabled>Choisir une spécialité</option>
             @for (speciality of specialities; track speciality) {
               <option [value]="speciality">{{ speciality }}</option>
@@ -51,25 +78,42 @@
 
           <app-icon
             name="chevron-down"
-            class="pointer-events-none absolute right-4 size-5 shrink-0 text-slate-500"
+            class="pointer-events-none absolute right-10 size-5 shrink-0 text-slate-500"
           ></app-icon>
         </span>
       </label>
+
+      @if (form.controls.speciality.invalid && form.controls.speciality.touched) {
+        <p class="text-xs font-medium leading-4 text-[#FB2C36]">
+          Choisis ta spécialité.
+        </p>
+      }
 
       <app-auth-password-field
         label="Mot de passe"
         placeholder="Entrer votre mot de passe"
         name="password"
         autocomplete="new-password"
+        [invalid]="form.controls.password.invalid && form.controls.password.touched"
         formControlName="password"
       />
+
+      @if (form.controls.password.invalid && form.controls.password.touched) {
+        <p class="text-xs font-medium leading-4 text-[#FB2C36]">
+          8 caractères minimum, avec une majuscule, une minuscule et un chiffre.
+        </p>
+      }
     </div>
 
     <app-password-strength [password]="password()" />
 
-    <button type="submit" class="auth-btn">
-      Créer mon compte
-      <app-icon name="arrow-up-right" class="size-6"></app-icon>
+    <button type="submit" class="auth-btn" [disabled]="loading()">
+      @if (loading()) {
+        Création…
+      } @else {
+        Créer mon compte
+        <app-icon name="arrow-up-right" class="size-6"></app-icon>
+      }
     </button>
 
     <div class="flex flex-col gap-2.5">
@@ -80,7 +124,7 @@
       <div class="flex flex-wrap items-center justify-center gap-2.5">
         <span class="text-sm font-normal leading-5 text-slate-500">Vous avez déjà un compte ?</span>
         <a
-          routerLink="/connexion"
+          routerLink="/auth/login"
           class="text-sm font-normal leading-5 text-slate-500 underline-offset-4 transition-colors hover:text-ink hover:underline"
         >
           Connectez-vous
@@ -95,7 +139,11 @@
         <span class="h-px flex-1 bg-gray-300"></span>
       </div>
 
-      <app-social-auth />
+      <app-social-auth
+        [disabled]="loading()"
+        (google)="loginWithGoogle()"
+        (github)="loginWithGithub()"
+      />
     </div>
   </form>
 

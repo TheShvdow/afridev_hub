@@ -1,0 +1,45 @@
+<!-- Hero -->
+<app-page-hero
+  title="Emplois"
+  subtitle="Trouvez l'emploi qui vous ressemble parmi les offres d'emploi publiées par les entreprises Africa's de la communauté AfriDev Hub."
+/>
+
+<!-- Main section -->
+<section class="bg-[#F8FAFC]">
+  <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-0 lg:py-10">
+    <div class="flex flex-col gap-10">
+      <!-- Filters -->
+      <app-job-filters
+        [countries]="countries"
+        [workTypes]="workTypes"
+        [currencies]="currencies"
+        [(selectedCountry)]="selectedCountry"
+        [(selectedWorkType)]="selectedWorkType"
+        [(selectedCurrency)]="selectedCurrency"
+      />
+
+      <!-- Cards grid -->
+      <div class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-2">
+        @for (job of filteredJobs(); track job.title) {
+          <app-card-job [job]="job" (selected)="openJob($event)" />
+        }
+      </div>
+
+      <!-- Empty state -->
+      @if (filteredJobs().length === 0) {
+        <p class="py-10 text-center text-[16px] text-[#64748B]">
+          Aucune offre ne correspond à ces filtres. Essayez de les modifier.
+        </p>
+      }
+
+      <!-- Load more -->
+      <div class="flex justify-center">
+        <button type="button" class="inline-flex h-14 items-center justify-center gap-2.5 rounded-full border border-ink px-5 text-base font-semibold leading-[26px] text-ink">
+          Charger plus
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<app-job-detail-panel [job]="selectedJob()" (closed)="closeJob()" />

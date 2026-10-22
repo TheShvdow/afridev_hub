@@ -37,22 +37,37 @@ export const AuthStore = signalStore(
         return { accessToken: null, refreshToken: null };
       }
       return {
-        accessToken:  localStorage.getItem(ACCESS_TOKEN_KEY),
-        refreshToken: localStorage.getItem(REFRESH_TOKEN_KEY),
+        accessToken:  localStorage.getItem(ACCESS_TOKEN_KEY) ?? sessionStorage.getItem(ACCESS_TOKEN_KEY),
+        refreshToken: localStorage.getItem(REFRESH_TOKEN_KEY) ?? sessionStorage.getItem(REFRESH_TOKEN_KEY),
       };
     };
 
-    const persistTokens = (accessToken: string, refreshToken: string): void => {
-      if (isPlatformBrowser(platformId)) {
-        localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-        localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    /**
+     * « Rester connecté » : la session est conservée d'un redémarrage à l'autre
+     * (localStorage). Sans cette option, les tokens ne survivent qu'à l'onglet
+     * courant (sessionStorage).
+     */
+    const persistTokens = (accessToken: string, refreshToken: string, remember: boolean): void => {
+      if (!isPlatformBrowser(platformId)) {
+        return;
       }
+
+      const target = remember ? localStorage : sessionStorage;
+      const other = remember ? sessionStorage : localStorage;
+
+      target.setItem(ACCESS_TOKEN_KEY, accessToken);
+      target.setItem(REFRESH_TOKEN_KEY, refreshToken);
+      other.removeItem(ACCESS_TOKEN_KEY);
+      other.removeItem(REFRESH_TOKEN_KEY);
     };
 
     const clearTokens = (): void => {
-      if (isPlatformBrowser(platformId)) {
-        localStorage.removeItem(ACCESS_TOKEN_KEY);
-        localStorage.removeItem(REFRESH_TOKEN_KEY);
+      if (!isPlatformBrowser(platformId)) {
+        return;
+      }
+      for (const storage of [localStorage, sessionStorage]) {
+        storage.removeItem(ACCESS_TOKEN_KEY);
+        storage.removeItem(REFRESH_TOKEN_KEY);
       }
     };
 
@@ -79,8 +94,8 @@ export const AuthStore = signalStore(
         });
       },
 
-      setTokens(accessToken: string, refreshToken: string): void {
-        persistTokens(accessToken, refreshToken);
+      setTokens(accessToken: string, refreshToken: string, remember = true): void {
+        persistTokens(accessToken, refreshToken, remember);
         patchState(store, { accessToken, refreshToken });
       },
 
@@ -92,8 +107,24 @@ export const AuthStore = signalStore(
         patchState(store, { isLoading });
       },
 
+      /** Efface la session locale sans-appeler l'API (intercepteur de refresh). */
       logout(): void {
         reset();
+      },
+
+      /**
+       * Déconnexion : purge la session locale immédiatement puis demande à l'API
+       * de révoquer le refresh token. Le jeton est capturé avant la purge,
+       * sinon la requête partirait sans en-tête `Authorization`.
+       */
+      signOut(): void {
+        const accessToken = store.accessToken();
+
+        reset();
+
+        if (accessToken) {
+          authService.logout(accessToken).subscribe({ error: () => undefined });
+        }
       },
     };
   })

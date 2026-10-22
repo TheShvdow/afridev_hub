@@ -3,6 +3,7 @@ import { Icon } from '../../../home/components/icon/icon';
 
 @Component({
   selector: 'app-password-strength',
+  standalone: true,
   imports: [Icon],
   templateUrl: './password-strength.html',
   styleUrl: './password-strength.css',
@@ -13,9 +14,11 @@ export class PasswordStrength {
   readonly checks = computed(() => {
     const value = this.password();
 
+    // Les trois règles correspondent exactement au mot de passe exigé par
+    // l'API (`RegisterDto`) : 8 caractères, une majuscule, une minuscule, un chiffre.
     return [
       { label: '8 caractères min', valid: value.length >= 8 },
-      { label: 'Une majuscule', valid: /[A-Z]/.test(value) },
+      { label: 'Majuscule & minuscule', valid: /[a-z]/.test(value) && /[A-Z]/.test(value) },
       { label: 'Un chiffre', valid: /\d/.test(value) },
     ];
   });

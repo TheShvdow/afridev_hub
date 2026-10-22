@@ -1,7 +1,13 @@
 import { Component, ElementRef, QueryList, ViewChildren, computed, input, output, signal } from '@angular/core';
 
+/**
+ * Saisie d'un code à 6 caractères (majuscules et chiffres).
+ * L'API envoie un code alphanumérique (`/^[A-Z0-9]{6}$/`) : les lettres sont
+ * donc acceptées, et le code est normalisé en majuscules avant l'envoi.
+ */
 @Component({
   selector: 'app-otp-inputs',
+  standalone: true,
   templateUrl: './otp-inputs.html',
   styleUrl: './otp-inputs.css',
 })
@@ -16,7 +22,7 @@ export class OtpInputs {
 
   onInput(index: number, event: Event): void {
     const field = event.target as HTMLInputElement;
-    const value = field.value.replace(/\D/g, '').slice(-1);
+    const value = field.value.replace(/[^a-zA-Z0-9]/g, '').slice(-1).toUpperCase();
 
     field.value = value;
 
@@ -45,7 +51,7 @@ export class OtpInputs {
   }
 
   onPaste(event: ClipboardEvent): void {
-    const text = (event.clipboardData?.getData('text') ?? '').replace(/\D/g, '');
+    const text = (event.clipboardData?.getData('text') ?? '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
 
     if (!text) {
       return;

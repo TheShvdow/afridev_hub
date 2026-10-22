@@ -4,6 +4,7 @@ import { Icon } from '../../../home/components/icon/icon';
 
 @Component({
   selector: 'app-auth-field',
+  standalone: true,
   imports: [Icon],
   templateUrl: './auth-field.html',
   styleUrl: './auth-field.css',
@@ -23,6 +24,7 @@ export class AuthField implements ControlValueAccessor {
   readonly name = input<string>('');
   readonly autocomplete = input<string>('off');
   readonly required = input(true);
+  readonly invalid = input(false);
 
   readonly value = signal('');
 

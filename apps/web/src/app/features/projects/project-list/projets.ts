@@ -1,10 +1,11 @@
 import { Component, computed, signal } from '@angular/core';
 import { CardProjet, Project } from '../../../shared/components/card-project/card-projet';
+import { PageHeroComponent } from '../../../shared/components/page-hero/page-hero.component';
 
 @Component({
   selector: 'app-projets',
   standalone: true,
-  imports: [CardProjet],
+  imports: [CardProjet, PageHeroComponent],
   templateUrl: './projets.html',
   styleUrl: './projets.css',
 })
