@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { emailLayout } from './email-layout';
 
 interface ResendEmailPayload {
   from: string;
@@ -35,7 +36,7 @@ export class MailService {
       from: this.fromAddress,
       to: [to],
       subject,
-      html,
+      html: emailLayout(html, subject),
     };
 
     const response = await fetch('https://api.resend.com/emails', {

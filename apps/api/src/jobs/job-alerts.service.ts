@@ -7,6 +7,7 @@ import type { JobsAlertMatchedEvent, JobsOfferPublishedEvent } from '@afridev/sh
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { escapeHtml } from '../mail/escape-html';
+import { emailButton, emailNote } from '../mail/email-layout';
 import { CurrencyService, RatesSnapshot } from '../currency/currency.service';
 import { DomainException } from '../common/errors/domain.exception';
 import { CreateJobAlertDto } from './dto/create-job-alert.dto';
@@ -157,15 +158,18 @@ export class JobAlertsService {
     const items = offers.slice(0, DIGEST_MAX_OFFERS).map((offer) => {
       const salary = `${offer.salaryMin.toLocaleString('fr-FR')} – ${offer.salaryMax.toLocaleString('fr-FR')} ${offer.currency}`;
       const url = `${webUrl}/jobs/${offer.id}`;
-      return `<li><a href="${escapeHtml(url)}">${escapeHtml(offer.title)}</a>
-        — ${escapeHtml(offer.company)} (${escapeHtml(offer.country)}, ${escapeHtml(salary)})</li>`;
+      return `<tr><td style="padding:12px 0;border-bottom:1px solid #E5E7EB">
+        <a href="${escapeHtml(url)}" style="font-weight:600;color:#0F9D58;text-decoration:none">${escapeHtml(offer.title)}</a><br>
+        <span style="font-size:13px;color:#6B7280">${escapeHtml(offer.company)} · ${escapeHtml(offer.country)} · ${escapeHtml(salary)}</span>
+      </td></tr>`;
     });
     const listUrl = `${webUrl}/jobs`;
     const more = offers.length > DIGEST_MAX_OFFERS
-      ? `<p><a href="${escapeHtml(listUrl)}">Voir les ${offers.length - DIGEST_MAX_OFFERS} autres offres</a></p>`
+      ? emailButton(listUrl, `Voir les ${offers.length - DIGEST_MAX_OFFERS} autres offres`)
       : '';
-    return `<p>Voici les offres publiées cette semaine qui correspondent à vos alertes :</p>
-      <ul>${items.join('')}</ul>${more}
-      <p style="color:#666;font-size:12px">Gérez vos alertes depuis la page Offres d'emploi d'AfriDev Hub.</p>`;
+    return `<h1 style="margin:0 0 16px;font-size:20px">Vos offres de la semaine</h1>
+      <p>Voici les offres publiées cette semaine qui correspondent à vos alertes :</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${items.join('')}</table>${more}
+      ${emailNote('Gérez vos alertes depuis la page Offres d\'emploi d\'AfriDev Hub.')}`;
   }
 }
