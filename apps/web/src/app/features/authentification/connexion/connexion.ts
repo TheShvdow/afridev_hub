@@ -11,9 +11,11 @@ import { AuthPasswordField } from '../components/auth-password-field/auth-passwo
 import { AuthSide, AuthFeature } from '../components/auth-side/auth-side';
 import { SocialAuth } from '../components/social-auth/social-auth';
 import { AuthService } from '../../../core/services/auth.service';
+import { UsersService } from '../../../core/services/users.service';
 import { AuthStore } from '../../../core/store/auth.store';
-import { extractApiErrorMessage } from '../../../core/utils/api-error';
+import { extractApiErrorCode, extractApiErrorMessage } from '../../../core/utils/api-error';
 import { resolveOAuthErrorMessage } from '../../../core/utils/oauth-error';
+import { takeSpeciality } from '../../../core/utils/pending-speciality';
 
 @Component({
   selector: 'app-connexion',
@@ -35,6 +37,7 @@ import { resolveOAuthErrorMessage } from '../../../core/utils/oauth-error';
 export class Connexion implements OnInit {
   private readonly fb          = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly usersService = inject(UsersService);
   private readonly authStore   = inject(AuthStore);
   private readonly router      = inject(Router);
   private readonly route       = inject(ActivatedRoute);
@@ -63,6 +66,10 @@ export class Connexion implements OnInit {
   });
 
   ngOnInit(): void {
+    // Retour de la page de vérification : l'email est prérempli.
+    const email = this.route.snapshot.queryParamMap.get('email');
+    if (email) this.form.controls.email.setValue(email);
+
     if (!isPlatformBrowser(this.platformId)) return;
 
     // L'API redirige ici quand un callback OAuth échoue : #provider=…&error=…
@@ -102,19 +109,39 @@ export class Connexion implements OnInit {
         this.authService.getMe().subscribe({
           next: (user) => {
             this.authStore.setUser(user);
+            this.applyPendingSpeciality();
             this.router.navigateByUrl(this.returnUrl());
           },
           error: () => {
             this.authStore.setUser(null);
+            this.applyPendingSpeciality();
             this.router.navigateByUrl(this.returnUrl());
           },
         });
       },
       error: (err) => {
         this.loading.set(false);
+
+        // Adresse non confirmée : on emmène directement l'utilisateur sur
+        // l'écran de saisie du code, avec l'email pour identifier le compte.
+        if (extractApiErrorCode(err) === 'AUTH_EMAIL_NOT_VERIFIED') {
+          this.router.navigate(['/auth/verify-email'], { queryParams: { email } });
+          return;
+        }
+
         this.errorMessage.set(extractApiErrorMessage(err));
       },
     });
+  }
+
+  /** Écrit la spécialité choisie à l'inscription, une fois la session ouverte. */
+  private applyPendingSpeciality(): void {
+    const speciality = takeSpeciality();
+    if (!speciality) return;
+
+    this.usersService
+      .updateProfile({ bio: `Spécialité : ${speciality}` })
+      .subscribe({ error: () => undefined });
   }
 
   loginWithGoogle(): void {

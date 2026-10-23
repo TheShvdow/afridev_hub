@@ -6,7 +6,8 @@ import { AuthClose } from '../components/auth-close/auth-close';
 import { AuthLayout } from '../components/auth-layout/auth-layout';
 import { AuthService } from '../../../core/services/auth.service';
 import { AuthStore } from '../../../core/store/auth.store';
-import { extractApiErrorMessage } from '../../../core/utils/api-error';
+import { extractApiErrorCode, extractApiErrorMessage } from '../../../core/utils/api-error';
+import { decodeJwtPayload } from '../../../core/utils/jwt';
 
 /**
  * Page de retour du fournisseur OAuth (GitHub, Google).
@@ -58,6 +59,17 @@ export class OauthCallback implements OnInit {
       },
       error: (err) => {
         this.authStore.logout();
+
+        // Fournisseur sans email vérifié : le compte attend la confirmation du
+        // code. L'email est lu dans le JWT uniquement pour préremplir l'écran.
+        if (extractApiErrorCode(err) === 'AUTH_EMAIL_NOT_VERIFIED') {
+          const email = decodeJwtPayload<{ email?: string }>(accessToken)?.email;
+          this.router.navigate(['/auth/verify-email'], {
+            queryParams: email ? { email } : {},
+          });
+          return;
+        }
+
         this.error.set(extractApiErrorMessage(err));
       },
     });

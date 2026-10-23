@@ -17,6 +17,7 @@ import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { Prisma, type User } from '@prisma/client';
 import { escapeHtml } from '../mail/escape-html';
+import { emailCode, emailNote } from '../mail/email-layout';
 import { DomainException } from '../common/errors/domain.exception';
 import { isUserBanned } from '../common/moderation/user-ban';
 
@@ -91,6 +92,7 @@ export class AuthService {
         email:        dto.email,
         username:     dto.username,
         passwordHash,
+        isVerified:   false,
       },
     });
 
@@ -99,16 +101,23 @@ export class AuthService {
       this.logger.error('Envoi de l\'email de vérification impossible', error instanceof Error ? error.stack : String(error));
     });
 
-    return this.generateTokenPair(user);
+    // Aucun token à l'inscription (décision 2026-10-22) : inscription, vérification du code,
+    // puis connexion. Le front redirige vers la page de vérification avec cet email.
+    return { message: 'Compte créé : saisissez le code reçu par email pour l\'activer.', email: user.email };
   }
 
   // ── Vérification email ──────────────────────────────────────────────
   // Code à 6 caractères envoyé par email (décision 2026-10-21). Seule son empreinte est
   // stockée ; 5 essais erronés invalident le code, un renvoi en génère un nouveau.
 
-  async verifyEmail(userId: string, code: string): Promise<{ message: string }> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { isVerified: true } });
-    if (!user) throw new DomainException('AUTH_USER_NOT_FOUND', 'Utilisateur introuvable.', 401);
+  // Sans connexion : l'utilisateur n'a pas encore de token. Un email inconnu reçoit la même
+  // réponse qu'un code faux, pour ne pas révéler quels emails ont un compte.
+  async verifyEmail(email: string, code: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({ where: { email }, select: { id: true, isVerified: true } });
+    if (!user) {
+      throw new DomainException('AUTH_VERIFICATION_TOKEN_INVALID', 'Code invalide ou expiré : demandez-en un nouveau.', 400);
+    }
+    const userId = user.id;
     if (user.isVerified) throw new DomainException('AUTH_ALREADY_VERIFIED', 'Cet email est déjà vérifié.', 409);
 
     const record = await this.prisma.verificationToken.findFirst({ where: { identifier: userId } });
@@ -141,15 +150,11 @@ export class AuthService {
     return { message: 'Email vérifié.' };
   }
 
-  async resendVerification(userId: string): Promise<{ message: string }> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new DomainException('AUTH_USER_NOT_FOUND', 'Utilisateur introuvable.', 401);
-    if (user.isVerified) {
-      throw new DomainException('AUTH_ALREADY_VERIFIED', 'Cet email est déjà vérifié.', 409);
-    }
-
-    await this.sendVerificationEmail(user);
-    return { message: 'Nouveau code de vérification envoyé.' };
+  // Même réponse que l'email existe ou non, et qu'il soit déjà vérifié ou non.
+  async resendVerification(email: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (user && !user.isVerified) await this.sendVerificationEmail(user);
+    return { message: 'Si un compte non vérifié utilise cet email, un nouveau code vient d\'y être envoyé.' };
   }
 
   private async sendVerificationEmail(user: User): Promise<void> {
@@ -165,10 +170,12 @@ export class AuthService {
     await this.mail.send(
       user.email,
       `${code} est votre code de vérification AfriDev Hub`,
-      `<p>Bonjour ${escapeHtml(user.username)},</p>
-       <p>Voici votre code pour confirmer votre adresse email :</p>
-       <p style="font-size:28px;font-weight:bold;letter-spacing:6px;font-family:monospace">${code}</p>
-       <p>Ce code expire dans 24 heures. Si vous n'avez pas créé de compte, ignorez cet email.</p>`,
+      `<h1 style="margin:0 0 16px;font-size:22px">Confirmez votre adresse email</h1>
+       <p>Bonjour ${escapeHtml(user.username)},</p>
+       <p>Bienvenue sur AfriDev Hub ! Saisissez ce code dans l'application pour confirmer votre adresse :</p>
+       ${emailCode(code)}
+       <p>Ce code expire dans 24 heures.</p>
+       ${emailNote('Vous n\'avez pas créé de compte ? Ignorez cet email, aucune action ne sera faite.')}`,
     );
   }
 
@@ -211,8 +218,20 @@ export class AuthService {
     if (await isUserBanned(this.prisma, user.id)) {
       throw new DomainException('AUTH_ACCOUNT_BANNED', 'Compte suspendu.', 403);
     }
+    this.assertVerified(user);
 
     return this.generateTokenPair(user);
+  }
+
+  // Pas de session tant que l'email n'est pas confirmé : le front renvoie vers la page de vérification.
+  private assertVerified(user: Pick<User, 'isVerified'>) {
+    if (!user.isVerified) {
+      throw new DomainException(
+        'AUTH_EMAIL_NOT_VERIFIED',
+        'Confirmez votre adresse email avec le code reçu avant de vous connecter.',
+        403,
+      );
+    }
   }
 
   // ── GitHub OAuth ─────────────────────────────────────────────────────
@@ -229,13 +248,17 @@ export class AuthService {
       if (await isUserBanned(this.prisma, existing.user.id)) {
         throw new DomainException('AUTH_ACCOUNT_BANNED', 'Compte suspendu.', 403);
       }
+      this.assertVerified(existing.user);
       return { type: 'tokens', tokens: await this.generateTokenPair(existing.user) };
     }
 
     const sameEmail = await this.prisma.user.findUnique({ where: { email: input.email } });
     if (sameEmail) {
       const linkToken = await this.jwt.signAsync(
-        { typ: 'oauth-link', provider: input.provider, providerAccountId: input.providerAccountId, userId: sameEmail.id },
+        {
+          typ: 'oauth-link', provider: input.provider, providerAccountId: input.providerAccountId,
+          userId: sameEmail.id, emailVerified: input.emailVerified,
+        },
         { secret: this.config.getOrThrow<string>('JWT_SECRET'), expiresIn: '10m' },
       );
       return { type: 'link', linkToken, email: input.email };
@@ -251,12 +274,19 @@ export class AuthService {
         accounts:    { create: { provider: input.provider, providerAccountId: input.providerAccountId } },
       },
     });
+    // Email non garanti par le fournisseur : même parcours qu'une inscription classique.
+    if (!user.isVerified) {
+      await this.sendVerificationEmail(user).catch((error: unknown) => {
+        this.logger.error('Envoi de l\'email de vérification impossible', error instanceof Error ? error.stack : String(error));
+      });
+    }
+    this.assertVerified(user);
     return { type: 'tokens', tokens: await this.generateTokenPair(user) };
   }
 
   // Liaison confirmée par le mot de passe du compte existant.
   async linkOAuthAccount(linkToken: string, password: string): Promise<AuthTokensResult> {
-    let claims: { typ?: string; provider?: string; providerAccountId?: string; userId?: string };
+    let claims: { typ?: string; provider?: string; providerAccountId?: string; userId?: string; emailVerified?: boolean };
     try {
       claims = await this.jwt.verifyAsync(linkToken, { secret: this.config.getOrThrow<string>('JWT_SECRET') });
     } catch {
@@ -287,6 +317,14 @@ export class AuthService {
     await this.prisma.account.create({
       data: { userId: user.id, provider: claims.provider, providerAccountId: claims.providerAccountId },
     });
+    // Mot de passe du compte + email confirmé par le fournisseur : l'adresse est prouvée.
+    if (!user.isVerified && claims.emailVerified) {
+      await this.prisma.user.update({ where: { id: user.id }, data: { isVerified: true } });
+      const payload: AuthEmailVerifiedEvent = { userId: user.id };
+      this.events.emit('auth.email.verified', payload);
+    } else {
+      this.assertVerified(user);
+    }
     return this.generateTokenPair(user);
   }
 
@@ -308,6 +346,7 @@ export class AuthService {
     if (await isUserBanned(this.prisma, user.id)) {
       throw new DomainException('AUTH_ACCOUNT_BANNED', 'Compte suspendu.', 403);
     }
+    this.assertVerified(user);
 
     return this.generateTokenPair(user);
   }

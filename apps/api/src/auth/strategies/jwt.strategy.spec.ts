@@ -1,7 +1,7 @@
 import { JwtStrategy } from './jwt.strategy';
 
-function build(banned: boolean, found = true) {
-  const user = found ? { id: 'u1', email: 'a@b.sn', role: 'MEMBER', username: 'amadou', isVerified: true } : null;
+function build(banned: boolean, found = true, isVerified = true) {
+  const user = found ? { id: 'u1', email: 'a@b.sn', role: 'MEMBER', username: 'amadou', isVerified } : null;
   const prisma = {
     user: { findUnique: jest.fn().mockResolvedValue(user) },
     moderationAction: { findFirst: jest.fn().mockResolvedValue(banned ? { action: 'BAN' } : null) },
@@ -27,5 +27,11 @@ describe('JwtStrategy — ban appliqué à chaque requête', () => {
     const strategy = build(false, false);
     await expect(strategy.validate({ sub: 'gone', email: 'x', role: 'MEMBER' }))
       .rejects.toMatchObject({ status: 401, code: 'AUTH_TOKEN_INVALID' });
+  });
+
+  it('refuse un access token appartenant à un compte dont l\'email n\'est pas vérifié', async () => {
+    const strategy = build(false, true, false);
+    await expect(strategy.validate({ sub: 'u1', email: 'a@b.sn', role: 'MEMBER' }))
+      .rejects.toMatchObject({ status: 403, code: 'AUTH_EMAIL_NOT_VERIFIED' });
   });
 });

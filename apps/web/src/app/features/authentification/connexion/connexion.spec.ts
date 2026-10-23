@@ -128,6 +128,61 @@ describe('Connexion', () => {
     expect(store.accessToken()).toBeNull();
   });
 
+  it('redirige vers la vérification quand l\'email n\'est pas confirmé', () => {
+    const navigate = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    fillForm();
+    component.submit();
+
+    controller.expectOne(`${API}/auth/login`).flush(
+      {
+        error: {
+          code: 'AUTH_EMAIL_NOT_VERIFIED',
+          message: 'Confirmez votre adresse email avec le code reçu avant de vous connecter.',
+        },
+      },
+      { status: 403, statusText: 'Forbidden' }
+    );
+
+    expect(navigate).toHaveBeenCalledWith(['/auth/verify-email'], {
+      queryParams: { email: 'idrissa@example.com' },
+    });
+    expect(component.errorMessage()).toBeNull();
+    expect(store.accessToken()).toBeNull();
+  });
+
+  it('applique la spécialité choisie à l\'inscription après connexion', () => {
+    sessionStorage.setItem('afridev_pending_speciality', 'Développement web');
+
+    fillForm();
+    component.submit();
+
+    controller.expectOne(`${API}/auth/login`).flush({
+      data: { accessToken: 'at-1', refreshToken: 'rt-1' },
+    });
+
+    controller.expectOne((req) => req.url.endsWith('/auth/me')).flush({
+      data: {
+        id: 'user-1',
+        email: 'idrissa@example.com',
+        username: 'idrissa_wade',
+        displayName: null,
+        avatarUrl: null,
+        role: 'MEMBER',
+        isVerified: true,
+        reputation: 0,
+        createdAt: '2026-10-20T16:53:59.632Z',
+      },
+    });
+
+    const profile = controller.expectOne(`${API}/users/me`);
+    expect(profile.request.method).toBe('PATCH');
+    expect(profile.request.body).toEqual({ bio: 'Spécialité : Développement web' });
+    profile.flush({ data: {} });
+
+    expect(sessionStorage.getItem('afridev_pending_speciality')).toBeNull();
+  });
+
   it('affiche les détails de validation renvoyés par l\'API', () => {
     fillForm();
     component.submit();

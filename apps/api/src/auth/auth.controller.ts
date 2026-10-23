@@ -11,14 +11,14 @@ import {
   Head,
   UseFilters,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiNoContentResponse, ApiResponse, ApiExcludeEndpoint } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiNoContentResponse, ApiResponse, ApiExcludeEndpoint, ApiQuery } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { OAuthCallbackFilter } from './filters/oauth-callback.filter';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto, VerifyEmailDto } from './dto/verify-email.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -27,11 +27,12 @@ import { GithubAuthGuard } from './guards/github-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { OAuthLinkDto } from './dto/oauth-link.dto';
 import type { OAuthLoginResult } from './auth.service';
+import { OAUTH_DOCS_PATH, takeOAuthReturn } from './oauth-return';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { ApiData } from '../common/swagger/api-data.decorator';
 import { AuthTokensDto, UserMeDto } from './dto/auth-tokens.dto';
-import { MessageDto } from '../common/swagger/models-extra';
+import { MessageDto, RegisteredDto } from '../common/swagger/models-extra';
 
 interface AuthUser {
   id: string;
@@ -52,8 +53,11 @@ export class AuthController {
 
   @Post('register')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @ApiOperation({ summary: 'Créer un compte' })
-  @ApiData({ type: AuthTokensDto, status: 201, description: 'Compte créé, tokens renvoyés' })
+  @ApiOperation({
+    summary: 'Créer un compte',
+    description: 'Aucun token : un code est envoyé par email, à confirmer avec POST /auth/verify-email avant de se connecter.',
+  })
+  @ApiData({ type: RegisteredDto, status: 201, description: 'Compte créé, en attente de vérification' })
   @ApiResponse({ status: 409, description: 'Email ou nom d\'utilisateur déjà utilisé' })
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
@@ -67,6 +71,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Se connecter' })
   @ApiData({ type: AuthTokensDto, description: 'Tokens d\'accès et de rafraîchissement' })
   @ApiResponse({ status: 401, description: 'Email ou mot de passe incorrect' })
+  @ApiResponse({ status: 403, description: 'AUTH_EMAIL_NOT_VERIFIED : email pas encore confirmé (ou compte suspendu)' })
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
@@ -125,34 +130,43 @@ export class AuthController {
   @Post('verify-email')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Confirmer son adresse email avec le code à 6 caractères reçu' })
+  @ApiOperation({
+    summary: 'Confirmer son adresse email avec le code à 6 caractères reçu',
+    description: 'Sans token : étape entre l\'inscription et la première connexion.',
+  })
   @ApiResponse({ status: 400, description: 'Code invalide ou expiré' })
+  @ApiResponse({ status: 409, description: 'Email déjà vérifié' })
   @ApiResponse({ status: 429, description: '5 essais erronés : le code est invalidé, en demander un nouveau' })
-  @ApiData({ type: MessageDto, description: 'Email vérifié' })
-  verifyEmail(@CurrentUser('id') userId: string, @Body() dto: VerifyEmailDto) {
-    return this.authService.verifyEmail(userId, dto.code);
+  @ApiData({ type: MessageDto, description: 'Email vérifié : l\'utilisateur peut se connecter' })
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(dto.email, dto.code);
   }
 
   @Post('resend-verification')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Recevoir un nouveau code de vérification par email' })
-  @ApiResponse({ status: 409, description: 'Email déjà vérifié' })
-  @ApiData({ type: MessageDto, description: 'Nouveau code envoyé par email' })
-  resendVerification(@CurrentUser('id') userId: string) {
-    return this.authService.resendVerification(userId);
+  @ApiOperation({
+    summary: 'Recevoir un nouveau code de vérification par email',
+    description: 'Réponse identique que l\'email ait un compte ou non.',
+  })
+  @ApiData({ type: MessageDto, description: 'Nouveau code envoyé si un compte non vérifié utilise cet email' })
+  resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerification(dto.email);
   }
 
   // ── GitHub OAuth ─────────────────────────────────────────────────────
 
   @Get('github')
   @UseGuards(GithubAuthGuard)
-  @ApiOperation({ summary: 'Démarrer l\'authentification GitHub' })
-  @ApiExcludeEndpoint()
+  @ApiOperation({
+    summary: 'Se connecter avec GitHub',
+    description:
+      'À ouvrir dans le navigateur, pas avec « Try it out » : la page redirige vers GitHub. ' +
+      'Depuis cette doc : [Se connecter avec GitHub](/api/auth/github?redirect=docs). ' +
+      'Au retour, le token est placé dans « Authorize ».',
+  })
+  @ApiQuery({ name: 'redirect', required: false, enum: ['docs'], description: 'docs : revenir sur Swagger au lieu du front' })
+  @ApiResponse({ status: 302, description: 'Redirection vers GitHub' })
   githubAuth() {
     // Passport redirige vers GitHub automatiquement
   }
@@ -173,15 +187,22 @@ export class AuthController {
   @ApiOperation({ summary: 'Callback GitHub OAuth' })
   @ApiExcludeEndpoint()
   githubCallback(@Req() req: Request & { user: OAuthLoginResult }, @Res() res: Response) {
-    this.redirectAfterOAuth(res, 'github', req.user);
+    this.redirectAfterOAuth(req, res, 'github', req.user);
   }
 
   // ── Google OAuth ─────────────────────────────────────────────────────
 
   @Get('google')
   @UseGuards(GoogleAuthGuard)
-  @ApiOperation({ summary: 'Démarrer l\'authentification Google' })
-  @ApiExcludeEndpoint()
+  @ApiOperation({
+    summary: 'Se connecter avec Google',
+    description:
+      'À ouvrir dans le navigateur, pas avec « Try it out » : la page redirige vers Google. ' +
+      'Depuis cette doc : [Se connecter avec Google](/api/auth/google?redirect=docs). ' +
+      'Au retour, le token est placé dans « Authorize ».',
+  })
+  @ApiQuery({ name: 'redirect', required: false, enum: ['docs'], description: 'docs : revenir sur Swagger au lieu du front' })
+  @ApiResponse({ status: 302, description: 'Redirection vers Google' })
   googleAuth() {
     // Passport redirige vers Google automatiquement
   }
@@ -192,7 +213,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Callback Google OAuth' })
   @ApiExcludeEndpoint()
   googleCallback(@Req() req: Request & { user: OAuthLoginResult }, @Res() res: Response) {
-    this.redirectAfterOAuth(res, 'google', req.user);
+    this.redirectAfterOAuth(req, res, 'google', req.user);
   }
 
   // Confirmation de la liaison d'un compte OAuth à un compte existant (mot de passe requis).
@@ -205,18 +226,18 @@ export class AuthController {
   }
 
   // Les tokens partent dans le fragment (#), jamais dans la query : ils n'apparaissent ni dans les logs ni dans l'historique serveur.
-  private redirectAfterOAuth(res: Response, provider: 'github' | 'google', result: OAuthLoginResult) {
+  // Une connexion lancée depuis Swagger revient sur la doc, qui place le token dans « Authorize ».
+  private redirectAfterOAuth(req: Request, res: Response, provider: 'github' | 'google', result: OAuthLoginResult) {
+    const toDocs = takeOAuthReturn(req, res);
     const webUrl = this.config.get<string>('WEB_URL', 'http://localhost:4200');
 
     if (result.type === 'link') {
-      const url = new URL(`/auth/oauth/link`, webUrl);
-      url.hash = new URLSearchParams({ provider, linkToken: result.linkToken, email: result.email }).toString();
-      res.redirect(url.toString());
+      const hash = new URLSearchParams({ provider, linkToken: result.linkToken, email: result.email }).toString();
+      res.redirect(toDocs ? `${OAUTH_DOCS_PATH}#${hash}` : `${new URL('/auth/oauth/link', webUrl)}#${hash}`);
       return;
     }
 
-    const url = new URL(`/auth/${provider}/callback`, webUrl);
-    url.hash = new URLSearchParams({ at: result.tokens.accessToken, rt: result.tokens.refreshToken }).toString();
-    res.redirect(url.toString());
+    const hash = new URLSearchParams({ at: result.tokens.accessToken, rt: result.tokens.refreshToken }).toString();
+    res.redirect(toDocs ? `${OAUTH_DOCS_PATH}#${hash}` : `${new URL(`/auth/${provider}/callback`, webUrl)}#${hash}`);
   }
 }

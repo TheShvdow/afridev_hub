@@ -12,9 +12,8 @@ import { AuthSide, AuthStep } from '../components/auth-side/auth-side';
 import { PasswordStrength } from '../components/password-strength/password-strength';
 import { SocialAuth } from '../components/social-auth/social-auth';
 import { AuthService } from '../../../core/services/auth.service';
-import { AuthStore } from '../../../core/store/auth.store';
-import { UsersService } from '../../../core/services/users.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
+import { rememberSpeciality } from '../../../core/utils/pending-speciality';
 
 @Component({
   selector: 'app-inscription',
@@ -35,11 +34,9 @@ import { extractApiErrorMessage } from '../../../core/utils/api-error';
   styleUrl: './inscription.css',
 })
 export class Inscription {
-  private readonly fb           = inject(FormBuilder);
-  private readonly authService  = inject(AuthService);
-  private readonly authStore    = inject(AuthStore);
-  private readonly usersService = inject(UsersService);
-  private readonly router       = inject(Router);
+  private readonly fb          = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly router      = inject(Router);
 
   readonly loading      = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -96,26 +93,17 @@ export class Inscription {
     this.loading.set(true);
     this.errorMessage.set(null);
 
-    // L'API n'accepte que `username`, `email` et `password` : la spécialité
-    // est enregistrée dans le profil juste après la création du compte.
+    // L'API n'accepte que `username`, `email` et `password`. Elle renvoie
+    // l'email du compte sans token : la session ne sera ouverte qu'après la
+    // confirmation du code reçu. La spécialité est conservée pour être écrite
+    // dans le profil à la première connexion (voir `takeSpeciality`).
     this.authService.register({ username, email, password }).subscribe({
-      next: (tokens) => {
-        this.authStore.setTokens(tokens.accessToken, tokens.refreshToken);
+      next: (res) => {
+        rememberSpeciality(speciality);
 
-        this.authService.getMe().subscribe({
-          next: (user) => this.authStore.setUser(user),
-          error: () => undefined,
+        this.router.navigate(['/auth/verify-email'], {
+          queryParams: { email: res.email || email },
         });
-
-        this.saveSpeciality(speciality);
-
-        // Le parcours de vérification est piloté par `POST /api/auth/verify-email` :
-        // c'est cette route qui est appelée à l'inscription, puis à la saisie
-        // du code reçu. `POST /api/auth/resend-verification` n'est utilisé que
-        // par le bouton « Renvoyer le code » de l'écran de vérification.
-        this.authService.verifyEmailOnSignup().subscribe({ error: () => undefined });
-
-        this.router.navigate(['/auth/verify-email'], { queryParams: { email } });
       },
       error: (err) => {
         this.loading.set(false);
@@ -147,13 +135,4 @@ export class Inscription {
     });
   }
 
-  /**
-   * La spécialité n'existe pas dans `RegisterDto` : elle est écrite dans la
-   * biographie du profil. Un échec n'empêche pas la création du compte.
-   */
-  private saveSpeciality(speciality: string): void {
-    this.usersService.updateProfile({ bio: `Spécialité : ${speciality}` }).subscribe({
-      error: () => undefined,
-    });
-  }
 }

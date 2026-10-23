@@ -24,18 +24,33 @@
         </p>
       </div>
 
-      <button type="button" class="auth-btn" (click)="goForum()">
-        Continuer vers le forum
+      <button type="button" class="auth-btn" (click)="goLogin()">
+        Se connecter
         <app-icon name="arrow-up-right" class="size-6"></app-icon>
       </button>
     } @else {
       <div class="flex flex-col gap-2.5">
         <h1 class="font-display text-2xl font-bold leading-8 text-ink">Vérifiez votre e-mail</h1>
-        <p class="text-sm font-medium leading-[22px] tracking-[0.07px] text-slate-500">
-          Nous avons envoyé un code à 6 caractères à
-        </p>
-        <p class="text-sm font-medium leading-[22px] tracking-[0.07px] text-ink">{{ email() }}.</p>
+
+        @if (email()) {
+          <p class="text-sm font-medium leading-[22px] tracking-[0.07px] text-slate-500">
+            Nous avons envoyé un code à 6 caractères à
+          </p>
+          <p class="text-sm font-medium leading-[22px] tracking-[0.07px] text-ink">{{ email() }}.</p>
+        } @else {
+          <p class="text-sm font-medium leading-[22px] tracking-[0.07px] text-slate-500">
+            Aucune adresse e-mail n'a été fournie. Revenez à la connexion pour
+            recommencer la vérification.
+          </p>
+        }
       </div>
+
+      @if (!email()) {
+        <a routerLink="/auth/login" class="auth-btn">
+          Revenir à la connexion
+          <app-icon name="arrow-up-right" class="size-6"></app-icon>
+        </a>
+      }
 
       @if (errorMessage()) {
         <p

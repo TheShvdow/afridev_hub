@@ -6,15 +6,15 @@ import { AuthLayout } from '../components/auth-layout/auth-layout';
 import { AuthSide, AuthStep } from '../components/auth-side/auth-side';
 import { OtpInputs } from '../components/otp-inputs/otp-inputs';
 import { AuthService } from '../../../core/services/auth.service';
-import { AuthStore } from '../../../core/store/auth.store';
-import { extractApiErrorMessage } from '../../../core/utils/api-error';
+import { extractApiErrorCode, extractApiErrorMessage } from '../../../core/utils/api-error';
 
 /**
  * Confirmation de l'adresse e-mail.
  *
- * `POST /api/auth/verify-email` est protégé par `JwtAuthGuard` et attend un
- * corps `{ code }` : l'utilisateur est déjà authentifié (l'inscription lui a
- * renvoyé ses tokens) et saisit le code reçu par e-mail.
+ * `POST /api/auth/verify-email` est public et attend `{ email, code }` :
+ * l'utilisateur n'a pas encore de session, puisque la connexion est bloquée
+ * tant que l'adresse n'est pas confirmée. L'email vient de la query string
+ * (`?email=…`), posée par l'inscription, la connexion ou le callback OAuth.
  */
 @Component({
   selector: 'app-verification-email',
@@ -33,7 +33,6 @@ import { extractApiErrorMessage } from '../../../core/utils/api-error';
 export class VerificationEmail implements OnInit {
   private readonly route       = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
-  private readonly authStore   = inject(AuthStore);
   private readonly router      = inject(Router);
 
   readonly email = signal('');
@@ -61,9 +60,7 @@ export class VerificationEmail implements OnInit {
   ];
 
   ngOnInit(): void {
-    const email = this.route.snapshot.queryParamMap.get('email');
-
-    this.email.set(email ?? this.authStore.currentUser()?.email ?? '');
+    this.email.set(this.route.snapshot.queryParamMap.get('email') ?? '');
   }
 
   onCode(code: string): void {
@@ -73,14 +70,17 @@ export class VerificationEmail implements OnInit {
 
   submit(): void {
     const code = this.code().trim().toUpperCase();
+    const email = this.email().trim();
 
     if (code.length !== 6) {
       this.errorMessage.set('Saisissez les 6 caractères du code reçu par e-mail.');
       return;
     }
 
-    if (!this.authStore.accessToken()) {
-      this.errorMessage.set('Votre session a expiré. Reconnectez-vous pour confirmer votre e-mail.');
+    if (!email) {
+      this.errorMessage.set(
+        'Adresse e-mail manquante : revenez à la connexion pour recommencer.'
+      );
       return;
     }
 
@@ -88,28 +88,35 @@ export class VerificationEmail implements OnInit {
     this.errorMessage.set(null);
     this.infoMessage.set(null);
 
-    this.authService.verifyEmail(code).subscribe({
+    this.authService.verifyEmail(email, code).subscribe({
       next: (res) => {
         this.loading.set(false);
         this.status.set('success');
         this.infoMessage.set(res.message || 'E-mail vérifié avec succès.');
-
-        // Le profil est rafraîchi pour refléter `isVerified = true`.
-        this.authService.getMe().subscribe({
-          next: (user) => this.authStore.setUser(user),
-          error: () => undefined,
-        });
       },
       error: (err) => {
         this.loading.set(false);
+
+        // Compte déjà confirmé (code saisi deux fois, autre onglet) : c'est un
+        // succès du point de vue de l'utilisateur, on le renvoie vers la connexion.
+        if (extractApiErrorCode(err) === 'AUTH_ALREADY_VERIFIED') {
+          this.status.set('success');
+          this.infoMessage.set('Cet e-mail est déjà vérifié. Vous pouvez vous connecter.');
+          return;
+        }
+
         this.errorMessage.set(extractApiErrorMessage(err));
       },
     });
   }
 
   resend(): void {
-    if (!this.authStore.accessToken()) {
-      this.errorMessage.set('Connectez-vous pour recevoir un nouveau code.');
+    const email = this.email().trim();
+
+    if (!email) {
+      this.errorMessage.set(
+        'Adresse e-mail manquante : revenez à la connexion pour recommencer.'
+      );
       return;
     }
 
@@ -117,7 +124,7 @@ export class VerificationEmail implements OnInit {
     this.errorMessage.set(null);
     this.infoMessage.set(null);
 
-    this.authService.resendVerification().subscribe({
+    this.authService.resendVerification(email).subscribe({
       next: (res) => {
         this.resending.set(false);
         this.infoMessage.set(res.message || 'Nouveau code envoyé par e-mail.');
@@ -129,7 +136,10 @@ export class VerificationEmail implements OnInit {
     });
   }
 
-  goForum(): void {
-    this.router.navigateByUrl('/forum');
+  /** La vérification ne connecte pas : on renvoie vers le formulaire de connexion. */
+  goLogin(): void {
+    this.router.navigate(['/auth/login'], {
+      queryParams: this.email() ? { email: this.email() } : {},
+    });
   }
 }

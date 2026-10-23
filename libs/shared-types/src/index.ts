@@ -66,6 +66,15 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
+/**
+ * Réponse de `POST /api/auth/register` : aucun token tant que l'adresse
+ * e-mail n'est pas confirmée avec le code reçu.
+ */
+export interface RegisterResponse {
+  message: string;
+  email:   string;
+}
+
 /** Réponse simple de l'API : `{ data: { message } }`. */
 export interface AuthMessageResponse {
   message: string;
@@ -343,6 +352,7 @@ export type ErrorCode =
   | 'AUTH_VERIFICATION_TOKEN_INVALID'
   | 'AUTH_VERIFICATION_TOO_MANY_ATTEMPTS'
   | 'AUTH_ALREADY_VERIFIED'
+  | 'AUTH_EMAIL_NOT_VERIFIED'
   | 'AUTH_LINK_TOKEN_INVALID'
   | 'AUTH_ACCOUNT_ALREADY_LINKED'
   | 'AUTH_PROVIDER_NOT_CONFIGURED'

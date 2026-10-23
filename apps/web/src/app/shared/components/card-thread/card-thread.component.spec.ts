@@ -6,6 +6,7 @@ describe('CardThreadComponent', () => {
   let fixture: ComponentFixture<CardThreadComponent>;
 
   const thread: Thread = {
+    id: 'post-1',
     initials: 'AD',
     tags: ['Backend', '#Sénégal'],
     title: 'Comment gérer les paiements Mobile Money ?',

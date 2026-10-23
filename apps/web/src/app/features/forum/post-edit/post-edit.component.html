@@ -1,0 +1,183 @@
+<app-page-hero
+  title="Modifier la question"
+  subtitle="Mettez à jour votre question pour la rendre plus claire ou ajouter les précisions demandées par la communauté."
+/>
+
+<section class="bg-white">
+  <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-0 lg:py-10">
+    @if (loading()) {
+      <p class="py-16 text-center text-[16px] text-[#64748B]">Chargement de la question…</p>
+    } @else if (notFound()) {
+      <div class="mx-auto flex max-w-[800px] flex-col items-center gap-4 py-16 text-center">
+        <p class="text-[24px] font-bold text-[#141219]">Question introuvable</p>
+        <p class="text-[16px] leading-[26px] text-[#64748B]">
+          Cette question n'existe pas ou a été supprimée.
+        </p>
+        <a
+          routerLink="/forum"
+          class="mt-2 inline-flex h-12 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Revenir au forum
+        </a>
+      </div>
+    } @else if (forbidden()) {
+      <div class="mx-auto flex max-w-[800px] flex-col items-center gap-4 py-16 text-center">
+        <p class="text-[24px] font-bold text-[#141219]">Modification impossible</p>
+        <p class="text-[16px] leading-[26px] text-[#64748B]">
+          Seul l'auteur de la question peut la modifier.
+        </p>
+        <a
+          [routerLink]="['/forum', postId() ?? '']"
+          class="mt-2 inline-flex h-12 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Revenir à la question
+        </a>
+      </div>
+    } @else if (loadError()) {
+      <div class="mx-auto flex max-w-[800px] flex-col items-center gap-4 py-16 text-center">
+        <p class="text-[16px] leading-[26px] text-[#64748B]">{{ loadError() }}</p>
+        <button
+          type="button"
+          (click)="retry()"
+          class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink"
+        >
+          Réessayer
+        </button>
+      </div>
+    } @else {
+      <form
+        class="mx-auto flex w-full max-w-[800px] flex-col gap-8"
+        [formGroup]="form"
+        (ngSubmit)="submit()"
+        novalidate
+      >
+        <div class="flex flex-col gap-2">
+          <h1 class="text-[32px] font-bold text-[#141219]">Modifier la question</h1>
+          <p class="text-[16px] leading-[26px] text-[#64748B]">
+            Les champs marqués d'un astérisque sont obligatoires.
+          </p>
+        </div>
+
+        @if (errorMessage()) {
+          <p
+            role="alert"
+            class="rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium leading-5 text-[#FB2C36]"
+          >
+            {{ errorMessage() }}
+          </p>
+        }
+
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center justify-between gap-4">
+            <label for="title" class="text-[16px] font-semibold text-[#141219]">Titre *</label>
+            <span class="text-[14px] text-[#64748B]">{{ form.controls.title.value.length }}/200</span>
+          </div>
+          <input
+            id="title"
+            type="text"
+            formControlName="title"
+            maxlength="200"
+            placeholder="Ex : Comment configurer Nx avec Angular 18 + SSR ?"
+            class="h-14 rounded-2xl border border-[#E2E8F0] px-5 text-[16px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
+          />
+          @if (form.controls.title.touched && form.controls.title.invalid) {
+            <p class="text-[14px] font-medium text-[#FB2C36]">
+              Le titre doit contenir entre 15 et 200 caractères.
+            </p>
+          }
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center justify-between gap-4">
+            <label for="body" class="text-[16px] font-semibold text-[#141219]">Votre question *</label>
+            <span class="text-[14px] text-[#64748B]">{{ form.controls.body.value.length }}/50000</span>
+          </div>
+          <textarea
+            id="body"
+            formControlName="body"
+            rows="10"
+            maxlength="50000"
+            placeholder="Décrivez ce que vous essayez de faire, ce que vous avez déjà tenté, et les messages d'erreur éventuels…"
+            class="rounded-2xl border border-[#E2E8F0] px-5 py-4 text-[16px] leading-[26px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
+          ></textarea>
+          @if (form.controls.body.touched && form.controls.body.invalid) {
+            <p class="text-[14px] font-medium text-[#FB2C36]">
+              Le contenu doit contenir au moins 50 caractères.
+            </p>
+          }
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center justify-between gap-4">
+            <label for="tag" class="text-[16px] font-semibold text-[#141219]">Tags *</label>
+            <span class="text-[14px] text-[#64748B]">
+              {{ form.controls.tags.value.length }}/{{ maxTags }}
+            </span>
+          </div>
+
+          @if (form.controls.tags.value.length > 0) {
+            <div class="flex flex-wrap gap-2">
+              @for (tag of form.controls.tags.value; track tag) {
+                <span class="inline-flex items-center gap-2 rounded-full bg-[#F0FDF4] px-4 py-1 text-[14px] font-medium text-[#0F6932]">
+                  {{ tag }}
+                  <button
+                    type="button"
+                    (click)="removeTag(tag)"
+                    [attr.aria-label]="'Retirer le tag ' + tag"
+                    class="text-[16px] leading-none text-[#0F6932] hover:opacity-70"
+                  >
+                    ×
+                  </button>
+                </span>
+              }
+            </div>
+          }
+
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <input
+              id="tag"
+              type="text"
+              [formControl]="tagInput"
+              (keydown)="onTagKeydown($event)"
+              maxlength="30"
+              placeholder="Ex : angular, nx, ssr"
+              class="h-14 min-w-0 flex-1 rounded-2xl border border-[#E2E8F0] px-5 text-[16px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
+            />
+            <button
+              type="button"
+              (click)="addTag()"
+              [disabled]="form.controls.tags.value.length >= maxTags"
+              class="h-14 shrink-0 rounded-full border border-ink px-6 text-base font-semibold text-ink disabled:opacity-50"
+            >
+              Ajouter
+            </button>
+          </div>
+
+          <p class="text-[14px] text-[#64748B]">
+            Ajoutez 1 à 5 tags pour aider les autres membres à trouver votre question (Entrée ou virgule pour valider).
+          </p>
+
+          @if (form.controls.tags.touched && form.controls.tags.invalid) {
+            <p class="text-[14px] font-medium text-[#FB2C36]">Au moins 1 tag est requis.</p>
+          }
+        </div>
+
+        <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+          <a
+            [routerLink]="['/forum', postId() ?? '']"
+            class="inline-flex h-14 items-center justify-center rounded-full px-6 text-base font-semibold text-[#64748B] transition-colors hover:text-ink"
+          >
+            Annuler
+          </a>
+          <button
+            type="submit"
+            [disabled]="saving()"
+            class="inline-flex h-14 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            {{ saving() ? 'Enregistrement…' : 'Enregistrer les modifications' }}
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</section>

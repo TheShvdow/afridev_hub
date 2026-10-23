@@ -19,6 +19,8 @@ export const OAUTH_ERROR_MESSAGES: Record<string, string> = {
     'Ce compte est suspendu. Contactez l’administration.',
   AUTH_ACCOUNT_ALREADY_LINKED:
     'Ce compte est déjà lié à un autre compte AfriDev Hub.',
+  AUTH_EMAIL_NOT_VERIFIED:
+    'Votre adresse e-mail n’est pas encore confirmée. Saisissez le code reçu pour activer le compte.',
   AUTH_INVALID_CREDENTIALS: 'Identifiants incorrects.',
 
   // Codes renvoyés par le fournisseur (OAuth 2.0).

@@ -40,6 +40,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (await isUserBanned(this.prisma, user.id)) {
       throw new DomainException('AUTH_ACCOUNT_BANNED', 'Compte suspendu.', 403);
     }
+    // Un token émis avant la vérification obligatoire ne donne plus accès aux routes protégées.
+    if (!user.isVerified) {
+      throw new DomainException('AUTH_EMAIL_NOT_VERIFIED', 'Confirmez votre adresse email avant de continuer.', 403);
+    }
 
     return user; // Injecté dans req.user
   }

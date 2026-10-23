@@ -34,6 +34,18 @@ export function extractApiErrorMessage(error: unknown): string {
   return getDefaultMessage(response?.status ?? 0);
 }
 
+/**
+ * Code métier de l'erreur (`AUTH_EMAIL_NOT_VERIFIED`, `AUTH_INVALID_CREDENTIALS`…),
+ * ou `null` quand l'API n'a pas renvoyé d'enveloppe AD-7.
+ */
+export function extractApiErrorCode(error: unknown): string | null {
+  const response = error as HttpErrorResponse | undefined;
+  const body = response?.error as { error?: { code?: unknown } } | undefined;
+  const code = body?.error?.code;
+
+  return typeof code === 'string' ? code : null;
+}
+
 export function getDefaultMessage(status: number): string {
   switch (status) {
     case 400: return 'Requête invalide.';

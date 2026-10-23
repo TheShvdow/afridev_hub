@@ -58,7 +58,7 @@ describe('Inscription', () => {
     });
   }
 
-  it('crée le compte avec les seuls champs acceptés par l\'API', () => {
+  it('crée le compte avec les seuls champs acceptés par l\'API et ouvre la vérification', () => {
     const navigate = jest.spyOn(router, 'navigate').mockResolvedValue(true);
 
     fillForm();
@@ -67,7 +67,7 @@ describe('Inscription', () => {
     const request = controller.expectOne(`${API}/auth/register`);
     expect(request.request.method).toBe('POST');
     // `RegisterDto` n'accepte que username, email et password : la spécialité
-    // est écrite dans le profil, pas dans la requête d'inscription.
+    // est conservée côté front pour être écrite dans le profil après connexion.
     expect(request.request.body).toEqual({
       username: 'mariama_kone',
       email: 'mariama@example.com',
@@ -75,27 +75,16 @@ describe('Inscription', () => {
     });
 
     request.flush({
-      data: { accessToken: 'at-1', refreshToken: 'rt-1' },
+      data: {
+        message: 'Compte créé : saisissez le code reçu par email pour l\'activer.',
+        email: 'mariama@example.com',
+      },
     });
 
-    expect(store.accessToken()).toBe('at-1');
-    expect(store.refreshToken()).toBe('rt-1');
-
-    controller.expectOne((req) => req.url.endsWith('/auth/me')).flush({ data: {} });
-
-    // La vérification est déclenchée par `POST /api/auth/verify-email` :
-    // `POST /api/auth/resend-verification` n'est appelé que depuis le bouton
-    // « Renvoyer le code » de l'écran de vérification.
-    const verify = controller.expectOne((req) => req.url.endsWith('/auth/verify-email'));
-    expect(verify.request.method).toBe('POST');
-    // L'endpoint est protégé : le jeton d'accès accompagne la demande.
-    expect(verify.request.headers.get('Authorization')).toBe('Bearer at-1');
-    verify.flush({ data: { message: 'Email vérifié' } });
-
-    const profile = controller.expectOne(`${API}/users/me`);
-    expect(profile.request.method).toBe('PATCH');
-    expect(profile.request.body).toEqual({ bio: 'Spécialité : Développement web' });
-    profile.flush({ data: {} });
+    // L'inscription n'ouvre pas de session : aucun token, aucun appel protégé.
+    expect(store.accessToken()).toBeNull();
+    expect(store.refreshToken()).toBeNull();
+    expect(sessionStorage.getItem('afridev_pending_speciality')).toBe('Développement web');
 
     expect(navigate).toHaveBeenCalledWith(['/auth/verify-email'], {
       queryParams: { email: 'mariama@example.com' },

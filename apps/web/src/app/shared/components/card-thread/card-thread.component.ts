@@ -2,6 +2,7 @@ import { Component, input, output } from '@angular/core';
 import { CommentData } from '../comment-item/comment-item';
 
 export interface Thread {
+  id: string;
   initials: string;
   tags: string[];
   title: string;

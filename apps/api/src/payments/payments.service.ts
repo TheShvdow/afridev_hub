@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
-import { escapeHtml } from '../mail/escape-html';
+import { emailDetails, emailNote } from '../mail/email-layout';
 import { Payment, PaymentEntityType, PlanType, Prisma } from '@prisma/client';
 import type { PaymentsPaymentCapturedEvent } from '@afridev/shared-types';
 import { DomainException } from '../common/errors/domain.exception';
@@ -355,14 +355,15 @@ export class PaymentsService {
   private receiptHtml(payment: SettledPayment, fulfilled: { product: ProductCode; validUntil: Date }) {
     const date = (value: Date) => value.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
     const amount = `${payment.amount.toLocaleString('fr-FR')} ${payment.currency}`;
-    return `<h2>Merci pour votre paiement</h2>
-      <table cellpadding="6">
-        <tr><td>Produit</td><td>${escapeHtml(PRODUCTS[fulfilled.product].label)}</td></tr>
-        <tr><td>Montant</td><td>${escapeHtml(amount)}</td></tr>
-        <tr><td>Date</td><td>${escapeHtml(date(new Date()))}</td></tr>
-        <tr><td>Référence</td><td>${escapeHtml(payment.id)}</td></tr>
-        <tr><td>Valable jusqu'au</td><td>${escapeHtml(date(fulfilled.validUntil))}</td></tr>
-      </table>
-      <p style="color:#666;font-size:12px">Conservez cet email comme justificatif de paiement.</p>`;
+    return `<h1 style="margin:0 0 16px;font-size:22px">Merci pour votre paiement</h1>
+      <p>Votre paiement a bien été reçu. Voici votre reçu :</p>
+      ${emailDetails([
+        ['Produit', PRODUCTS[fulfilled.product].label],
+        ['Montant', amount],
+        ['Date', date(new Date())],
+        ['Référence', payment.id],
+        ['Valable jusqu\'au', date(fulfilled.validUntil)],
+      ])}
+      ${emailNote('Conservez cet email comme justificatif de paiement.')}`;
   }
 }

@@ -5,6 +5,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { escapeHtml } from '../mail/escape-html';
+import { emailButton } from '../mail/email-layout';
 import { CurrencyService } from '../currency/currency.service';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -56,9 +57,10 @@ export class JobsScheduler {
         await this.mail.send(
           offer.recruiter.email,
           `Votre offre « ${offer.title} » expire bientôt`,
-          `<p>Votre offre <strong>${escapeHtml(offer.title)}</strong> expirera le ${escapeHtml(date)}.</p>
-           <p>Vous pouvez la renouveler pour 60 jours depuis votre tableau de bord :
-           <a href="${escapeHtml(url)}">voir l'offre</a>.</p>`,
+          `<h1 style="margin:0 0 16px;font-size:20px">Votre offre expire bientôt</h1>
+           <p>Votre offre <strong>${escapeHtml(offer.title)}</strong> expirera le ${escapeHtml(date)}.</p>
+           <p>Renouvelez-la pour 60 jours supplémentaires depuis votre tableau de bord.</p>
+           ${emailButton(url, 'Voir l\'offre')}`,
         );
         await this.prisma.jobOffer.update({ where: { id: offer.id }, data: { expiryReminderSentAt: now } });
         sent += 1;

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { escapeHtml } from '../mail/escape-html';
+import { emailButton, emailNote } from '../mail/email-layout';
 import { NotificationsGateway } from './notifications.gateway';
 import { NotificationType } from '@prisma/client';
 
@@ -75,9 +76,10 @@ export class NotificationsService {
     const webUrl = this.config?.get<string>('WEB_URL') ?? 'http://localhost:4200';
     const url = `${webUrl}${input.link ?? '/notifications'}`;
     const html = `
+      <h1 style="margin:0 0 16px;font-size:20px">${escapeHtml(input.title)}</h1>
       <p>${escapeHtml(input.message)}</p>
-      <p><a href="${escapeHtml(url)}">Voir sur AfriDev Hub</a></p>
-      <p style="color:#666;font-size:12px">Vous pouvez désactiver ces emails dans vos préférences de notification.</p>`;
+      ${emailButton(url, 'Voir sur AfriDev Hub')}
+      ${emailNote('Vous pouvez désactiver ces emails dans vos préférences de notification.')}`;
     await this.mail.send(user.email, input.title, html);
   }
 

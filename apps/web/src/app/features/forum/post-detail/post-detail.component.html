@@ -1,0 +1,277 @@
+<section class="bg-white">
+  <div class="mx-auto w-full max-w-[900px] px-6 py-16 sm:px-10 lg:px-0 lg:py-12">
+    <a
+      routerLink="/forum"
+      class="inline-flex items-center gap-2 text-[16px] font-semibold text-[#0F6932] transition-opacity hover:opacity-80"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Retour au forum
+    </a>
+
+    @if (loading()) {
+      <p class="py-16 text-center text-[16px] text-[#64748B]">Chargement de la question…</p>
+    } @else if (notFound()) {
+      <div class="flex flex-col items-center gap-4 py-16 text-center">
+        <p class="text-[24px] font-bold text-[#141219]">Question introuvable</p>
+        <p class="text-[16px] leading-[26px] text-[#64748B]">
+          Cette question n'existe pas ou a été supprimée.
+        </p>
+        <a
+          routerLink="/forum"
+          class="mt-2 inline-flex h-12 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Revenir au forum
+        </a>
+      </div>
+    } @else if (errorMessage()) {
+      <div class="flex flex-col items-center gap-4 py-16 text-center">
+        <p class="text-[16px] leading-[26px] text-[#64748B]">{{ errorMessage() }}</p>
+        <button
+          type="button"
+          (click)="retry()"
+          class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink"
+        >
+          Réessayer
+        </button>
+      </div>
+    } @else {
+      @if (post(); as question) {
+      <article class="mt-8">
+        <div class="flex flex-wrap gap-2 sm:gap-3">
+          @for (tag of question.postTags; track tag.tag.slug) {
+            <span
+              [class]="
+                'max-w-full break-words rounded-[1000px] px-3 py-1 text-[13px] font-medium sm:px-4 sm:text-[16px] ' +
+                (tag.tag.name === question.postTags[0].tag.name
+                  ? 'bg-[#F0FDF4] text-[#0F6932]'
+                  : 'bg-[#FEFCE8] text-[#A16207]')
+              "
+            >
+              {{ tag.tag.name }}
+            </span>
+          }
+        </div>
+
+        <h1 class="mt-5 text-[26px] font-bold leading-[36px] text-[#141219] sm:text-[36px] sm:leading-[46px]">
+          {{ question.title }}
+        </h1>
+
+        <div class="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div class="flex items-center gap-3">
+            @if (question.user.avatarUrl) {
+              <img
+                [src]="question.user.avatarUrl"
+                [alt]="authorName(question.user)"
+                class="size-10 rounded-full object-cover"
+              />
+            } @else {
+              <span
+                aria-hidden="true"
+                class="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#0F1011] text-[14px] font-semibold text-[#FBBF24]"
+              >
+                {{ initials(question.user) }}
+              </span>
+            }
+
+            <div class="min-w-0">
+              <p class="text-[16px] font-semibold leading-[24px] text-[#141219]">
+                {{ authorName(question.user) }}
+              </p>
+              <p class="text-[14px] leading-[22px] text-[#64748B]">
+                {{ question.user.reputation }} points · {{ timeAgo(question.createdAt) }}
+              </p>
+            </div>
+          </div>
+
+          @if (question.isResolved) {
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#F0FDF4] px-3 py-1 text-[13px] font-medium text-[#0F6932]">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 12.5L9.5 17L19 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Résolue
+            </span>
+          }
+
+          @if (canEdit()) {
+            <a
+              [routerLink]="['/forum', question.id, 'edit']"
+              class="inline-flex items-center gap-1.5 rounded-full border border-[#E2E8F0] px-3 py-1 text-[13px] font-medium text-[#334155] transition-colors hover:border-ink hover:text-ink"
+            >
+              Modifier
+            </a>
+          }
+
+          @if (canDelete()) {
+            <button
+              type="button"
+              (click)="openDeleteConfirm()"
+              aria-label="Supprimer la question"
+              class="inline-flex items-center gap-1.5 rounded-full border border-[#FB2C36]/30 px-3 py-1 text-[13px] font-medium text-[#FB2C36] transition-colors hover:bg-[#FB2C36]/5"
+            >
+              Supprimer
+            </button>
+          }
+        </div>
+
+        <div class="mt-6 grid grid-cols-3 gap-3 sm:max-w-[360px]">
+          <div class="flex flex-col items-center justify-center rounded-2xl bg-[#F8FAFC] px-3 py-3">
+            <span class="text-[22px] font-semibold leading-[30px] text-[#141219]">{{ question.voteScore }}</span>
+            <span class="text-[13px] leading-[20px] text-[#64748B]">votes</span>
+          </div>
+          <div class="flex flex-col items-center justify-center rounded-2xl bg-[#F8FAFC] px-3 py-3">
+            <span class="text-[22px] font-semibold leading-[30px] text-[#141219]">{{ question.viewCount }}</span>
+            <span class="text-[13px] leading-[20px] text-[#64748B]">vues</span>
+          </div>
+          <div class="flex flex-col items-center justify-center rounded-2xl bg-[#F8FAFC] px-3 py-3">
+            <span class="text-[22px] font-semibold leading-[30px] text-[#141219]">{{ question.answers.length }}</span>
+            <span class="text-[13px] leading-[20px] text-[#64748B]">réponses</span>
+          </div>
+        </div>
+
+        <div class="mt-8 whitespace-pre-line break-words text-[16px] leading-[28px] text-[#334155] sm:text-[17px]">
+          {{ question.body }}
+        </div>
+      </article>
+
+      <section class="mt-12 border-t border-[#E2E8F0] pt-8">
+        <h2 class="text-[22px] font-bold text-[#141219] sm:text-[26px]">
+          {{ question.answers.length }} réponse{{ question.answers.length > 1 ? 's' : '' }}
+        </h2>
+
+        @if (question.answers.length === 0) {
+          <p class="mt-6 rounded-2xl bg-[#F8FAFC] px-5 py-8 text-center text-[16px] leading-[26px] text-[#64748B]">
+            Aucune réponse pour le moment. Aidez la communauté en partageant votre expérience.
+          </p>
+        } @else {
+          <div class="mt-6 flex flex-col gap-4">
+            @for (answer of question.answers; track answer.id) {
+              <article
+                [class]="
+                  'rounded-2xl border p-5 sm:p-6 ' +
+                  (answer.isAccepted ? 'border-[#0F6932] bg-[#F0FDF4]/30' : 'border-[#E2E8F0] bg-white')
+                "
+              >
+                <div class="flex flex-wrap items-center gap-3">
+                  @if (answer.user.avatarUrl) {
+                    <img
+                      [src]="answer.user.avatarUrl"
+                      [alt]="authorName(answer.user)"
+                      class="size-10 rounded-full object-cover"
+                    />
+                  } @else {
+                    <span
+                      aria-hidden="true"
+                      class="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#0F1011] text-[14px] font-semibold text-[#FBBF24]"
+                    >
+                      {{ initials(answer.user) }}
+                    </span>
+                  }
+
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <p class="text-[16px] font-semibold leading-[24px] text-[#141219]">
+                        {{ authorName(answer.user) }}
+                      </p>
+                      <span class="text-[13px] leading-[20px] text-[#94A3B8]">
+                        {{ timeAgo(answer.createdAt) }}
+                      </span>
+                    </div>
+                    <p class="text-[13px] leading-[20px] text-[#64748B]">
+                      {{ answer.user.reputation }} points
+                    </p>
+                  </div>
+
+                  @if (answer.isAccepted) {
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-[#0F6932] px-3 py-1 text-[13px] font-medium text-white">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 12.5L9.5 17L19 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      Réponse acceptée
+                    </span>
+                  }
+
+                  <span class="rounded-full bg-[#F8FAFC] px-3 py-1 text-[13px] font-medium text-[#64748B]">
+                    {{ answer.voteScore }} votes
+                  </span>
+                </div>
+
+                <p class="mt-4 whitespace-pre-line break-words text-[16px] leading-[26px] text-[#475569]">
+                  {{ answer.body }}
+                </p>
+              </article>
+            }
+          </div>
+        }
+      </section>
+
+      <div class="mt-12 flex justify-center">
+        <a
+          routerLink="/forum/ask"
+          class="inline-flex h-14 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Poser une question
+        </a>
+      </div>
+      }
+    }
+  </div>
+
+  @if (confirmingDelete()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
+      <div class="absolute inset-0 bg-[#0F1011]/50" (click)="cancelDelete()"></div>
+
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-question-title"
+        class="relative z-10 w-full max-w-[480px] rounded-[24px] bg-white p-6 shadow-2xl sm:p-8"
+      >
+        <span
+          aria-hidden="true"
+          class="flex size-12 items-center justify-center rounded-full bg-[#FB2C36]/10 text-[#FB2C36]"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 7H20M10 11V16M14 11V16M6 7L7 19C7 20.1046 7.89543 21 9 21H15C16.1046 21 17 20.1046 17 19L18 7M9 7V4C9 3.44772 9.44772 3 10 3H14C14.5523 3 15 3.44772 15 4V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+
+        <h2 id="delete-question-title" class="mt-4 text-[22px] font-bold text-[#141219]">
+          Supprimer cette question ?
+        </h2>
+        <p class="mt-2 text-[16px] leading-[26px] text-[#64748B]">
+          Cette action est définitive. La question et toutes ses réponses seront supprimées.
+        </p>
+
+        @if (deleteError()) {
+          <p
+            role="alert"
+            class="mt-4 rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium leading-5 text-[#FB2C36]"
+          >
+            {{ deleteError() }}
+          </p>
+        }
+
+        <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            (click)="cancelDelete()"
+            [disabled]="deleting()"
+            class="inline-flex h-12 items-center justify-center rounded-full px-5 text-base font-semibold text-[#64748B] transition-colors hover:text-ink disabled:opacity-60"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            (click)="confirmDelete()"
+            [disabled]="deleting()"
+            class="inline-flex h-12 items-center justify-center rounded-full bg-[#FB2C36] px-5 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            {{ deleting() ? 'Suppression…' : 'Supprimer définitivement' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</section>

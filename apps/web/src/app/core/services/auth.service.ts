@@ -1,25 +1,17 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpContext } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, from, of } from 'rxjs';
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../../../environments/environment';
-import { SILENT_ERROR } from '../interceptors/silent-error';
 import type {
   LoginDto,
   RegisterDto,
+  RegisterResponse,
   AuthTokens,
   AuthMessageResponse,
   UserMe,
 } from '@afridev/shared-types';
-
-/**
- * Corps attendu par `POST /api/auth/verify-email` : le code à 6 caractères
- * alphanumériques envoyé par e-mail (majuscules et chiffres).
- */
-export interface VerifyEmailCodeDto {
-  code: string;
-}
 
 /**
  * Les réponses sont dépouillées de leur enveloppe `{ data }` par
@@ -47,9 +39,13 @@ export class AuthService {
     return this.http.post<AuthTokens>(`${this.base}/login`, dto);
   }
 
-  /** `POST /api/auth/register` — l'API n'accepte que `username`, `email` et `password`. */
-  register(dto: RegisterDto): Observable<AuthTokens> {
-    return this.http.post<AuthTokens>(`${this.base}/register`, dto);
+  /**
+   * `POST /api/auth/register` — l'API n'accepte que `username`, `email` et
+   * `password`. Aucun token n'est renvoyé : un code d'activation est expédié
+   * et la connexion reste bloquée tant que l'adresse n'est pas confirmée.
+   */
+  register(dto: RegisterDto): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>(`${this.base}/register`, dto);
   }
 
   /**
@@ -61,34 +57,19 @@ export class AuthService {
   }
 
   /**
-   * Confirme l'adresse e-mail avec le code reçu.
-   * La route est protégée par `JwtAuthGuard` : l'utilisateur est authentifié
-   * (l'inscription renvoie déjà les tokens).
+   * Confirme l'adresse e-mail avec le code reçu. Route publique : le compte
+   * n'a pas encore de session, l'email identifie le compte à vérifier.
    */
-  verifyEmail(code: string): Observable<AuthMessageResponse> {
-    return this.http.post<AuthMessageResponse>(`${this.base}/verify-email`, { code });
+  verifyEmail(email: string, code: string): Observable<AuthMessageResponse> {
+    return this.http.post<AuthMessageResponse>(`${this.base}/verify-email`, { email, code });
   }
 
   /**
-   * Déclenche la vérification d'e-mail juste après l'inscription.
-   *
-   * L'API expédie déjà le code par e-mail depuis `POST /api/auth/register` :
-   * cet appel confirme la route de vérification qui porte le parcours et met à
-   * jour l'état du compte côté API. L'API exige le code dans le corps de la
-   * requête : un refus est attendu et silencieux (le code a bien été expédié
-   * par l'inscription), l'appel ne doit donc pas déclencher de toast.
+   * Renvoie un code de vérification. Route publique : la réponse est identique
+   * que l'email appartienne à un compte non vérifié ou non.
    */
-  verifyEmailOnSignup(): Observable<AuthMessageResponse> {
-    return this.http.post<AuthMessageResponse>(
-      `${this.base}/verify-email`,
-      {},
-      { context: new HttpContext().set(SILENT_ERROR, true) }
-    );
-  }
-
-  /** Renvoie l'email de vérification (nécessite d'être authentifié). */
-  resendVerification(): Observable<AuthMessageResponse> {
-    return this.http.post<AuthMessageResponse>(`${this.base}/resend-verification`, {});
+  resendVerification(email: string): Observable<AuthMessageResponse> {
+    return this.http.post<AuthMessageResponse>(`${this.base}/resend-verification`, { email });
   }
 
   /**
