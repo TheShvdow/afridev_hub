@@ -1,19 +1,18 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PageHeroComponent } from '../../../shared/components/page-hero/page-hero.component';
 import { ForumPostDetail, ForumService } from '../../../core/services/forum.service';
 import { AuthStore } from '../../../core/store/auth.store';
 import { ToastService } from '../../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
-
-const MAX_TAGS = 5;
+import { QuestionFieldsComponent, createQuestionForm } from '../question-fields/question-fields.component';
 
 @Component({
   selector: 'app-post-edit',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, PageHeroComponent],
+  imports: [ReactiveFormsModule, RouterLink, PageHeroComponent, QuestionFieldsComponent],
   templateUrl: './post-edit.component.html',
   styleUrl: './post-edit.component.css',
 })
@@ -26,7 +25,6 @@ export class PostEditComponent {
   private readonly authStore = inject(AuthStore);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly maxTags = MAX_TAGS;
   readonly postId = signal<string | null>(null);
   readonly loading = signal(true);
   readonly saving = signal(false);
@@ -35,13 +33,9 @@ export class PostEditComponent {
   readonly loadError = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
 
-  readonly form = this.fb.nonNullable.group({
-    title: ['', [Validators.required, Validators.minLength(15), Validators.maxLength(200)]],
-    body: ['', [Validators.required, Validators.minLength(50), Validators.maxLength(50000)]],
-    tags: this.fb.nonNullable.control<string[]>([], [Validators.required]),
-  });
+  readonly form = createQuestionForm(this.fb);
 
-  readonly tagInput = this.fb.nonNullable.control('');
+  private readonly fields = viewChild(QuestionFieldsComponent);
 
   private currentId: string | null = null;
 
@@ -107,47 +101,10 @@ export class PostEditComponent {
     this.loading.set(false);
   }
 
-  addTag(): void {
-    const name = this.tagInput.value.trim().replace(/^#+/, '');
-    if (!name) return;
-
-    const tags = this.form.controls.tags.value;
-    if (tags.length >= MAX_TAGS) return;
-
-    const duplicate = tags.some((tag) => tag.toLowerCase() === name.toLowerCase());
-    if (!duplicate) {
-      this.form.controls.tags.setValue([...tags, name]);
-      this.form.controls.tags.markAsTouched();
-    }
-
-    this.tagInput.setValue('');
-  }
-
-  removeTag(tag: string): void {
-    this.form.controls.tags.setValue(
-      this.form.controls.tags.value.filter((current) => current !== tag),
-    );
-    this.form.controls.tags.markAsTouched();
-  }
-
-  onTagKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' || event.key === ',') {
-      event.preventDefault();
-      this.addTag();
-      return;
-    }
-
-    if (event.key === 'Backspace' && !this.tagInput.value) {
-      const tags = this.form.controls.tags.value;
-      if (tags.length > 0) this.removeTag(tags[tags.length - 1]);
-    }
-  }
-
   submit(): void {
     if (this.saving() || this.loading()) return;
 
-    // Une saisie de tag non validée ne doit pas être perdue à la soumission.
-    if (this.tagInput.value.trim()) this.addTag();
+    this.fields()?.flushPendingTag();
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();

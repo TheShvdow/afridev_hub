@@ -1,8 +1,10 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { AskQuestionComponent } from './ask-question.component';
 import { ForumService } from '../../../core/services/forum.service';
+import { QuestionFieldsComponent } from '../question-fields/question-fields.component';
 
 const forumStub = {
   findSimilar: jest.fn(() =>
@@ -41,6 +43,10 @@ describe('AskQuestionComponent', () => {
   let component: AskQuestionComponent;
   let fixture: ComponentFixture<AskQuestionComponent>;
   let router: Router;
+
+  // Les tags se saisissent dans le composant de champs partagé.
+  const fields = (): QuestionFieldsComponent =>
+    fixture.debugElement.query(By.directive(QuestionFieldsComponent)).componentInstance;
 
   beforeEach(async () => {
     forumStub.findSimilar.mockClear();
@@ -88,8 +94,8 @@ describe('AskQuestionComponent', () => {
     component.form.controls.body.setValue(
       "J'essaie de configurer Nx avec Angular 18 et le SSR, mais le build échoue sans message clair.",
     );
-    component.tagInput.setValue('angular');
-    component.addTag();
+    fields().tagInput.setValue('angular');
+    fields().addTag();
 
     tick(400);
     component.submit();
@@ -106,8 +112,8 @@ describe('AskQuestionComponent', () => {
 
   it('should not add more than five tags', () => {
     for (const tag of ['a', 'b', 'c', 'd', 'e', 'f']) {
-      component.tagInput.setValue(tag);
-      component.addTag();
+      fields().tagInput.setValue(tag);
+      fields().addTag();
     }
 
     expect(component.form.controls.tags.value).toEqual(['a', 'b', 'c', 'd', 'e']);

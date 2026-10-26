@@ -9,18 +9,11 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import {
-  ForumAnswer,
-  ForumAuthorSummary,
-  ForumPostDetail,
-  ForumService,
-} from '../../../core/services/forum.service';
-import { AuthStore } from '../../../core/store/auth.store';
-import { ToastService } from '../../../core/services/toast.service';
+import { ForumPostDetail } from '../../../core/services/forum.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
-import { initialsFrom, relativeTime } from '../../../shared/utils/forum-thread.mapper';
+import { AnswerThreadBase } from '../../../shared/forum/answer-thread.base';
 
 @Component({
   selector: 'app-post-detail',
@@ -29,14 +22,10 @@ import { initialsFrom, relativeTime } from '../../../shared/utils/forum-thread.m
   templateUrl: './post-detail.component.html',
   styleUrl: './post-detail.component.css',
 })
-export class PostDetailComponent implements OnInit {
+export class PostDetailComponent extends AnswerThreadBase implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly forum = inject(ForumService);
-  protected readonly authStore = inject(AuthStore);
-  private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly fb = inject(FormBuilder);
 
   readonly post = signal<ForumPostDetail | null>(null);
   readonly canEdit = computed(() => {
@@ -59,15 +48,7 @@ export class PostDetailComponent implements OnInit {
   readonly confirmingDelete = signal(false);
   readonly deleting = signal(false);
   readonly deleteError = signal<string | null>(null);
-  readonly answering = signal(false);
-  readonly answerError = signal<string | null>(null);
-  readonly confirmingAnswerId = signal<string | null>(null);
-  readonly deletingAnswerId = signal<string | null>(null);
-  readonly answerDeleteError = signal<string | null>(null);
 
-  readonly answerForm = this.fb.nonNullable.group({
-    body: ['', [Validators.required, Validators.maxLength(50000)]],
-  });
 
   private currentId: string | null = null;
 
@@ -163,129 +144,5 @@ export class PostDetailComponent implements OnInit {
         this.deleteError.set(extractApiErrorMessage(error));
       },
     });
-  }
-
-  submitAnswer(): void {
-    if (this.answering()) return;
-
-    if (this.answerForm.invalid) {
-      this.answerForm.markAllAsTouched();
-      return;
-    }
-
-    const question = this.post();
-    if (!question) return;
-
-    const { body } = this.answerForm.getRawValue();
-    this.answering.set(true);
-    this.answerError.set(null);
-
-    this.forum.createAnswer(question.id, { body: body.trim() }).subscribe({
-      next: (answer) => {
-        this.answering.set(false);
-        const existing = this.post();
-        if (existing) {
-          this.post.set({
-            ...existing,
-            answers: [...existing.answers, answer as ForumAnswer],
-            _count: { answers: (existing._count?.answers ?? existing.answers.length) + 1 },
-          });
-        }
-        this.answerForm.reset({ body: '' });
-        this.toast.success('Réponse publiée.');
-      },
-      error: (error: HttpErrorResponse) => {
-        this.answering.set(false);
-
-        if (error.status === 401) {
-          this.answerError.set('Connectez-vous pour répondre à cette question.');
-          return;
-        }
-        if (error.status === 403) {
-          this.answerError.set("Vous ne pouvez pas répondre à votre propre question.");
-          return;
-        }
-
-        this.answerError.set(extractApiErrorMessage(error));
-      },
-    });
-  }
-
-  authorName(author: ForumAuthorSummary): string {
-    return author.displayName ?? author.username;
-  }
-
-  canDeleteAnswer(answer: ForumAnswer): boolean {
-    const me = this.authStore.currentUser();
-    if (!me) return false;
-
-    const isModerator = me.role === 'ADMIN' || me.role === 'MODERATOR';
-    return isModerator || me.id === answer.user.id;
-  }
-
-  requestAnswerDelete(answerId: string): void {
-    if (this.deletingAnswerId()) return;
-
-    this.answerDeleteError.set(null);
-    this.confirmingAnswerId.set(answerId);
-  }
-
-  cancelAnswerDelete(): void {
-    if (this.deletingAnswerId()) return;
-
-    this.confirmingAnswerId.set(null);
-    this.answerDeleteError.set(null);
-  }
-
-  deleteAnswer(answerId: string): void {
-    if (this.deletingAnswerId()) return;
-
-    this.deletingAnswerId.set(answerId);
-    this.answerDeleteError.set(null);
-
-    this.forum.deleteAnswer(answerId).subscribe({
-      next: () => {
-        const existing = this.post();
-        if (existing) {
-          this.post.set({
-            ...existing,
-            answers: existing.answers.filter((answer) => answer.id !== answerId),
-            _count: {
-              answers: Math.max(0, (existing._count?.answers ?? existing.answers.length) - 1),
-            },
-          });
-        }
-
-        this.deletingAnswerId.set(null);
-        this.confirmingAnswerId.set(null);
-        this.toast.success('Réponse supprimée.');
-      },
-      error: (error: HttpErrorResponse) => {
-        this.deletingAnswerId.set(null);
-
-        if (error.status === 401) {
-          this.answerDeleteError.set('Connectez-vous pour supprimer cette réponse.');
-          return;
-        }
-        if (error.status === 403) {
-          this.answerDeleteError.set("Vous n'êtes pas autorisé à supprimer cette réponse.");
-          return;
-        }
-        if (error.status === 404) {
-          this.answerDeleteError.set('Cette réponse a déjà été supprimée.');
-          return;
-        }
-
-        this.answerDeleteError.set(extractApiErrorMessage(error));
-      },
-    });
-  }
-
-  initials(author: ForumAuthorSummary): string {
-    return initialsFrom(this.authorName(author));
-  }
-
-  timeAgo(iso: string): string {
-    return relativeTime(iso);
   }
 }

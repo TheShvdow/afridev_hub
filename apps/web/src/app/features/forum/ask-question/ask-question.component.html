@@ -27,25 +27,7 @@
         </p>
       }
 
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center justify-between gap-4">
-          <label for="title" class="text-[16px] font-semibold text-[#141219]">Titre *</label>
-          <span class="text-[14px] text-[#64748B]">{{ form.controls.title.value.length }}/200</span>
-        </div>
-        <input
-          id="title"
-          type="text"
-          formControlName="title"
-          maxlength="200"
-          placeholder="Ex : Comment configurer Nx avec Angular 18 + SSR ?"
-          class="h-14 rounded-2xl border border-[#E2E8F0] px-5 text-[16px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
-        />
-        @if (form.controls.title.touched && form.controls.title.invalid) {
-          <p class="text-[14px] font-medium text-[#FB2C36]">
-            Le titre doit contenir entre 15 et 200 caractères.
-          </p>
-        }
-
+      <app-question-fields [form]="form">
         @if (loadingSimilar()) {
           <p class="text-[14px] text-[#64748B]" aria-live="polite">
             Recherche de questions similaires…
@@ -80,82 +62,7 @@
             </p>
           </div>
         }
-      </div>
-
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center justify-between gap-4">
-          <label for="body" class="text-[16px] font-semibold text-[#141219]">Votre question *</label>
-          <span class="text-[14px] text-[#64748B]">{{ form.controls.body.value.length }}/50000</span>
-        </div>
-        <textarea
-          id="body"
-          formControlName="body"
-          rows="10"
-          maxlength="50000"
-          placeholder="Décrivez ce que vous essayez de faire, ce que vous avez déjà tenté, et les messages d'erreur éventuels…"
-          class="rounded-2xl border border-[#E2E8F0] px-5 py-4 text-[16px] leading-[26px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
-        ></textarea>
-        @if (form.controls.body.touched && form.controls.body.invalid) {
-          <p class="text-[14px] font-medium text-[#FB2C36]">
-            Le contenu doit contenir au moins 50 caractères.
-          </p>
-        }
-      </div>
-
-      <div class="flex flex-col gap-3">
-        <div class="flex items-center justify-between gap-4">
-          <label for="tag" class="text-[16px] font-semibold text-[#141219]">Tags *</label>
-          <span class="text-[14px] text-[#64748B]">
-            {{ form.controls.tags.value.length }}/{{ maxTags }}
-          </span>
-        </div>
-
-        @if (form.controls.tags.value.length > 0) {
-          <div class="flex flex-wrap gap-2">
-            @for (tag of form.controls.tags.value; track tag) {
-              <span class="inline-flex items-center gap-2 rounded-full bg-[#F0FDF4] px-4 py-1 text-[14px] font-medium text-[#0F6932]">
-                {{ tag }}
-                <button
-                  type="button"
-                  (click)="removeTag(tag)"
-                  [attr.aria-label]="'Retirer le tag ' + tag"
-                  class="text-[16px] leading-none text-[#0F6932] hover:opacity-70"
-                >
-                  ×
-                </button>
-              </span>
-            }
-          </div>
-        }
-
-        <div class="flex flex-col gap-3 sm:flex-row">
-          <input
-            id="tag"
-            type="text"
-            [formControl]="tagInput"
-            (keydown)="onTagKeydown($event)"
-            maxlength="30"
-            placeholder="Ex : angular, nx, ssr"
-            class="h-14 min-w-0 flex-1 rounded-2xl border border-[#E2E8F0] px-5 text-[16px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
-          />
-          <button
-            type="button"
-            (click)="addTag()"
-            [disabled]="form.controls.tags.value.length >= maxTags"
-            class="h-14 shrink-0 rounded-full border border-ink px-6 text-base font-semibold text-ink disabled:opacity-50"
-          >
-            Ajouter
-          </button>
-        </div>
-
-        <p class="text-[14px] text-[#64748B]">
-          Ajoutez 1 à 5 tags pour aider les autres membres à trouver votre question (Entrée ou virgule pour valider).
-        </p>
-
-        @if (form.controls.tags.touched && form.controls.tags.invalid) {
-          <p class="text-[14px] font-medium text-[#FB2C36]">Au moins 1 tag est requis.</p>
-        }
-      </div>
+      </app-question-fields>
 
       <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
         <a

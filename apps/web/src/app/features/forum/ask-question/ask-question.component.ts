@@ -1,19 +1,18 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap } from 'rxjs';
 import { PageHeroComponent } from '../../../shared/components/page-hero/page-hero.component';
 import { ForumService, SimilarPost } from '../../../core/services/forum.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
-
-const MAX_TAGS = 5;
+import { QuestionFieldsComponent, createQuestionForm } from '../question-fields/question-fields.component';
 
 @Component({
   selector: 'app-ask-question',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, PageHeroComponent],
+  imports: [ReactiveFormsModule, RouterLink, PageHeroComponent, QuestionFieldsComponent],
   templateUrl: './ask-question.component.html',
   styleUrl: './ask-question.component.css',
 })
@@ -23,19 +22,14 @@ export class AskQuestionComponent {
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
-  readonly maxTags = MAX_TAGS;
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly similarPosts = signal<SimilarPost[]>([]);
   readonly loadingSimilar = signal(false);
 
-  readonly form = this.fb.nonNullable.group({
-    title: ['', [Validators.required, Validators.minLength(15), Validators.maxLength(200)]],
-    body: ['', [Validators.required, Validators.minLength(50), Validators.maxLength(50000)]],
-    tags: this.fb.nonNullable.control<string[]>([], [Validators.required]),
-  });
+  readonly form = createQuestionForm(this.fb);
 
-  readonly tagInput = this.fb.nonNullable.control('');
+  private readonly fields = viewChild(QuestionFieldsComponent);
 
   constructor() {
     this.form.controls.title.valueChanges
@@ -60,47 +54,10 @@ export class AskQuestionComponent {
       });
   }
 
-  addTag(): void {
-    const name = this.tagInput.value.trim().replace(/^#+/, '');
-    if (!name) return;
-
-    const tags = this.form.controls.tags.value;
-    if (tags.length >= MAX_TAGS) return;
-
-    const duplicate = tags.some((tag) => tag.toLowerCase() === name.toLowerCase());
-    if (!duplicate) {
-      this.form.controls.tags.setValue([...tags, name]);
-      this.form.controls.tags.markAsTouched();
-    }
-
-    this.tagInput.setValue('');
-  }
-
-  removeTag(tag: string): void {
-    this.form.controls.tags.setValue(
-      this.form.controls.tags.value.filter((current) => current !== tag),
-    );
-    this.form.controls.tags.markAsTouched();
-  }
-
-  onTagKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' || event.key === ',') {
-      event.preventDefault();
-      this.addTag();
-      return;
-    }
-
-    if (event.key === 'Backspace' && !this.tagInput.value) {
-      const tags = this.form.controls.tags.value;
-      if (tags.length > 0) this.removeTag(tags[tags.length - 1]);
-    }
-  }
-
   submit(): void {
     if (this.loading()) return;
 
-    // Une saisie de tag non validée ne doit pas être perdue à la soumission.
-    if (this.tagInput.value.trim()) this.addTag();
+    this.fields()?.flushPendingTag();
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
