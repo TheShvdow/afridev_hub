@@ -87,6 +87,9 @@ describe('authInterceptor', () => {
 
     // Aucun appel à /auth/refresh ne doit partir.
     controller.expectNone((req) => req.url.endsWith('/auth/refresh'));
+    // Sans refresh, les jetons en place ne changent pas.
+    expect(store.accessToken()).toBe('at-1');
+    expect(store.refreshToken()).toBe('rt-1');
   });
 
   it('rafraîchit le token sur /api/auth/me après un 401', () => {
@@ -124,5 +127,8 @@ describe('authInterceptor', () => {
       });
 
     controller.expectNone((req) => req.url.endsWith('/auth/refresh'));
+    // Sans refresh, les jetons en place ne changent pas.
+    expect(store.accessToken()).toBe('at-1');
+    expect(store.refreshToken()).toBe('rt-1');
   });
 });

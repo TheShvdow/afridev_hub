@@ -209,6 +209,8 @@ describe('Connexion', () => {
     component.submit();
 
     controller.expectNone(`${API}/auth/login`);
+    expect(component.form.invalid).toBe(true);
+    expect(component.loading()).toBe(false);
   });
 
   it('affiche l\'erreur renvoyée par l\'API après un callback OAuth en échec', () => {

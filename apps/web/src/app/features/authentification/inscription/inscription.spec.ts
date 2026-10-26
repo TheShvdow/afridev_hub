@@ -121,6 +121,8 @@ describe('Inscription', () => {
     component.submit();
 
     controller.expectNone(`${API}/auth/register`);
+    expect(component.form.invalid).toBe(true);
+    expect(component.loading()).toBe(false);
   });
 
   it('démarre la connexion GitHub depuis le bouton dédié', () => {
