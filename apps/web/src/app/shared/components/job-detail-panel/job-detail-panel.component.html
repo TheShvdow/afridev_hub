@@ -30,7 +30,7 @@
             aria-label="Fermer"
             class="shrink-0 rounded-full p-2 text-[#64748B] transition-colors hover:bg-[#F1F5F9] hover:text-[#141219]"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
             </svg>
           </button>
@@ -76,7 +76,7 @@
             <ul class="mt-2 flex flex-col gap-2">
               @for (mission of job.missions; track mission) {
                 <li class="flex items-start gap-[10px] text-[16px] leading-[26px] text-[#64748B]">
-                  <svg class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg aria-hidden="true" class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M5 12.5L10 17.5L19 7" stroke="#0F6932" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                   <span>{{ mission }}</span>
@@ -90,7 +90,7 @@
             <ul class="mt-2 flex flex-col gap-2">
               @for (item of job.profile; track item) {
                 <li class="flex items-start gap-[10px] text-[16px] leading-[26px] text-[#64748B]">
-                  <svg class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg aria-hidden="true" class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M5 12.5L10 17.5L19 7" stroke="#0F6932" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                   <span>{{ item }}</span>
@@ -104,7 +104,7 @@
             <ul class="mt-2 flex flex-col gap-2">
               @for (benefit of job.benefits; track benefit) {
                 <li class="flex items-start gap-[10px] text-[16px] leading-[26px] text-[#64748B]">
-                  <svg class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg aria-hidden="true" class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M5 12.5L10 17.5L19 7" stroke="#0F6932" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                   <span>{{ benefit }}</span>
