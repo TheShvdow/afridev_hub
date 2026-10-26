@@ -170,7 +170,9 @@
                 </p>
               }
               <form [formGroup]="answerForm" (ngSubmit)="submitAnswer()" novalidate class="flex flex-col gap-3 sm:flex-row sm:items-start">
+                <label for="thread-answer-body" class="sr-only">Votre réponse</label>
                 <input
+                  id="thread-answer-body"
                   type="text"
                   formControlName="body"
                   maxlength="50000"

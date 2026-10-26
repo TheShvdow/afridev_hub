@@ -37,7 +37,9 @@
 
     @if (isReplying()) {
       <form (submit)="submitReply(); $event.preventDefault()" class="mt-[12px] flex items-center gap-[10px]">
+        <label for="reply-{{ comment().id }}" class="sr-only">Répondre à ce commentaire</label>
         <input
+          id="reply-{{ comment().id }}"
           type="text"
           [value]="replyText()"
           (input)="replyText.set($any($event.target).value)"

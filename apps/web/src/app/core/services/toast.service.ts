@@ -25,16 +25,12 @@ export class ToastService {
     setTimeout(() => this.remove(id), 5000);
   }
 
-  /**
-   * `crypto.randomUUID` n'existe que dans les contextes sécurisés (HTTPS).
-   * Hors de ce contexte (HTTP sur une IP de réseau local), on retombe sur un
-   * identifiant construit localement : sans cela, l'affichage d'un toast
-   * interromprait le traitement de l'erreur d'origine.
-   */
+  // L'identifiant n'a besoin d'être unique qu'au sein de ce service : un compteur suffit.
+  // Il ne dépend ni de crypto.randomUUID (absent hors HTTPS) ni d'un générateur pseudo-aléatoire.
+  private nextId = 0;
+
   private generateId(): string {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-      return crypto.randomUUID();
-    }
-    return `toast-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    this.nextId += 1;
+    return `toast-${this.nextId}`;
   }
 }
