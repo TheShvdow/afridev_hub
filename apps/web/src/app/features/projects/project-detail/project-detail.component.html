@@ -1,0 +1,302 @@
+<section class="min-h-screen bg-[#F8FAFC]">
+  <div class="mx-auto w-full max-w-[1100px] px-6 py-16 sm:px-10 lg:px-0 lg:py-12">
+    <a
+      routerLink="/projets"
+      class="inline-flex items-center gap-2 text-[16px] font-semibold text-[#0F6932] transition-opacity hover:opacity-80"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Retour aux projets
+    </a>
+
+    @if (loading()) {
+      <p class="py-20 text-center text-[16px] text-[#64748B]">Chargement du projet…</p>
+    } @else if (notFound()) {
+      <div class="flex flex-col items-center gap-4 py-20 text-center">
+        <p class="text-[24px] font-bold text-[#141219]">Projet introuvable</p>
+        <p class="text-[16px] leading-[26px] text-[#64748B]">
+          Ce projet n'existe pas ou a été retiré de la vitrine.
+        </p>
+        <a
+          routerLink="/projets"
+          class="mt-2 inline-flex h-12 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Revenir aux projets
+        </a>
+      </div>
+    } @else if (errorMessage()) {
+      <div class="flex flex-col items-center gap-4 py-20 text-center">
+        <p class="text-[16px] leading-[26px] text-[#64748B]">{{ errorMessage() }}</p>
+        <button
+          type="button"
+          (click)="retry()"
+          class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink"
+        >
+          Réessayer
+        </button>
+      </div>
+    } @else {
+      @if (project(); as item) {
+        <article class="mt-8 overflow-hidden rounded-[24px] bg-white">
+          <div class="bg-[#0F1011] px-6 py-10 text-white sm:px-10 lg:py-12">
+            <div class="flex flex-wrap items-center gap-3">
+              @if (item.category) {
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-1 text-[14px] font-medium text-[#FBBF24]">
+                  @if (item.category.icon) {
+                    {{ item.category.icon }}
+                  }
+                  {{ item.category.name }}
+                </span>
+              }
+              @for (link of item.projectTags; track link.tag.slug) {
+                <span class="rounded-full bg-white/10 px-4 py-1 text-[14px] font-medium text-white">
+                  {{ link.tag.name }}
+                </span>
+              }
+            </div>
+
+            <h1 class="mt-5 text-[32px] font-bold leading-[42px] sm:text-[44px] sm:leading-[54px]">
+              {{ item.name }}
+            </h1>
+
+            <p class="mt-4 max-w-[760px] whitespace-pre-line break-words text-[16px] leading-[27px] text-[#CBD5E1] sm:text-[17px]">
+              {{ item.description }}
+            </p>
+
+            <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <a
+                [routerLink]="['/u', item.user.username]"
+                class="group flex items-center gap-3"
+              >
+                @if (item.user.avatarUrl) {
+                  <img
+                    [src]="item.user.avatarUrl"
+                    [alt]="authorName()"
+                    class="size-10 rounded-full object-cover"
+                  />
+                } @else {
+                  <span
+                    aria-hidden="true"
+                    class="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-[14px] font-semibold text-[#FBBF24]"
+                  >
+                    {{ authorInitials() }}
+                  </span>
+                }
+                <div class="min-w-0">
+                  <p class="text-[15px] font-semibold leading-[22px] group-hover:underline">{{ authorName() }}</p>
+                  <p class="text-[13px] leading-[20px] text-[#94A3B8]">
+                    {{ item.user.reputation }} points · {{ countryName() }}
+                  </p>
+                </div>
+              </a>
+
+              <span class="text-[13px] text-[#94A3B8]">Publié {{ timeAgo(item.createdAt) }}</span>
+            </div>
+
+            <div class="mt-7 flex flex-wrap gap-3">
+              <button
+                type="button"
+                (click)="toggleStar()"
+                [disabled]="starring()"
+                [attr.aria-pressed]="item.starredByViewer === true"
+                [class]="
+                  'inline-flex h-12 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-semibold transition-colors disabled:opacity-60 ' +
+                  (item.starredByViewer
+                    ? 'bg-[#FBBF24] text-[#0F1011] hover:opacity-90'
+                    : 'border border-[#FBBF24]/60 text-[#FBBF24] hover:bg-[#FBBF24]/10')
+                "
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  [attr.fill]="item.starredByViewer ? 'currentColor' : 'none'"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 2.5L14.9 8.4L21.4 9.3L16.7 13.9L17.8 20.4L12 17.3L6.2 20.4L7.3 13.9L2.6 9.3L9.1 8.4L12 2.5Z"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                {{ starLabel() }}
+                <span aria-hidden="true">·</span>
+                {{ communityStars() }}
+              </button>
+              <a
+                [href]="item.repoUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-5 text-[15px] font-semibold text-[#0F1011] transition-opacity hover:opacity-90"
+              >
+                Voir le dépôt GitHub
+              </a>
+              @if (item.demoUrl) {
+                <a
+                  [href]="item.demoUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/30 px-5 text-[15px] font-semibold text-white transition-colors hover:bg-white/10"
+                >
+                  Ouvrir la démo
+                </a>
+              }
+              @if (canEdit()) {
+                <a
+                  [routerLink]="['/projects', item.id, 'edit']"
+                  class="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/30 px-5 text-[15px] font-semibold text-white transition-colors hover:bg-white/10"
+                >
+                  Modifier le projet
+                </a>
+              }
+              @if (canDelete()) {
+                <button
+                  type="button"
+                  (click)="openDeleteConfirm()"
+                  class="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#FB2C36]/50 px-5 text-[15px] font-semibold text-[#FCA5A5] transition-colors hover:bg-[#FB2C36]/10"
+                >
+                  Supprimer
+                </button>
+              }
+            </div>
+
+            @if (starError()) {
+              <p role="alert" class="mt-4 text-[14px] font-medium text-[#FCA5A5]">
+                {{ starError() }}
+              </p>
+            }
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 px-6 py-8 sm:px-10 lg:grid-cols-4 lg:gap-5">
+            <div class="rounded-2xl bg-[#F8FAFC] px-4 py-5 text-center">
+              <p class="text-[26px] font-bold leading-[34px] text-[#141219]">{{ stars() }}</p>
+              <p class="mt-1 text-[13px] font-medium text-[#64748B]">Étoiles GitHub</p>
+            </div>
+            <div class="rounded-2xl bg-[#F8FAFC] px-4 py-5 text-center">
+              <p class="text-[26px] font-bold leading-[34px] text-[#141219]">{{ forks() }}</p>
+              <p class="mt-1 text-[13px] font-medium text-[#64748B]">Forks</p>
+            </div>
+            <div class="rounded-2xl bg-[#F8FAFC] px-4 py-5 text-center">
+              <p class="text-[26px] font-bold leading-[34px] text-[#141219]">{{ communityStars() }}</p>
+              <p class="mt-1 text-[13px] font-medium text-[#64748B]">Étoiles AfriDev</p>
+            </div>
+            <div class="rounded-2xl bg-[#F8FAFC] px-4 py-5 text-center">
+              <p class="truncate text-[20px] font-bold leading-[34px] text-[#141219]">
+                {{ item.githubLanguage ?? '—' }}
+              </p>
+              <p class="mt-1 text-[13px] font-medium text-[#64748B]">Langage</p>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-4 border-t border-[#E2E8F0] px-6 py-6 sm:px-10 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="text-[14px] font-semibold text-[#141219]">Dernier push GitHub</p>
+              <p class="mt-1 text-[14px] text-[#64748B]">{{ timeAgo(item.githubLastPush) }}</p>
+            </div>
+            <div class="sm:text-right">
+              <p class="text-[14px] font-semibold text-[#141219]">Stats GitHub</p>
+              <p class="mt-1 text-[14px] text-[#64748B]">
+                @if (item.githubSyncedAt) {
+                  Synchronisées {{ timeAgo(item.githubSyncedAt) }}
+                } @else {
+                  Pas encore synchronisées
+                }
+              </p>
+
+              @if (canRefresh()) {
+                <button
+                  type="button"
+                  (click)="refreshStats()"
+                  [disabled]="refreshing()"
+                  class="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[#E2E8F0] px-4 text-[14px] font-semibold text-[#141219] transition-colors hover:border-ink disabled:opacity-60"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M4 4V10H10M20 20V14H14M4.8 14A8 8 0 0019 17.2M19.2 10A8 8 0 005 6.8"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  {{ refreshing() ? 'Rafraîchissement…' : 'Rafraîchir les stats' }}
+                </button>
+              }
+
+              @if (refreshError()) {
+                <p class="mt-2 text-[13px] font-medium leading-5 text-[#FB2C36]">
+                  {{ refreshError() }}
+                </p>
+              }
+            </div>
+          </div>
+        </article>
+      }
+    }
+  </div>
+
+  @if (confirmingDelete()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
+      <div class="absolute inset-0 bg-[#0F1011]/50" (click)="cancelDelete()"></div>
+
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-project-title"
+        class="relative z-10 w-full max-w-[480px] rounded-[24px] bg-white p-6 shadow-2xl sm:p-8"
+      >
+        <span
+          aria-hidden="true"
+          class="flex size-12 items-center justify-center rounded-full bg-[#FB2C36]/10 text-[#FB2C36]"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 7H20M10 11V16M14 11V16M6 7L7 19C7 20.1046 7.89543 21 9 21H15C16.1046 21 17 20.1046 17 19L18 7M9 7V4C9 3.44772 9.44772 3 10 3H14C14.5523 3 15 3.44772 15 4V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+
+        <h2 id="delete-project-title" class="mt-4 text-[22px] font-bold text-[#141219]">
+          Supprimer ce projet ?
+        </h2>
+        <p class="mt-2 text-[16px] leading-[26px] text-[#64748B]">
+          Cette action est définitive. Le projet et ses étoiles seront supprimés de la vitrine.
+        </p>
+
+        @if (deleteError()) {
+          <p
+            role="alert"
+            class="mt-4 rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium leading-5 text-[#FB2C36]"
+          >
+            {{ deleteError() }}
+          </p>
+        }
+
+        <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            (click)="cancelDelete()"
+            [disabled]="deleting()"
+            class="inline-flex h-12 items-center justify-center rounded-full px-5 text-base font-semibold text-[#64748B] transition-colors hover:text-ink disabled:opacity-60"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            (click)="confirmDelete()"
+            [disabled]="deleting()"
+            class="inline-flex h-12 items-center justify-center rounded-full bg-[#FB2C36] px-5 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            {{ deleting() ? 'Suppression…' : 'Supprimer définitivement' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</section>

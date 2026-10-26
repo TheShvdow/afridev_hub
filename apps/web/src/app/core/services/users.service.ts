@@ -9,11 +9,14 @@ import { environment } from '../../../environments/environment';
  * que les champs réellement renseignés.
  */
 export interface UpdateProfileDto {
-  displayName?: string;
-  bio?: string;
-  location?: string;
+  displayName?: string | null;
+  bio?: string | null;
+  location?: string | null;
   stack?: string[];
-  websiteUrl?: string;
+  websiteUrl?: string | null;
+  githubUsername?: string | null;
+  linkedinUsername?: string | null;
+  twitterUsername?: string | null;
 }
 
 /** Sous-ensemble de la réponse de `PATCH /api/users/me` (MyProfileDto). */
@@ -25,6 +28,35 @@ export interface MyProfile {
   stack: string[];
   reputation: number;
   isVerified: boolean;
+}
+
+export interface PublicUserProfile {
+  id: string;
+  username: string;
+  displayName: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+  location: string | null;
+  websiteUrl: string | null;
+  githubUsername: string | null;
+  linkedinUsername: string | null;
+  twitterUsername: string | null;
+  reputation: number;
+  role: string;
+  isVerified: boolean;
+  createdAt: string;
+  _count?: {
+    posts: number;
+    answers: number;
+    projects: number;
+    receivedBadges: number;
+  };
+  ogMeta?: {
+    ogTitle: string;
+    ogDescription: string;
+    ogImage: string | null;
+    ogUrl: string;
+  };
 }
 
 /**
@@ -39,5 +71,12 @@ export class UsersService {
   /** `PATCH /api/users/me` — nécessite un jeton d'accès valide. */
   updateProfile(dto: UpdateProfileDto): Observable<MyProfile> {
     return this.http.patch<MyProfile>(`${this.base}/me`, dto);
+  }
+
+  /** `GET /api/users/{username}` — profil public. */
+  getPublicProfile(username: string): Observable<PublicUserProfile> {
+    return this.http.get<PublicUserProfile>(
+      `${this.base}/${encodeURIComponent(username)}`,
+    );
   }
 }

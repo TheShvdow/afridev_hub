@@ -21,13 +21,27 @@
 
   <div class="mt-auto flex items-center justify-between pt-[31px]">
     <p class="text-base font-medium leading-[26px] text-slate-500">
-      Par&nbsp;Équipe <span class="font-medium text-[#141219]">{{ project().city }}</span>
+      Par&nbsp;<span class="font-medium text-[#141219]">{{ project().author ?? 'Équipe' }}</span>
+      @if (project().city) {
+        · {{ project().city }}
+      }
     </p>
-    <a
-      href="#"
-      class="rounded-[1000px] bg-[#0F1011] px-[20px] py-[14px] text-[16px] font-semibold text-white transition-opacity hover:opacity-90"
-    >
-      {{ ctaLabel() }}
-    </a>
+    @if (project().detailHref) {
+      <a
+        [routerLink]="project().detailHref"
+        class="rounded-[1000px] bg-[#0F1011] px-[20px] py-[14px] text-[16px] font-semibold text-white transition-opacity hover:opacity-90"
+      >
+        {{ ctaLabel() }}
+      </a>
+    } @else {
+      <a
+        [href]="project().href ?? '#'"
+        [attr.target]="project().href ? '_blank' : null"
+        [attr.rel]="project().href ? 'noopener noreferrer' : null"
+        class="rounded-[1000px] bg-[#0F1011] px-[20px] py-[14px] text-[16px] font-semibold text-white transition-opacity hover:opacity-90"
+      >
+        {{ ctaLabel() }}
+      </a>
+    }
   </div>
 </article>

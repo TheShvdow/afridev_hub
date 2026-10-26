@@ -3,7 +3,7 @@
   [class.pointer-events-none]="!thread()"
   [class.opacity-0]="!thread()"
 >
-  <div class="absolute inset-0 bg-[#0F1011]/50" (click)="closed.emit()"></div>
+  <div class="absolute inset-0 bg-[#0F1011]/50" (click)="close()"></div>
 
   <div
     role="dialog"
@@ -13,24 +13,24 @@
     [class.scale-95]="!thread()"
     [class.opacity-0]="!thread()"
   >
-    @if (thread(); as thread) {
+    @if (thread(); as currentThread) {
       <div class="flex items-start justify-between gap-4 border-b border-[#E2E8F0] p-[24px]">
         <div class="min-w-0">
           <div class="flex flex-wrap gap-3">
-            @for (tag of thread.tags; track tag) {
-              @if (tag === thread.tags[0]) {
-                <span class="bg-[#F0FDF4] text-[#0F6932] rounded-[1000px] px-[16px] py-[4px] text-[14px] font-medium">{{ tag }}</span>
+            @for (tag of currentThread.tags; track tag) {
+              @if (tag === currentThread.tags[0]) {
+                <span class="rounded-[1000px] bg-[#F0FDF4] px-[16px] py-[4px] text-[14px] font-medium text-[#0F6932]">{{ tag }}</span>
               } @else {
-                <span class="bg-[#FEFCE8] text-[#A16207] rounded-[1000px] px-[16px] py-[4px] text-[14px] font-medium">{{ tag }}</span>
+                <span class="rounded-[1000px] bg-[#FEFCE8] px-[16px] py-[4px] text-[14px] font-medium text-[#A16207]">{{ tag }}</span>
               }
             }
           </div>
-          <h3 class="mt-[10px] text-[22px] font-bold leading-[32px] text-[#141219]">{{ thread.title }}</h3>
-          <p class="mt-[6px] text-[14px] leading-[22px] text-[#64748B]">{{ thread.meta }}</p>
+          <h3 class="mt-[10px] text-[22px] font-bold leading-[32px] text-[#141219]">{{ currentThread.title }}</h3>
+          <p class="mt-[6px] text-[14px] leading-[22px] text-[#64748B]">{{ currentThread.meta }}</p>
         </div>
         <button
           type="button"
-          (click)="closed.emit()"
+          (click)="close()"
           aria-label="Fermer"
           class="shrink-0 rounded-full p-2 text-[#64748B] transition-colors hover:bg-[#F1F5F9] hover:text-[#141219]"
         >
@@ -41,45 +41,160 @@
       </div>
 
       <div class="flex-1 overflow-y-auto p-[24px]">
-        <article class="flex gap-4">
-          <span
-            aria-hidden="true"
-            class="flex size-[48px] shrink-0 items-center justify-center rounded-full bg-[#0F1011] text-[18px] font-semibold text-[#FBBF24]"
-          >
-            {{ thread.initials }}
-          </span>
-          <div class="min-w-0">
-            <p class="text-[16px] font-semibold leading-[26px] text-[#141219]">{{ thread.meta.split(' · ')[0] }}</p>
-            <p class="mt-1 text-[16px] leading-[26px] text-[#475569]">{{ thread.body }}</p>
+        @if (loading()) {
+          <p class="py-6 text-center text-[15px] text-[#64748B]">Chargement de la discussion…</p>
+        } @else if (error()) {
+          <div class="flex flex-col items-center gap-3 py-6 text-center">
+            <p class="text-[15px] text-[#64748B]">{{ error() }}</p>
+            <button
+              type="button"
+              (click)="load(currentThread.id)"
+              class="inline-flex h-10 items-center justify-center rounded-full border border-ink px-4 text-sm font-semibold text-ink"
+            >
+              Réessayer
+            </button>
           </div>
-        </article>
+        } @else {
+          @if (post(); as question) {
+          <article class="flex gap-4">
+            @if (question.user.avatarUrl) {
+              <img
+                [src]="question.user.avatarUrl"
+                [alt]="authorName(question.user)"
+                class="size-[48px] shrink-0 rounded-full object-cover"
+              />
+            } @else {
+              <span
+                aria-hidden="true"
+                class="flex size-[48px] shrink-0 items-center justify-center rounded-full bg-[#0F1011] text-[18px] font-semibold text-[#FBBF24]"
+              >
+                {{ initials(question.user) }}
+              </span>
+            }
+            <div class="min-w-0">
+              <p class="text-[16px] font-semibold leading-[26px] text-[#141219]">{{ authorName(question.user) }}</p>
+              <p class="text-[14px] leading-[22px] text-[#64748B]">{{ question.user.reputation }} points · {{ timeAgo(question.createdAt) }}</p>
+              <p class="mt-2 whitespace-pre-line break-words text-[16px] leading-[26px] text-[#475569]">{{ question.body }}</p>
+            </div>
+          </article>
 
-        <div class="mt-[24px] flex items-center gap-[10px]">
-          <h4 class="text-[18px] font-bold leading-[28px] text-[#141219]">Discussion</h4>
-          <span class="rounded-full bg-[#F1F5F9] px-[10px] py-[2px] text-[14px] font-medium text-[#64748B]">{{ thread.comments.length }}</span>
-        </div>
+          <div class="mt-[24px] flex items-center gap-[10px]">
+            <h4 class="text-[18px] font-bold leading-[28px] text-[#141219]">Discussion</h4>
+            <span class="rounded-full bg-[#F1F5F9] px-[10px] py-[2px] text-[14px] font-medium text-[#64748B]">{{ question.answers.length }}</span>
+          </div>
 
-        <div class="mt-[16px] flex flex-col gap-[16px]">
-          @for (comment of thread.comments; track comment.id) {
-            <app-comment-item [comment]="comment" />
+          <div class="mt-[16px] flex flex-col gap-[16px]">
+            @if (question.answers.length === 0) {
+              <p class="text-[15px] text-[#64748B]">Aucune réponse pour le moment.</p>
+            } @else {
+              @for (answer of question.answers; track answer.id) {
+                <article class="flex gap-4 rounded-2xl border border-[#E2E8F0] p-4">
+                  @if (answer.user.avatarUrl) {
+                    <img
+                      [src]="answer.user.avatarUrl"
+                      [alt]="authorName(answer.user)"
+                      class="size-[40px] shrink-0 rounded-full object-cover"
+                    />
+                  } @else {
+                    <span
+                      aria-hidden="true"
+                      class="flex size-[40px] shrink-0 items-center justify-center rounded-full bg-[#0F1011] text-[14px] font-semibold text-[#FBBF24]"
+                    >
+                      {{ initials(answer.user) }}
+                    </span>
+                  }
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <p class="text-[15px] font-semibold leading-[24px] text-[#141219]">{{ authorName(answer.user) }}</p>
+                      @if (answer.isAccepted) {
+                        <span class="rounded-full bg-[#F0FDF4] px-2 py-0.5 text-[12px] font-medium text-[#0F6932]">Réponse acceptée</span>
+                      }
+                    </div>
+                    <p class="text-[13px] leading-[20px] text-[#64748B]">{{ answer.user.reputation }} points · {{ timeAgo(answer.createdAt) }}</p>
+                    <p class="mt-2 whitespace-pre-line break-words text-[15px] leading-[24px] text-[#475569]">{{ answer.body }}</p>
+
+                    @if (answerDeleteError() && confirmingAnswerId() === answer.id) {
+                      <p
+                        role="alert"
+                        class="mt-3 rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-3 py-2 text-[13px] font-medium text-[#FB2C36]"
+                      >
+                        {{ answerDeleteError() }}
+                      </p>
+                    }
+
+                    @if (canDeleteAnswer(answer)) {
+                      <div class="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-[#E2E8F0] pt-2">
+                        @if (confirmingAnswerId() === answer.id) {
+                          <span class="mr-auto text-[13px] font-medium text-[#64748B]">Supprimer cette réponse ?</span>
+                          <button
+                            type="button"
+                            (click)="cancelAnswerDelete()"
+                            [disabled]="deletingAnswerId() === answer.id"
+                            class="rounded-full border border-[#E2E8F0] px-3 py-1 text-[13px] font-semibold text-[#475569] transition-colors hover:bg-[#F8FAFC] disabled:opacity-60"
+                          >
+                            Annuler
+                          </button>
+                          <button
+                            type="button"
+                            (click)="deleteAnswer(answer.id)"
+                            [disabled]="deletingAnswerId() === answer.id"
+                            class="rounded-full bg-[#FB2C36] px-3 py-1 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                          >
+                            {{ deletingAnswerId() === answer.id ? 'Suppression…' : 'Supprimer' }}
+                          </button>
+                        } @else {
+                          <button
+                            type="button"
+                            (click)="requestAnswerDelete(answer.id)"
+                            class="rounded-full border border-[#E2E8F0] px-3 py-1 text-[13px] font-semibold text-[#64748B] transition-colors hover:border-[#FB2C36]/40 hover:text-[#FB2C36]"
+                          >
+                            Supprimer
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                </article>
+              }
+            }
+          </div>
+
+          <div class="mt-6">
+            @if (isAuthenticated()) {
+              @if (answerError()) {
+                <p
+                  role="alert"
+                  class="mb-3 rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-2 text-sm font-medium text-[#FB2C36]"
+                >
+                  {{ answerError() }}
+                </p>
+              }
+              <form [formGroup]="answerForm" (ngSubmit)="submitAnswer()" novalidate class="flex flex-col gap-3 sm:flex-row sm:items-start">
+                <input
+                  type="text"
+                  formControlName="body"
+                  maxlength="50000"
+                  placeholder="Écrire une réponse…"
+                  class="min-w-0 flex-1 rounded-full border border-[#E2E8F0] bg-white px-[20px] py-[14px] text-[16px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  [disabled]="answering() || answerForm.invalid"
+                  class="shrink-0 rounded-full bg-[#0F1011] px-[24px] py-[14px] text-[16px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  {{ answering() ? 'Envoi…' : 'Répondre' }}
+                </button>
+              </form>
+              
+            } @else {
+              <p class="text-[15px] text-[#64748B]">
+                <a routerLink="/auth/login" (click)="close()" class="font-semibold text-[#0F6932] hover:underline">Connectez-vous</a>
+                pour répondre à cette question.
+              </p>
+            }
+          </div>
           }
-        </div>
-      </div>
-
-      <div class="border-t border-[#E2E8F0] p-[24px]">
-        <form (submit)="$event.preventDefault()" class="flex items-center gap-[12px]">
-          <input
-            type="text"
-            placeholder="Écrire une réponse…"
-            class="min-w-0 flex-1 rounded-full border border-[#E2E8F0] bg-white px-[20px] py-[14px] text-[16px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
-          />
-          <button
-            type="submit"
-            class="shrink-0 rounded-full bg-[#0F1011] px-[24px] py-[14px] text-[16px] font-semibold text-white transition-opacity hover:opacity-90"
-          >
-            Répondre
-          </button>
-        </form>
+        }
       </div>
     }
   </div>

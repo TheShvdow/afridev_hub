@@ -63,6 +63,12 @@ export interface UpdatePostDto {
   tags?: string[];
 }
 
+export interface CreateAnswerDto {
+  body: string;
+}
+
+export interface ForumAnswerCreated extends ForumAnswer {}
+
 export interface SimilarPost {
   id: string;
   title: string;
@@ -137,5 +143,18 @@ export class ForumService {
   /** `DELETE /api/forum/posts/{id}` — auteur ou modérateur. */
   deletePost(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/posts/${encodeURIComponent(id)}`);
+  }
+
+  /** `POST /api/forum/posts/{postId}/answers` — répondre à une question. */
+  createAnswer(postId: string, dto: CreateAnswerDto): Observable<ForumAnswer> {
+    return this.http.post<ForumAnswer>(
+      `${this.base}/posts/${encodeURIComponent(postId)}/answers`,
+      dto,
+    );
+  }
+
+  /** `DELETE /api/forum/answers/{answerId}` — auteur ou modérateur. */
+  deleteAnswer(answerId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/answers/${encodeURIComponent(answerId)}`);
   }
 }

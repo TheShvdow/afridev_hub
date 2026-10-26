@@ -83,6 +83,45 @@ describe('ForumService.getPost — contenu masqué', () => {
   });
 });
 
+describe('ForumService.deleteAnswer — propriété ou modération', () => {
+  function build(answer: { id: string; userId: string } | null) {
+    const prisma = {
+      answer: {
+        findUnique: jest.fn().mockResolvedValue(answer),
+        delete:     jest.fn().mockResolvedValue(answer),
+      },
+    };
+    return { service: new ForumService(prisma as never, { emit: jest.fn() } as never), prisma };
+  }
+
+  it('deletes an answer authored by the current user', async () => {
+    const { service, prisma } = build({ id: 'a1', userId: 'author' });
+    await service.deleteAnswer('a1', 'author', 'MEMBER');
+    expect(prisma.answer.delete).toHaveBeenCalledWith({ where: { id: 'a1' } });
+  });
+
+  it('lets a moderator delete any answer', async () => {
+    const { service, prisma } = build({ id: 'a1', userId: 'author' });
+    await service.deleteAnswer('a1', 'mod-1', 'MODERATOR');
+    expect(prisma.answer.delete).toHaveBeenCalledWith({ where: { id: 'a1' } });
+  });
+
+  it('refuses a member who does not own the answer', async () => {
+    const { service, prisma } = build({ id: 'a1', userId: 'author' });
+    await expect(service.deleteAnswer('a1', 'other', 'MEMBER')).rejects.toMatchObject({
+      code: 'FORUM_FORBIDDEN',
+    });
+    expect(prisma.answer.delete).not.toHaveBeenCalled();
+  });
+
+  it('returns a 404 for an unknown answer', async () => {
+    const { service } = build(null);
+    await expect(service.deleteAnswer('missing', 'author', 'MEMBER')).rejects.toMatchObject({
+      code: 'FORUM_ANSWER_NOT_FOUND',
+    });
+  });
+});
+
 describe('ForumListener — voteScore', () => {
   function build() {
     const prisma = {

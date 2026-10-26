@@ -8,37 +8,188 @@
 <section class="bg-[#F8FAFC]">
   <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-0 lg:py-10">
     <div class="flex flex-col gap-10">
-      <!-- Filters -->
+      <!-- Categories -->
       <div class="flex flex-wrap items-center gap-[12px]">
-        @for (tag of tags; track tag) {
+        <button
+          type="button"
+          (click)="selectCategory('')"
+          [class]="
+            (selectedCategory() === ''
+              ? 'bg-[#141219] text-white '
+              : 'bg-white text-[#141219] border-[#E2E8F0] ') +
+            'rounded-full border px-[16px] py-[4px] text-[16px] font-medium transition-colors'
+          "
+        >
+          Tous
+        </button>
+        @for (category of categories(); track category.slug) {
           <button
             type="button"
-            (click)="toggleTag(tag)"
+            (click)="selectCategory(category.slug)"
             [class]="
-              (selectedTag() === tag
+              (selectedCategory() === category.slug
                 ? 'bg-[#141219] text-white '
                 : 'bg-white text-[#141219] border-[#E2E8F0] ') +
               'rounded-full border px-[16px] py-[4px] text-[16px] font-medium transition-colors'
             "
           >
-            {{ tag }}
+            @if (category.icon) {
+              {{ category.icon }}
+            }
+            {{ category.name }}
           </button>
         }
+        <a
+          routerLink="/projects/new"
+          class="ml-auto inline-flex h-10 items-center justify-center rounded-full bg-ink px-5 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Soumettre un projet
+        </a>
       </div>
+
+      <!-- Search and filters -->
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <label class="flex flex-col gap-1.5">
+          <span class="text-[14px] font-medium text-[#64748B]">Recherche</span>
+          <input
+            type="search"
+            [formControl]="search"
+            placeholder="Nom ou description…"
+            class="h-12 rounded-full border border-[#E2E8F0] bg-white px-5 text-[16px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
+          />
+        </label>
+
+        <label class="flex flex-col gap-1.5">
+          <span class="text-[14px] font-medium text-[#64748B]">Pays</span>
+          <select
+            [value]="selectedCountry()"
+            (change)="selectCountry($any($event.target).value)"
+            class="h-12 rounded-full border border-[#E2E8F0] bg-white px-5 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none"
+          >
+            <option value="">Tous les pays</option>
+            @for (country of countries(); track country.code) {
+              <option [value]="country.code">{{ country.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="flex flex-col gap-1.5">
+          <span class="text-[14px] font-medium text-[#64748B]">Tri</span>
+          <select
+            [value]="selectedSort()"
+            (change)="selectSort($any($event.target).value)"
+            class="h-12 rounded-full border border-[#E2E8F0] bg-white px-5 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none"
+          >
+            <option value="newest">Plus récents</option>
+            <option value="popular">Populaires sur AfriDev</option>
+            <option value="stars">Étoiles GitHub</option>
+            <option value="activity">Dernier push</option>
+          </select>
+        </label>
+
+        <div class="flex flex-col gap-1.5">
+          <span class="text-[14px] font-medium text-[#64748B]">Stack</span>
+          <div class="flex gap-2">
+            <input
+              type="text"
+              [value]="stackDraft()"
+              (input)="stackDraft.set($any($event.target).value)"
+              (keydown)="onStackKeydown($event)"
+              placeholder="nestjs, angular…"
+              aria-label="Filtrer par stack"
+              class="h-12 min-w-0 flex-1 rounded-full border border-[#E2E8F0] bg-white px-5 text-[16px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
+            />
+            <button
+              type="button"
+              (click)="addStack()"
+              class="h-12 shrink-0 rounded-full bg-[#0F1011] px-5 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              Filtrer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      @if (stacks().length > 0) {
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-[14px] font-medium text-[#64748B]">Stacks actives :</span>
+          @for (stack of stacks(); track stack) {
+            <button
+              type="button"
+              (click)="removeStack(stack)"
+              class="inline-flex items-center gap-1.5 rounded-full border border-[#0F6932]/30 bg-[#F0FDF4] px-3 py-1 text-[14px] font-medium text-[#0F6932]"
+            >
+              {{ stack }}
+              <span aria-hidden="true">×</span>
+            </button>
+          }
+        </div>
+      }
+
+      @if (hasFilters()) {
+        <div>
+          <button
+            type="button"
+            (click)="resetFilters()"
+            class="text-[15px] font-semibold text-[#0F6932] hover:underline"
+          >
+            Réinitialiser les filtres
+          </button>
+        </div>
+      }
 
       <!-- Cards grid -->
-      <div class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
-        @for (project of filteredProjects(); track project.title + project.stars + $index) {
-          <app-card-projet [project]="project" ctaLabel="Démo" />
-        }
-      </div>
+      @if (loading()) {
+        <p class="py-16 text-center text-[16px] text-[#64748B]">Chargement des projets…</p>
+      } @else if (error()) {
+        <div class="flex flex-col items-center gap-4 py-16">
+          <p class="text-center text-[16px] text-[#64748B]">
+            Impossible de charger les projets pour le moment.
+          </p>
+          <button
+            type="button"
+            (click)="retry()"
+            class="inline-flex h-12 items-center justify-center rounded-full border border-[#0F1011] px-5 text-base font-semibold text-[#0F1011]"
+          >
+            Réessayer
+          </button>
+        </div>
+      } @else if (projects().length === 0) {
+        <div class="flex flex-col items-center gap-4 py-16">
+          <p class="text-center text-[16px] text-[#64748B]">
+            Aucun projet ne correspond à ces filtres.
+          </p>
+          @if (hasFilters()) {
+            <button
+              type="button"
+              (click)="resetFilters()"
+              class="inline-flex h-12 items-center justify-center rounded-full border border-[#0F1011] px-5 text-base font-semibold text-[#0F1011]"
+            >
+              Voir tous les projets
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
+          @for (project of projects(); track project.id) {
+            <app-card-projet [project]="project" ctaLabel="Découvrir" />
+          }
+        </div>
+      }
 
       <!-- Load more -->
-      <div class="flex justify-center">
-        <button type="button" class="inline-flex h-14 items-center justify-center gap-2.5 rounded-full border border-ink px-5 text-base font-semibold leading-[26px] text-ink">
-          Charger plus
-        </button>
-      </div>
+      @if (hasMore() && !loading() && !error()) {
+        <div class="flex justify-center">
+          <button
+            type="button"
+            (click)="loadMore()"
+            [disabled]="loadingMore()"
+            class="inline-flex h-14 items-center justify-center gap-2.5 rounded-full border border-ink px-5 text-base font-semibold leading-[26px] text-ink disabled:opacity-60"
+          >
+            {{ loadingMore() ? 'Chargement…' : 'Charger plus' }}
+          </button>
+        </div>
+      }
     </div>
   </div>
 </section>

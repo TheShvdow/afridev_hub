@@ -48,10 +48,12 @@ const DETAIL: ForumPostDetail = {
 const forumStub = {
   getPost: jest.fn(() => of(DETAIL)),
   deletePost: jest.fn(() => of(undefined)),
+  deleteAnswer: jest.fn(() => of(undefined)),
 };
 
 const authStub = {
   currentUser: jest.fn(() => ({ id: DETAIL.userId, role: 'MEMBER' })),
+  isAuthenticated: jest.fn(() => true),
 };
 
 describe('PostDetailComponent', () => {
@@ -61,6 +63,7 @@ describe('PostDetailComponent', () => {
   beforeEach(async () => {
     forumStub.getPost.mockClear();
     forumStub.deletePost.mockClear();
+    forumStub.deleteAnswer.mockClear();
     authStub.currentUser.mockReturnValue({ id: DETAIL.userId, role: 'MEMBER' });
 
     await TestBed.configureTestingModule({
@@ -135,6 +138,33 @@ describe('PostDetailComponent', () => {
 
     expect(forumStub.deletePost).toHaveBeenCalledWith(DETAIL.id);
     expect(router.navigateByUrl).toHaveBeenCalledWith('/forum');
+  });
+
+  it('should delete an answer after confirmation', () => {
+    authStub.currentUser.mockReturnValue({ id: DETAIL.answers[0].user.id, role: 'MEMBER' });
+
+    const answerAuthorFixture = TestBed.createComponent(PostDetailComponent);
+    answerAuthorFixture.detectChanges();
+
+    const answers = answerAuthorFixture.nativeElement.querySelectorAll('article');
+    const answerArticle = answers[1] as HTMLElement;
+
+    const deleteButton = Array.from(answerArticle.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Supprimer',
+    ) as HTMLButtonElement;
+    deleteButton.click();
+    answerAuthorFixture.detectChanges();
+
+    const confirmButton = Array.from(answerArticle.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Supprimer',
+    ) as HTMLButtonElement;
+    confirmButton.click();
+    answerAuthorFixture.detectChanges();
+
+    expect(forumStub.deleteAnswer).toHaveBeenCalledWith(DETAIL.answers[0].id);
+    expect(answerAuthorFixture.componentInstance.post()?.answers).toHaveLength(0);
+
+    answerAuthorFixture.destroy();
   });
 
   it('should show a not-found message for a 404 response', () => {
