@@ -13,7 +13,6 @@ import { Newsletter } from './components/newsletter/newsletter';
   standalone: true,
   imports: [Hero, Stats, Forum, Projects, Mentors, Jobs, Formations, Newsletter],
   templateUrl: './home.html',
-  styleUrl: './home.css',
 })
 export class Home {
 

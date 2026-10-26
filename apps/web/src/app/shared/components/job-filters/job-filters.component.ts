@@ -5,7 +5,6 @@ import { Component, input, model } from '@angular/core';
   standalone: true,
   imports: [],
   templateUrl: './job-filters.component.html',
-  styleUrl: './job-filters.component.css',
 })
 export class JobFiltersComponent {
   readonly countries = input.required<string[]>();

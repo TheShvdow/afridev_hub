@@ -14,7 +14,6 @@ import { AnswerThreadBase } from '../../forum/answer-thread.base';
   standalone: true,
   imports: [CommentItem, ReactiveFormsModule, RouterLink],
   templateUrl: './thread-modal.component.html',
-  styleUrl: './thread-modal.component.css',
 })
 export class ThreadModalComponent extends AnswerThreadBase {
   private readonly destroyRef = inject(DestroyRef);

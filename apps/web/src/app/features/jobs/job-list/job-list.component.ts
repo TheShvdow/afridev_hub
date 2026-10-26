@@ -19,7 +19,6 @@ import {
   standalone: true,
   imports: [CardJobComponent, JobDetailPanelComponent, JobFiltersComponent, PageHeroComponent],
   templateUrl: './job-list.component.html',
-  styleUrl: './job-list.component.css',
 })
 export class JobListComponent {
   readonly jobs: Job[] = JOBS;

@@ -16,7 +16,6 @@ import {
   standalone: true,
   imports: [CardMentorComponent, MentorFiltersComponent, PageHeroComponent],
   templateUrl: './mentor-list.component.html',
-  styleUrl: './mentor-list.component.css',
 })
 export class MentorListComponent {
   readonly mentors: Mentor[] = MENTORS;

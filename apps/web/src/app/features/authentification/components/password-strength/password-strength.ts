@@ -6,7 +6,6 @@ import { Icon } from '../../../home/components/icon/icon';
   standalone: true,
   imports: [Icon],
   templateUrl: './password-strength.html',
-  styleUrl: './password-strength.css',
 })
 export class PasswordStrength {
   readonly password = input<string>('');

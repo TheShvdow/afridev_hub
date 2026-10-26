@@ -28,7 +28,6 @@ import { extractApiErrorCode, extractApiErrorMessage } from '../../../core/utils
     RouterLink,
   ],
   templateUrl: './verification-email.html',
-  styleUrl: './verification-email.css',
 })
 export class VerificationEmail implements OnInit {
   private readonly route       = inject(ActivatedRoute);

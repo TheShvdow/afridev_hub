@@ -16,7 +16,6 @@ const PAGE_SIZE = 20;
   standalone: true,
   imports: [RouterLink, CardThreadComponent, ForumFiltersComponent, PageHeroComponent, ThreadModalComponent],
   templateUrl: './post-list.component.html',
-  styleUrl: './post-list.component.css',
 })
 export class PostListComponent implements OnInit {
   private readonly forum = inject(ForumService);

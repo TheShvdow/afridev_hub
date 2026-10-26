@@ -20,7 +20,6 @@ import {
   standalone: true,
   imports: [SectionHeading, RouterLink, CardJobComponent, JobDetailPanelComponent, JobFiltersComponent],
   templateUrl: './jobs.html',
-  styleUrl: './jobs.css',
 })
 export class Jobs {
   readonly jobs: Job[] = JOBS;

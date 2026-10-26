@@ -20,7 +20,6 @@ export interface AuthFeature {
   standalone: true,
   imports: [Icon, NgClass],
   templateUrl: './auth-side.html',
-  styleUrl: './auth-side.css',
 })
 export class AuthSide {
   readonly eyebrow = input<string>('');

@@ -5,7 +5,6 @@ import { Component, input, model } from '@angular/core';
   standalone: true,
   imports: [],
   templateUrl: './forum-filters.component.html',
-  styleUrl: './forum-filters.component.css',
 })
 export class ForumFiltersComponent {
   readonly tags = input.required<string[]>();

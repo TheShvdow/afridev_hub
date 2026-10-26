@@ -9,7 +9,6 @@ import { Component, ElementRef, QueryList, ViewChildren, computed, input, output
   selector: 'app-otp-inputs',
   standalone: true,
   templateUrl: './otp-inputs.html',
-  styleUrl: './otp-inputs.css',
 })
 export class OtpInputs {
   @ViewChildren('digit') private digits!: QueryList<ElementRef<HTMLInputElement>>;

@@ -32,7 +32,6 @@ import { takeSpeciality } from '../../../core/utils/pending-speciality';
     RouterLink,
   ],
   templateUrl: './connexion.html',
-  styleUrl: './connexion.css',
 })
 export class Connexion implements OnInit {
   private readonly fb          = inject(FormBuilder);

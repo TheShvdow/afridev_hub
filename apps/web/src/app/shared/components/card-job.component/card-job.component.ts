@@ -25,7 +25,6 @@ export interface Job {
   standalone: true,
   imports: [],
   templateUrl: './card-job.component.html',
-  styleUrl: './card-job.component.scss',
 })
 export class CardJobComponent {
   readonly job = input.required<Job>();

@@ -8,7 +8,6 @@ import { Icon } from '../../features/home/components/icon/icon';
   standalone: true,
   imports: [RouterLink, Icon],
   templateUrl: './navbar.html',
-  styleUrl: './navbar.css',
 })
 export class Navbar {
   readonly authStore = inject(AuthStore);

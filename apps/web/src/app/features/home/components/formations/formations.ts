@@ -7,7 +7,6 @@ import { Icon } from '../icon/icon';
     standalone: true,
     imports: [SectionHeading, Icon],
     templateUrl: './formations.html',
-    styleUrl: './formations.css',
 })
 export class Formations {
   readonly formations = [

@@ -20,7 +20,6 @@ export type MentorSlot = 'cette-semaine' | 'demain';
   standalone: true,
   imports: [],
   templateUrl: './card-mentor.component.html',
-  styleUrl: './card-mentor.component.css',
 })
 export class CardMentorComponent {
   readonly mentor = input.required<Mentor>();

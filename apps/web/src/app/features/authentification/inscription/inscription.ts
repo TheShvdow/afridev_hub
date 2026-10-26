@@ -31,7 +31,6 @@ import { rememberSpeciality } from '../../../core/utils/pending-speciality';
     RouterLink,
   ],
   templateUrl: './inscription.html',
-  styleUrl: './inscription.css',
 })
 export class Inscription {
   private readonly fb          = inject(FormBuilder);

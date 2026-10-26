@@ -6,7 +6,6 @@ import { Icon } from '../home/components/icon/icon';
   standalone: true,
   imports: [Icon],
   templateUrl: './communautes.html',
-  styleUrl: './communautes.css',
 })
 export class Communautes {
   readonly communities = [

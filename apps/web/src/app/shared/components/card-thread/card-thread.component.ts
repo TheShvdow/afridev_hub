@@ -18,7 +18,6 @@ export interface Thread {
   standalone: true,
   imports: [],
   templateUrl: './card-thread.component.html',
-  styleUrl: './card-thread.component.css',
 })
 export class CardThreadComponent {
   readonly thread = input.required<Thread>();

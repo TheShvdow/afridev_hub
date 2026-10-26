@@ -22,7 +22,6 @@ const PAGE_SIZE = 12;
   standalone: true,
   imports: [CardProjet, PageHeroComponent, ReactiveFormsModule, RouterLink],
   templateUrl: './projets.html',
-  styleUrl: './projets.css',
 })
 export class Projets implements OnInit {
   private readonly projectsService = inject(ProjectsService);
