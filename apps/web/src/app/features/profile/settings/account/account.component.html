@@ -1,0 +1,280 @@
+<section class="min-h-screen bg-[#F8FAFC] pb-20 pt-32">
+  <div class="mx-auto w-full max-w-[1100px] px-6 sm:px-10 lg:px-0">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="text-[13px] font-semibold uppercase tracking-[0.18em] text-[#0F6932]">Mon compte</p>
+        <h1 class="mt-2 text-[32px] font-bold leading-[42px] text-[#141219] sm:text-[40px] sm:leading-[50px]">
+          Mon profil
+        </h1>
+        <p class="mt-2 max-w-[600px] text-[16px] leading-[26px] text-[#64748B]">
+          Gérez les informations visibles par la communauté sur votre profil public.
+        </p>
+      </div>
+
+      @if (authStore.currentUser(); as me) {
+        <a
+          [routerLink]="['/u', me.username]"
+          class="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full border border-[#0F1011] px-5 text-[15px] font-semibold text-[#0F1011] transition-colors hover:bg-[#0F1011] hover:text-white"
+        >
+          Voir mon profil public
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M7 17L17 7M17 7H9M17 7V15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      }
+    </div>
+
+    <div class="mt-8 grid items-start gap-6 lg:grid-cols-[340px_1fr]">
+      <aside class="overflow-hidden rounded-[24px] bg-[#0F1011] text-white">
+        <div class="px-6 py-8 text-center">
+          @if (profile()?.avatarUrl || authStore.currentUser()?.avatarUrl; as avatarUrl) {
+            <img
+              [src]="avatarUrl"
+              [alt]="displayName()"
+              class="mx-auto size-24 rounded-full object-cover ring-2 ring-white/20"
+            />
+          } @else {
+            <span
+              aria-hidden="true"
+              class="mx-auto flex size-24 items-center justify-center rounded-full bg-white/10 text-[32px] font-semibold text-[#FBBF24]"
+            >
+              {{ initials() }}
+            </span>
+          }
+
+          <h2 class="mt-4 break-words text-[24px] font-bold leading-[32px]">
+            {{ displayName() || 'Mon profil' }}
+          </h2>
+          <p class="mt-1 text-[15px] font-medium text-[#FBBF24]">
+            &#64;{{ authStore.currentUser()?.username }}
+          </p>
+
+          <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+            @if (roleLabel()) {
+              <span class="rounded-full bg-white/10 px-3 py-1 text-[13px] font-medium text-white">
+                {{ roleLabel() }}
+              </span>
+            }
+            @if (authStore.currentUser()?.isVerified) {
+              <span class="inline-flex items-center gap-1 rounded-full bg-[#F0FDF4] px-3 py-1 text-[13px] font-semibold text-[#0F6932]">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Vérifié
+              </span>
+            }
+          </div>
+        </div>
+
+        <dl class="divide-y divide-white/10 border-t border-white/10 text-left">
+          <div class="flex items-center justify-between gap-4 px-6 py-4">
+            <dt class="text-[14px] text-[#94A3B8]">Réputation</dt>
+            <dd class="text-[15px] font-semibold text-[#FBBF24]">
+              {{ authStore.currentUser()?.reputation ?? 0 }} points
+            </dd>
+          </div>
+          <div class="px-6 py-4">
+            <dt class="text-[14px] text-[#94A3B8]">Adresse e-mail</dt>
+            <dd class="mt-1 break-all text-[15px] font-medium">
+              {{ authStore.currentUser()?.email ?? '—' }}
+            </dd>
+          </div>
+          <div class="flex items-center justify-between gap-4 px-6 py-4">
+            <dt class="text-[14px] text-[#94A3B8]">Membre depuis</dt>
+            <dd class="text-[15px] font-medium">{{ memberSince() || '—' }}</dd>
+          </div>
+        </dl>
+      </aside>
+
+      <div>
+        @if (loading()) {
+          <div class="rounded-[24px] bg-white px-6 py-16 text-center text-[16px] text-[#64748B] sm:px-10">
+            Chargement de votre profil…
+          </div>
+        } @else if (errorMessage() && !profile()) {
+          <div class="flex flex-col items-center gap-4 rounded-[24px] bg-white px-6 py-16 text-center sm:px-10">
+            <p class="text-[16px] leading-[26px] text-[#64748B]">{{ errorMessage() }}</p>
+            <button
+              type="button"
+              (click)="retry()"
+              class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink"
+            >
+              Réessayer
+            </button>
+          </div>
+        } @else {
+          <form
+            [formGroup]="form"
+            (ngSubmit)="submit()"
+            novalidate
+            class="rounded-[24px] bg-white px-6 py-8 sm:px-10 sm:py-10"
+          >
+            <div class="flex flex-col gap-2 border-b border-[#E2E8F0] pb-6">
+              <h2 class="text-[22px] font-bold text-[#141219]">Informations publiques</h2>
+              <p class="text-[15px] leading-[24px] text-[#64748B]">
+                Ces informations apparaissent sur votre profil et à côté de vos contributions.
+              </p>
+            </div>
+
+            @if (errorMessage()) {
+              <p
+                role="alert"
+                class="mt-6 rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium text-[#FB2C36]"
+              >
+                {{ errorMessage() }}
+              </p>
+            }
+
+            <div class="mt-6 grid gap-5">
+              <label class="block">
+                <span class="text-[14px] font-semibold text-[#141219]">Nom affiché</span>
+                <input
+                  type="text"
+                  formControlName="displayName"
+                  autocomplete="name"
+                  maxlength="60"
+                  placeholder="Votre nom ou pseudonyme"
+                  class="mt-2 h-12 w-full rounded-xl border border-[#E2E8F0] px-4 text-[15px] text-[#141219] outline-none transition-colors placeholder:text-[#94A3B8] focus:border-[#0F6932]"
+                />
+                <span class="mt-1.5 block text-[13px] leading-[20px] text-[#64748B]">
+                  Laissez vide pour afficher votre nom d'utilisateur.
+                </span>
+                @if (form.controls.displayName.touched && form.controls.displayName.invalid) {
+                  <span class="mt-1 block text-[13px] text-[#FB2C36]">60 caractères maximum.</span>
+                }
+              </label>
+
+              <label class="block">
+                <span class="flex items-center justify-between gap-4 text-[14px] font-semibold text-[#141219]">
+                  <span>Biographie</span>
+                  <span class="text-[13px] font-normal text-[#64748B]">{{ bioLength() }}/500</span>
+                </span>
+                <textarea
+                  formControlName="bio"
+                  rows="5"
+                  maxlength="500"
+                  placeholder="Présentez votre parcours, vos spécialités et ce que vous aimez construire."
+                  class="mt-2 w-full resize-y rounded-xl border border-[#E2E8F0] px-4 py-3 text-[15px] leading-[24px] text-[#141219] outline-none transition-colors placeholder:text-[#94A3B8] focus:border-[#0F6932]"
+                ></textarea>
+                @if (form.controls.bio.touched && form.controls.bio.invalid) {
+                  <span class="mt-1 block text-[13px] text-[#FB2C36]">500 caractères maximum.</span>
+                }
+              </label>
+
+              <div class="grid gap-5 sm:grid-cols-2">
+                <label class="block">
+                  <span class="text-[14px] font-semibold text-[#141219]">Localisation</span>
+                  <input
+                    type="text"
+                    formControlName="location"
+                    autocomplete="address-level2"
+                    maxlength="100"
+                    placeholder="Dakar, Sénégal"
+                    class="mt-2 h-12 w-full rounded-xl border border-[#E2E8F0] px-4 text-[15px] text-[#141219] outline-none transition-colors placeholder:text-[#94A3B8] focus:border-[#0F6932]"
+                  />
+                  @if (form.controls.location.touched && form.controls.location.invalid) {
+                    <span class="mt-1 block text-[13px] text-[#FB2C36]">100 caractères maximum.</span>
+                  }
+                </label>
+
+                <label class="block">
+                  <span class="text-[14px] font-semibold text-[#141219]">Site web</span>
+                  <input
+                    type="url"
+                    formControlName="websiteUrl"
+                    autocomplete="url"
+                    placeholder="https://votre-site.dev"
+                    class="mt-2 h-12 w-full rounded-xl border border-[#E2E8F0] px-4 text-[15px] text-[#141219] outline-none transition-colors placeholder:text-[#94A3B8] focus:border-[#0F6932]"
+                  />
+                  @if (form.controls.websiteUrl.touched && form.controls.websiteUrl.invalid) {
+                    <span class="mt-1 block text-[13px] text-[#FB2C36]">
+                      Saisissez une URL complète commençant par http:// ou https://.
+                    </span>
+                  }
+                </label>
+              </div>
+            </div>
+
+            <div class="mt-8 border-t border-[#E2E8F0] pt-8">
+              <h2 class="text-[22px] font-bold text-[#141219]">Réseaux sociaux</h2>
+              <p class="mt-2 text-[15px] leading-[24px] text-[#64748B]">
+                Indiquez uniquement votre nom d'utilisateur, sans le symbole &#64;.
+              </p>
+
+              <div class="mt-6 grid gap-5 sm:grid-cols-2">
+                <label class="block">
+                  <span class="text-[14px] font-semibold text-[#141219]">GitHub</span>
+                  <input
+                    type="text"
+                    formControlName="githubUsername"
+                    autocomplete="off"
+                    maxlength="39"
+                    placeholder="idy-dev"
+                    class="mt-2 h-12 w-full rounded-xl border border-[#E2E8F0] px-4 text-[15px] text-[#141219] outline-none transition-colors placeholder:text-[#94A3B8] focus:border-[#0F6932]"
+                  />
+                  @if (form.controls.githubUsername.touched && form.controls.githubUsername.invalid) {
+                    <span class="mt-1 block text-[13px] text-[#FB2C36]">39 caractères maximum.</span>
+                  }
+                </label>
+
+                <label class="block">
+                  <span class="text-[14px] font-semibold text-[#141219]">LinkedIn</span>
+                  <input
+                    type="text"
+                    formControlName="linkedinUsername"
+                    autocomplete="off"
+                    maxlength="100"
+                    placeholder="idrissa-wade"
+                    class="mt-2 h-12 w-full rounded-xl border border-[#E2E8F0] px-4 text-[15px] text-[#141219] outline-none transition-colors placeholder:text-[#94A3B8] focus:border-[#0F6932]"
+                  />
+                  @if (form.controls.linkedinUsername.touched && form.controls.linkedinUsername.invalid) {
+                    <span class="mt-1 block text-[13px] text-[#FB2C36]">100 caractères maximum.</span>
+                  }
+                </label>
+
+                <label class="block sm:col-span-2 sm:max-w-[calc(50%-10px)]">
+                  <span class="text-[14px] font-semibold text-[#141219]">X (Twitter)</span>
+                  <input
+                    type="text"
+                    formControlName="twitterUsername"
+                    autocomplete="off"
+                    maxlength="50"
+                    placeholder="idy_dev"
+                    class="mt-2 h-12 w-full rounded-xl border border-[#E2E8F0] px-4 text-[15px] text-[#141219] outline-none transition-colors placeholder:text-[#94A3B8] focus:border-[#0F6932]"
+                  />
+                  @if (form.controls.twitterUsername.touched && form.controls.twitterUsername.invalid) {
+                    <span class="mt-1 block text-[13px] text-[#FB2C36]">50 caractères maximum.</span>
+                  }
+                </label>
+              </div>
+            </div>
+
+            <div class="mt-8 flex flex-col gap-4 border-t border-[#E2E8F0] pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <p class="text-[13px] leading-[20px] text-[#64748B]">
+                Votre nom d'utilisateur et votre adresse e-mail ne sont pas modifiables.
+              </p>
+
+              <div class="flex shrink-0 gap-3">
+                <button
+                  type="button"
+                  (click)="resetForm()"
+                  [disabled]="form.pristine || saving()"
+                  class="inline-flex h-12 items-center justify-center rounded-full border border-[#E2E8F0] px-5 text-[15px] font-semibold text-[#141219] transition-colors hover:border-[#0F1011] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  [disabled]="form.invalid || form.pristine || saving()"
+                  class="inline-flex h-12 items-center justify-center rounded-full bg-[#0F1011] px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+                </button>
+              </div>
+            </div>
+          </form>
+        }
+      </div>
+    </div>
+  </div>
+</section>

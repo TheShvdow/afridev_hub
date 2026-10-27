@@ -1,0 +1,21 @@
+<div class="flex items-center justify-center gap-5">
+  <button
+    type="button"
+    class="flex size-14 items-center justify-center rounded-full border border-gray-200 bg-white transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+    aria-label="Continuer avec Google"
+    [disabled]="disabled()"
+    (click)="google.emit()"
+  >
+    <app-icon name="google" class="size-8"></app-icon>
+  </button>
+
+  <button
+    type="button"
+    class="flex size-14 items-center justify-center rounded-full border border-gray-200 bg-white transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+    aria-label="Continuer avec GitHub"
+    [disabled]="disabled()"
+    (click)="github.emit()"
+  >
+    <app-icon name="github" class="size-8 text-slate-500"></app-icon>
+  </button>
+</div>

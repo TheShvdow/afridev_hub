@@ -1,1 +1,15 @@
-<router-outlet />
+<div class="min-h-screen flex flex-col">
+  @if (!chromeHidden()) {
+    <app-navbar></app-navbar>
+  }
+
+  <main class="flex-1 w-full">
+    <router-outlet></router-outlet>
+  </main>
+
+  @if (!chromeHidden()) {
+    <app-footer></app-footer>
+  }
+
+  <app-toast-container></app-toast-container>
+</div>

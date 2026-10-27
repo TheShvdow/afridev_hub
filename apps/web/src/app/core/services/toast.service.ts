@@ -20,8 +20,17 @@ export class ToastService {
   }
 
   private add(type: Toast['type'], message: string): void {
-    const id = crypto.randomUUID();
+    const id = this.generateId();
     this.toasts.update((list) => [...list, { id, type, message }]);
     setTimeout(() => this.remove(id), 5000);
+  }
+
+  // L'identifiant n'a besoin d'être unique qu'au sein de ce service : un compteur suffit.
+  // Il ne dépend ni de crypto.randomUUID (absent hors HTTPS) ni d'un générateur pseudo-aléatoire.
+  private nextId = 0;
+
+  private generateId(): string {
+    this.nextId += 1;
+    return `toast-${this.nextId}`;
   }
 }

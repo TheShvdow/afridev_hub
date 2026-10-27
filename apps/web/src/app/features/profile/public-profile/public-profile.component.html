@@ -1,0 +1,147 @@
+<section class="min-h-screen bg-[#F8FAFC]">
+  <div class="mx-auto w-full max-w-[1100px] px-6 py-16 sm:px-10 lg:px-0 lg:py-12">
+    @if (loading()) {
+      <p class="py-20 text-center text-[16px] text-[#64748B]">Chargement du profil…</p>
+    } @else if (notFound()) {
+      <div class="flex flex-col items-center gap-4 py-20 text-center">
+        <p class="text-[24px] font-bold text-[#141219]">Profil introuvable</p>
+        <p class="text-[16px] leading-[26px] text-[#64748B]">
+          Ce profil n'existe pas ou a été supprimé.
+        </p>
+        <a
+          routerLink="/"
+          class="mt-2 inline-flex h-12 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Retour à l'accueil
+        </a>
+      </div>
+    } @else if (errorMessage()) {
+      <div class="flex flex-col items-center gap-4 py-20 text-center">
+        <p class="text-[16px] leading-[26px] text-[#64748B]">{{ errorMessage() }}</p>
+        <button
+          type="button"
+          (click)="retry()"
+          class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink"
+        >
+          Réessayer
+        </button>
+      </div>
+    } @else {
+      @if (profile(); as user) {
+        <article class="overflow-hidden rounded-[24px] bg-white">
+          <header class="bg-[#0F1011] px-6 py-10 text-white sm:px-10 lg:py-12">
+            <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
+                @if (user.avatarUrl) {
+                  <img
+                    [src]="user.avatarUrl"
+                    [alt]="name()"
+                    class="size-24 shrink-0 rounded-full object-cover ring-2 ring-white/20"
+                  />
+                } @else {
+                  <span
+                    aria-hidden="true"
+                    class="flex size-24 shrink-0 items-center justify-center rounded-full bg-white/10 text-[32px] font-semibold text-[#FBBF24]"
+                  >
+                    {{ initials() }}
+                  </span>
+                }
+
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-3">
+                    <h1 class="break-words text-[30px] font-bold leading-[40px] sm:text-[40px] sm:leading-[50px]">
+                      {{ name() }}
+                    </h1>
+                    @if (user.isVerified) {
+                      <span class="inline-flex items-center gap-1.5 rounded-full bg-[#F0FDF4] px-3 py-1 text-[13px] font-semibold text-[#0F6932]">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                          <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Compte vérifié
+                      </span>
+                    }
+                  </div>
+
+                  <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[15px] leading-[24px] text-[#CBD5E1]">
+                    <span class="font-medium text-[#FBBF24]">&#64;{{ user.username }}</span>
+                    @if (user.location) {
+                      <span aria-hidden="true">·</span>
+                      <span>{{ user.location }}</span>
+                    }
+                    @if (memberSince()) {
+                      <span aria-hidden="true">·</span>
+                      <span>Membre depuis {{ memberSince() }}</span>
+                    }
+                  </div>
+
+                  @if (roleLabel()) {
+                    <span class="mt-3 inline-flex rounded-full bg-white/10 px-3 py-1 text-[13px] font-medium text-white">
+                      {{ roleLabel() }}
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <div class="shrink-0 rounded-2xl bg-white/5 px-6 py-4 text-center sm:min-w-[132px]">
+                <p class="text-[30px] font-bold leading-[38px] text-[#FBBF24]">{{ user.reputation }}</p>
+                <p class="text-[13px] uppercase tracking-wide text-[#94A3B8]">points</p>
+              </div>
+            </div>
+          </header>
+
+          <div class="grid gap-10 px-6 py-10 sm:px-10 lg:grid-cols-[1fr_320px] lg:py-12">
+            <section aria-labelledby="about-title">
+              <h2 id="about-title" class="text-[20px] font-bold text-[#141219]">À propos</h2>
+              @if (user.bio) {
+                <p class="mt-4 whitespace-pre-line break-words text-[16px] leading-[27px] text-[#475569]">
+                  {{ user.bio }}
+                </p>
+              } @else {
+                <p class="mt-4 text-[16px] leading-[27px] text-[#64748B]">
+                  Ce membre n'a pas encore renseigné de biographie.
+                </p>
+              }
+
+              @if (links().length) {
+                <div class="mt-7 flex flex-wrap gap-3">
+                  @for (link of links(); track link.href) {
+                    <a
+                      [href]="link.href"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex h-11 items-center justify-center rounded-full border border-[#E2E8F0] px-5 text-[15px] font-semibold text-[#141219] transition-colors hover:border-[#0F1011]"
+                    >
+                      {{ link.label }}
+                    </a>
+                  }
+                </div>
+              }
+            </section>
+
+            <section aria-labelledby="activity-title">
+              <h2 id="activity-title" class="text-[20px] font-bold text-[#141219]">Activité</h2>
+              <dl class="mt-4 grid grid-cols-2 gap-3">
+                <div class="rounded-2xl bg-[#F8FAFC] px-4 py-4">
+                  <dt class="text-[13px] font-medium text-[#64748B]">Questions</dt>
+                  <dd class="mt-1 text-[24px] font-bold leading-[32px] text-[#141219]">{{ user._count?.posts ?? 0 }}</dd>
+                </div>
+                <div class="rounded-2xl bg-[#F8FAFC] px-4 py-4">
+                  <dt class="text-[13px] font-medium text-[#64748B]">Réponses</dt>
+                  <dd class="mt-1 text-[24px] font-bold leading-[32px] text-[#141219]">{{ user._count?.answers ?? 0 }}</dd>
+                </div>
+                <div class="rounded-2xl bg-[#F8FAFC] px-4 py-4">
+                  <dt class="text-[13px] font-medium text-[#64748B]">Projets</dt>
+                  <dd class="mt-1 text-[24px] font-bold leading-[32px] text-[#141219]">{{ user._count?.projects ?? 0 }}</dd>
+                </div>
+                <div class="rounded-2xl bg-[#F8FAFC] px-4 py-4">
+                  <dt class="text-[13px] font-medium text-[#64748B]">Badges</dt>
+                  <dd class="mt-1 text-[24px] font-bold leading-[32px] text-[#141219]">{{ user._count?.receivedBadges ?? 0 }}</dd>
+                </div>
+              </dl>
+            </section>
+          </div>
+        </article>
+      }
+    }
+  </div>
+</section>

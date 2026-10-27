@@ -1,4 +1,4 @@
-import { signalStore, withState, withMethods, withComputed } from '@ngrx/signals';
+import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
 import { inject } from '@angular/core';
 import { computed } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
@@ -31,46 +31,101 @@ export const AuthStore = signalStore(
     isAuthenticated: computed(() => !!store.accessToken()),
   })),
 
-  withMethods((store, authService = inject(AuthService), platformId = inject(PLATFORM_ID)) => ({
-    /** Rehydrater depuis localStorage au démarrage (browser only) */
-    initializeAuth(): void {
-      if (!isPlatformBrowser(platformId)) return;
+  withMethods((store, authService = inject(AuthService), platformId = inject(PLATFORM_ID)) => {
+    const readTokens = (): { accessToken: string | null; refreshToken: string | null } => {
+      if (!isPlatformBrowser(platformId)) {
+        return { accessToken: null, refreshToken: null };
+      }
+      return {
+        accessToken:  localStorage.getItem(ACCESS_TOKEN_KEY) ?? sessionStorage.getItem(ACCESS_TOKEN_KEY),
+        refreshToken: localStorage.getItem(REFRESH_TOKEN_KEY) ?? sessionStorage.getItem(REFRESH_TOKEN_KEY),
+      };
+    };
 
-      const at = localStorage.getItem(ACCESS_TOKEN_KEY);
-      const rt = localStorage.getItem(REFRESH_TOKEN_KEY);
+    /**
+     * « Rester connecté » : la session est conservée d'un redémarrage à l'autre
+     * (localStorage). Sans cette option, les tokens ne survivent qu'à l'onglet
+     * courant (sessionStorage).
+     */
+    const persistTokens = (accessToken: string, refreshToken: string, remember: boolean): void => {
+      if (!isPlatformBrowser(platformId)) {
+        return;
+      }
 
-      if (at && rt) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (store as any).patchState({ accessToken: at, refreshToken: rt });
+      const target = remember ? localStorage : sessionStorage;
+      const other = remember ? sessionStorage : localStorage;
+
+      target.setItem(ACCESS_TOKEN_KEY, accessToken);
+      target.setItem(REFRESH_TOKEN_KEY, refreshToken);
+      other.removeItem(ACCESS_TOKEN_KEY);
+      other.removeItem(REFRESH_TOKEN_KEY);
+    };
+
+    const clearTokens = (): void => {
+      if (!isPlatformBrowser(platformId)) {
+        return;
+      }
+      for (const storage of [localStorage, sessionStorage]) {
+        storage.removeItem(ACCESS_TOKEN_KEY);
+        storage.removeItem(REFRESH_TOKEN_KEY);
+      }
+    };
+
+    // Réinitialise l'état et efface les tokens persistés.
+    const reset = (): void => {
+      clearTokens();
+      patchState(store, initialState);
+    };
+
+    return {
+      /** Rehydrater depuis localStorage au démarrage (browser only) */
+      initializeAuth(): void {
+        if (!isPlatformBrowser(platformId)) return;
+
+        const { accessToken, refreshToken } = readTokens();
+        if (!accessToken || !refreshToken) return;
+
+        patchState(store, { accessToken, refreshToken });
+
         // Charger le profil courant
         authService.getMe().subscribe({
-          next: (user) => (store as any).patchState({ currentUser: user }),
-          error: () => this.logout(),
+          next: (user) => patchState(store, { currentUser: user }),
+          error: () => reset(),
         });
-      }
-    },
+      },
 
-    setTokens(accessToken: string, refreshToken: string): void {
-      if (isPlatformBrowser(platformId)) {
-        localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-        localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (store as any).patchState({ accessToken, refreshToken });
-    },
+      setTokens(accessToken: string, refreshToken: string, remember = true): void {
+        persistTokens(accessToken, refreshToken, remember);
+        patchState(store, { accessToken, refreshToken });
+      },
 
-    setUser(user: UserMe): void {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (store as any).patchState({ currentUser: user });
-    },
+      setUser(user: UserMe | null): void {
+        patchState(store, { currentUser: user });
+      },
 
-    logout(): void {
-      if (isPlatformBrowser(platformId)) {
-        localStorage.removeItem(ACCESS_TOKEN_KEY);
-        localStorage.removeItem(REFRESH_TOKEN_KEY);
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (store as any).patchState(initialState);
-    },
-  }))
+      setLoading(isLoading: boolean): void {
+        patchState(store, { isLoading });
+      },
+
+      /** Efface la session locale sans-appeler l'API (intercepteur de refresh). */
+      logout(): void {
+        reset();
+      },
+
+      /**
+       * Déconnexion : purge la session locale immédiatement puis demande à l'API
+       * de révoquer le refresh token. Le jeton est capturé avant la purge,
+       * sinon la requête partirait sans en-tête `Authorization`.
+       */
+      signOut(): void {
+        const accessToken = store.accessToken();
+
+        reset();
+
+        if (accessToken) {
+          authService.logout(accessToken).subscribe({ error: () => undefined });
+        }
+      },
+    };
+  })
 );

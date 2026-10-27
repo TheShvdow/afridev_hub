@@ -1,0 +1,22 @@
+<label class="flex flex-col gap-2">
+  <span class="auth-field__label">{{ label() }}</span>
+
+  <span class="auth-field">
+    <app-icon [name]="icon()" class="auth-field__icon"></app-icon>
+
+    <input
+      class="auth-field__input"
+      [class.auth-field__input--invalid]="invalid()"
+      [type]="type()"
+      [name]="name()"
+      [attr.autocomplete]="autocomplete()"
+      [placeholder]="placeholder()"
+      [value]="value()"
+      (input)="onInput($event)"
+    />
+
+    @if (required()) {
+      <span class="auth-field__required">*</span>
+    }
+  </span>
+</label>

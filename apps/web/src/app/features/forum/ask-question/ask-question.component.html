@@ -1,0 +1,84 @@
+<app-page-hero
+  title="Poser une question"
+  subtitle="Décrivez votre problème avec suffisamment de contexte : plus votre question est précise, plus la communauté pourra vous aider."
+/>
+
+<section class="bg-white">
+  <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-0 lg:py-10">
+    <form
+      class="mx-auto flex w-full max-w-[800px] flex-col gap-8"
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      novalidate
+    >
+      <div class="flex flex-col gap-2">
+        <h1 class="text-[32px] font-bold text-[#141219]">Nouvelle question</h1>
+        <p class="text-[16px] leading-[26px] text-[#64748B]">
+          Les champs marqués d'un astérisque sont obligatoires.
+        </p>
+      </div>
+
+      @if (errorMessage()) {
+        <p
+          role="alert"
+          class="rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium leading-5 text-[#FB2C36]"
+        >
+          {{ errorMessage() }}
+        </p>
+      }
+
+      <app-question-fields [form]="form">
+        @if (loadingSimilar()) {
+          <p class="text-[14px] text-[#64748B]" aria-live="polite">
+            Recherche de questions similaires…
+          </p>
+        } @else if (similarPosts().length > 0) {
+          <div class="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-5" aria-live="polite">
+            <p class="text-[15px] font-semibold text-[#141219]">
+              Des questions proches existent déjà
+            </p>
+            <ul class="mt-3 flex flex-col gap-2">
+              @for (post of similarPosts(); track post.id) {
+                <li>
+                  <a
+                    [routerLink]="['/forum', post.id]"
+                    class="flex flex-wrap items-center gap-2 text-[15px] leading-[24px] text-[#0F6932] hover:underline"
+                  >
+                    <span>{{ post.title }}</span>
+                    @if (post.isResolved) {
+                      <span class="rounded-full bg-[#F0FDF4] px-2 py-0.5 text-[12px] font-medium text-[#0F6932]">
+                        Résolue
+                      </span>
+                    }
+                    <span class="text-[12px] text-[#64748B]">
+                      {{ (post.similarity * 100).toFixed(0) }} % de similarité
+                    </span>
+                  </a>
+                </li>
+              }
+            </ul>
+            <p class="mt-3 text-[13px] leading-[20px] text-[#64748B]">
+              Consultez ces questions avant de publier : votre réponse s'y trouve peut-être déjà.
+            </p>
+          </div>
+        }
+      </app-question-fields>
+
+      <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+        <a
+          routerLink="/forum"
+          class="inline-flex h-14 items-center justify-center rounded-full px-6 text-base font-semibold text-[#64748B] transition-colors hover:text-ink"
+        >
+          Annuler
+        </a>
+        <button
+          type="submit"
+          [disabled]="loading()"
+          class="inline-flex h-14 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+        >
+          {{ loading() ? 'Publication…' : 'Publier la question' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</section>

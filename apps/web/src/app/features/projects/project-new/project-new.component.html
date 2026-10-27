@@ -1,0 +1,277 @@
+<app-page-hero
+  [title]="isEdit() ? 'Modifier un projet' : 'Soumettre un projet'"
+  [subtitle]="
+    isEdit()
+      ? 'Mettez à jour les informations de votre projet. Un nouveau dépôt GitHub est revérifié automatiquement.'
+      : 'Partagez un projet open-source africain avec la communauté. Les statistiques GitHub sont vérifiées et importées automatiquement.'
+  "
+/>
+
+<section class="bg-white">
+  <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-0 lg:py-10">
+    @if (loadingProject()) {
+      <p class="py-20 text-center text-[16px] text-[#64748B]">Chargement du projet…</p>
+    } @else if (notFound()) {
+      <div class="flex flex-col items-center gap-4 py-20 text-center">
+        <p class="text-[24px] font-bold text-[#141219]">Projet introuvable</p>
+        <p class="text-[16px] leading-[26px] text-[#64748B]">
+          Ce projet n'existe pas ou a été retiré de la vitrine.
+        </p>
+        <a
+          routerLink="/projets"
+          class="mt-2 inline-flex h-12 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Revenir aux projets
+        </a>
+      </div>
+    } @else if (forbidden()) {
+      <div class="flex flex-col items-center gap-4 py-20 text-center">
+        <p class="text-[24px] font-bold text-[#141219]">Modification impossible</p>
+        <p class="text-[16px] leading-[26px] text-[#64748B]">
+          Vous ne pouvez modifier que les projets dont vous êtes l'auteur.
+        </p>
+        <a
+          [routerLink]="cancelHref()"
+          class="mt-2 inline-flex h-12 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Revenir au projet
+        </a>
+      </div>
+    } @else {
+    <form
+      class="mx-auto flex w-full max-w-[800px] flex-col gap-8"
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      novalidate
+    >
+      <div class="flex flex-col gap-2">
+        <h1 class="text-[32px] font-bold text-[#141219]">
+          {{ isEdit() ? 'Modifier le projet' : 'Nouveau projet' }}
+        </h1>
+        <p class="text-[16px] leading-[26px] text-[#64748B]">
+          Les champs marqués d'un astérisque sont obligatoires.
+        </p>
+      </div>
+
+      @if (!isEdit()) {
+        <div class="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-5 py-4">
+          <p class="text-[15px] font-semibold text-[#141219]">Badge « dev vérifié » requis</p>
+          <p class="mt-1 text-[14px] leading-[22px] text-[#64748B]">
+            Pour soumettre un projet, votre profil doit réunir un email confirmé, un pays, une stack,
+            une bio de 50 caractères minimum et au moins un lien externe.
+            <a routerLink="/profile" class="font-semibold text-[#0F6932] hover:underline">
+              Compléter mon profil
+            </a>
+          </p>
+        </div>
+      }
+
+      @if (errorMessage()) {
+        <p
+          role="alert"
+          class="rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium leading-5 text-[#FB2C36]"
+        >
+          {{ errorMessage() }}
+        </p>
+      }
+
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-4">
+          <label for="name" class="text-[16px] font-semibold text-[#141219]">Nom du projet *</label>
+          <span class="text-[14px] text-[#64748B]">{{ form.controls.name.value.length }}/120</span>
+        </div>
+        <input
+          id="name"
+          type="text"
+          formControlName="name"
+          maxlength="120"
+          placeholder="Ex : AfriPay — Paiements mobiles unifiés"
+          class="h-14 rounded-2xl border border-[#E2E8F0] px-5 text-[16px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
+        />
+        @if (form.controls.name.touched && form.controls.name.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">
+            Le nom doit contenir entre 5 et 120 caractères.
+          </p>
+        }
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-4">
+          <label for="description" class="text-[16px] font-semibold text-[#141219]">
+            Description *
+          </label>
+          <span class="text-[14px] text-[#64748B]">
+            {{ form.controls.description.value.length }}/10000
+          </span>
+        </div>
+        <textarea
+          id="description"
+          formControlName="description"
+          rows="8"
+          maxlength="10000"
+          placeholder="Présentez le problème résolu, les fonctionnalités principales et la stack technique du projet…"
+          class="rounded-2xl border border-[#E2E8F0] px-5 py-4 text-[16px] leading-[26px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
+        ></textarea>
+        @if (form.controls.description.touched && form.controls.description.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">
+            La description doit contenir au moins 50 caractères.
+          </p>
+        }
+      </div>
+
+      <div class="grid gap-6 sm:grid-cols-2">
+        <div class="flex flex-col gap-2">
+          <label for="country" class="text-[16px] font-semibold text-[#141219]">Pays *</label>
+          <select
+            id="country"
+            formControlName="country"
+            class="h-14 rounded-2xl border border-[#E2E8F0] bg-white px-5 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none"
+          >
+            <option value="" disabled>Sélectionner un pays</option>
+            @for (country of countries(); track country.code) {
+              <option [value]="country.code">{{ country.name }}</option>
+            }
+          </select>
+          @if (form.controls.country.touched && form.controls.country.invalid) {
+            <p class="text-[14px] font-medium text-[#FB2C36]">Sélectionnez un pays.</p>
+          }
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label for="categorySlug" class="text-[16px] font-semibold text-[#141219]">
+            Catégorie *
+          </label>
+          <select
+            id="categorySlug"
+            formControlName="categorySlug"
+            class="h-14 rounded-2xl border border-[#E2E8F0] bg-white px-5 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none"
+          >
+            <option value="" disabled>Sélectionner une catégorie</option>
+            @for (category of categories(); track category.slug) {
+              <option [value]="category.slug">{{ category.name }}</option>
+            }
+          </select>
+          @if (form.controls.categorySlug.touched && form.controls.categorySlug.invalid) {
+            <p class="text-[14px] font-medium text-[#FB2C36]">Sélectionnez une catégorie.</p>
+          }
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="repoUrl" class="text-[16px] font-semibold text-[#141219]">
+          Dépôt GitHub *
+        </label>
+        <input
+          id="repoUrl"
+          type="url"
+          formControlName="repoUrl"
+          placeholder="https://github.com/compte/projet"
+          class="h-14 rounded-2xl border border-[#E2E8F0] px-5 text-[16px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
+        />
+        <p class="text-[14px] leading-[22px] text-[#64748B]">
+          Le dépôt doit être public : son existence et ses statistiques sont vérifiées auprès de
+          GitHub.
+        </p>
+        @if (form.controls.repoUrl.touched && form.controls.repoUrl.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">
+            Indiquez un lien de dépôt GitHub valide, par exemple https://github.com/compte/projet.
+          </p>
+        }
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="demoUrl" class="text-[16px] font-semibold text-[#141219]">
+          Lien de démonstration
+        </label>
+        <input
+          id="demoUrl"
+          type="url"
+          formControlName="demoUrl"
+          placeholder="https://mon-projet.demo.com"
+          class="h-14 rounded-2xl border border-[#E2E8F0] px-5 text-[16px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
+        />
+        @if (form.controls.demoUrl.touched && form.controls.demoUrl.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">
+            Indiquez une URL valide commençant par http:// ou https://.
+          </p>
+        }
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <div class="flex items-center justify-between gap-4">
+          <label for="tag" class="text-[16px] font-semibold text-[#141219]">Technologies *</label>
+          <span class="text-[14px] text-[#64748B]">
+            {{ form.controls.tags.value.length }}/{{ maxTags }}
+          </span>
+        </div>
+
+        @if (form.controls.tags.value.length > 0) {
+          <div class="flex flex-wrap gap-2">
+            @for (tag of form.controls.tags.value; track tag) {
+              <span
+                class="inline-flex items-center gap-2 rounded-full bg-[#F0FDF4] px-4 py-1 text-[14px] font-medium text-[#0F6932]"
+              >
+                {{ tag }}
+                <button
+                  type="button"
+                  (click)="removeTag(tag)"
+                  [attr.aria-label]="'Retirer la technologie ' + tag"
+                  class="text-[16px] leading-none text-[#0F6932] hover:opacity-70"
+                >
+                  ×
+                </button>
+              </span>
+            }
+          </div>
+        }
+
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <input
+            id="tag"
+            type="text"
+            [formControl]="tagInput"
+            (keydown)="onTagKeydown($event)"
+            maxlength="30"
+            placeholder="Ex : typescript, nestjs, wave-api"
+            class="h-14 min-w-0 flex-1 rounded-2xl border border-[#E2E8F0] px-5 text-[16px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
+          />
+          <button
+            type="button"
+            (click)="addTag()"
+            [disabled]="form.controls.tags.value.length >= maxTags"
+            class="h-14 shrink-0 rounded-full border border-ink px-6 text-base font-semibold text-ink disabled:opacity-50"
+          >
+            Ajouter
+          </button>
+        </div>
+
+        <p class="text-[14px] text-[#64748B]">
+          Ajoutez 1 à 5 technologies (Entrée ou virgule pour valider).
+        </p>
+
+        @if (form.controls.tags.touched && form.controls.tags.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">
+            Au moins 1 technologie est requise.
+          </p>
+        }
+      </div>
+
+      <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+        <a
+          [routerLink]="cancelHref()"
+          class="inline-flex h-14 items-center justify-center rounded-full px-6 text-base font-semibold text-[#64748B] transition-colors hover:text-ink"
+        >
+          Annuler
+        </a>
+        <button
+          type="submit"
+          [disabled]="loading()"
+          class="inline-flex h-14 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+        >
+          {{ submitLabel() }}
+        </button>
+      </div>
+    </form>
+    }
+  </div>
+</section>

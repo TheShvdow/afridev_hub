@@ -66,6 +66,20 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
+/**
+ * Réponse de `POST /api/auth/register` : aucun token tant que l'adresse
+ * e-mail n'est pas confirmée avec le code reçu.
+ */
+export interface RegisterResponse {
+  message: string;
+  email:   string;
+}
+
+/** Réponse simple de l'API : `{ data: { message } }`. */
+export interface AuthMessageResponse {
+  message: string;
+}
+
 // ── User ──────────────────────────────────────────────────────────────────────
 
 /** Sous-ensemble public d'un utilisateur, utilisé dans les relations (`user`, `recruiter`, `actor`…). */

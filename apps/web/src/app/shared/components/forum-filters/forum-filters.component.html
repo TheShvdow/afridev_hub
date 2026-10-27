@@ -1,0 +1,16 @@
+<div class="flex flex-wrap gap-[12px]">
+  @for (tag of tags(); track tag) {
+    <button
+      type="button"
+      (click)="selectedTag.set(tag)"
+      [class]="
+        (selectedTag() === tag
+          ? 'bg-[#141219] text-white '
+          : 'bg-white text-[#141219] border-[#E2E8F0] ') +
+        'rounded-full border px-[16px] py-[4px] text-[16px] font-medium transition-colors'
+      "
+    >
+      {{ tag }}
+    </button>
+  }
+</div>

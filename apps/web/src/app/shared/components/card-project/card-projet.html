@@ -1,0 +1,47 @@
+<article class="flex h-full flex-col rounded-[24px] bg-white p-[24px] transition-shadow hover:shadow-lg">
+  <div class="relative overflow-hidden rounded-3xl">
+    <img [src]="project().image" [alt]="project().title" class="h-[200px] w-full object-cover" />
+    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/0" aria-hidden="true"></div>
+    <span class="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-black/10 px-2 py-1 text-sm font-medium leading-[22px] text-white backdrop-blur-sm">
+      <svg class="size-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M11.48 3.5c.2-.57.84-.57 1.04 0l1.9 3.85a.6.6 0 0 0 .45.34l4.18.61c.62.09.87.86.42 1.3l-3.03 2.95a.6.6 0 0 0-.17.53l.72 4.18c.1.62-.55 1.1-1.1.8l-3.74-1.96a.6.6 0 0 0-.56 0l-3.74 1.96c-.55.3-1.2-.18-1.1-.8l.72-4.18a.6.6 0 0 0-.17-.53L4.53 9.6c-.45-.44-.2-1.21.42-1.3l4.18-.61a.6.6 0 0 0 .45-.34l1.9-3.85Z" />
+      </svg>
+      {{ project().stars }}
+    </span>
+    <h3 class="absolute bottom-[14px] left-4 right-4 text-[28px] font-bold leading-[45px] text-white">{{ project().title }}</h3>
+  </div>
+
+  <p class="mt-4 text-base font-medium leading-[26px] text-[#141219]">{{ project().description }}</p>
+
+  <div class="mt-4 flex flex-wrap gap-4">
+    @for (tag of project().tags; track tag) {
+      <span class="bg-[#F0FDF4] text-[#0F6932] rounded-[1000px] px-[16px] py-[4px] text-[16px] font-medium">{{ tag }}</span>
+    }
+  </div>
+
+  <div class="mt-auto flex items-center justify-between pt-[31px]">
+    <p class="text-base font-medium leading-[26px] text-slate-500">
+      Par&nbsp;<span class="font-medium text-[#141219]">{{ project().author ?? 'Équipe' }}</span>
+      @if (project().city) {
+        · {{ project().city }}
+      }
+    </p>
+    @if (project().detailHref) {
+      <a
+        [routerLink]="project().detailHref"
+        class="rounded-[1000px] bg-[#0F1011] px-[20px] py-[14px] text-[16px] font-semibold text-white transition-opacity hover:opacity-90"
+      >
+        {{ ctaLabel() }}
+      </a>
+    } @else {
+      <a
+        [href]="project().href ?? '#'"
+        [attr.target]="project().href ? '_blank' : null"
+        [attr.rel]="project().href ? 'noopener noreferrer' : null"
+        class="rounded-[1000px] bg-[#0F1011] px-[20px] py-[14px] text-[16px] font-semibold text-white transition-opacity hover:opacity-90"
+      >
+        {{ ctaLabel() }}
+      </a>
+    }
+  </div>
+</article>

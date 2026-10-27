@@ -1,0 +1,36 @@
+<article
+  tabindex="0"
+  role="button"
+  (click)="opened.emit(thread())"
+  (keydown.enter)="opened.emit(thread())"
+  (keydown.space)="$event.preventDefault(); opened.emit(thread())"
+  class="flex cursor-pointer items-center gap-3 rounded-2xl transition-colors hover:bg-[#F8FAFC] sm:gap-4 lg:h-[130px]"
+>
+  <span
+    aria-hidden="true"
+    class="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#0F1011] text-[18px] font-semibold leading-[38px] text-[#FBBF24] sm:size-16 sm:text-[24px] lg:size-20"
+  >
+    {{ thread().initials }}
+  </span>
+  <div class="min-w-0 flex-1">
+    <div class="flex flex-wrap gap-2 sm:gap-4">
+      @for (tag of thread().tags; track tag) {
+        @if (tag === thread().tags[0]) {
+          <span class="max-w-full break-words rounded-[1000px] bg-[#F0FDF4] px-3 py-1 text-[13px] font-medium text-[#0F6932] sm:px-4 sm:text-[16px]">{{ tag }}</span>
+        } @else {
+          <span class="max-w-full break-words rounded-[1000px] bg-[#FEFCE8] px-3 py-1 text-[13px] font-medium text-[#A16207] sm:px-4 sm:text-[16px]">{{ tag }}</span>
+        }
+      }
+    </div>
+    <h3 class="mt-1.5 text-[15px] font-normal leading-[24px] text-[#141219] sm:text-[16px] sm:leading-[26px]">{{ thread().title }}</h3>
+    <p class="mt-1 text-[13px] leading-[22px] text-[#64748B] sm:mt-[6px] sm:text-[16px] sm:leading-[26px]">{{ thread().meta }}</p>
+  </div>
+  <div class="hidden shrink-0 flex-col items-center justify-center gap-[6px] rounded-2xl bg-[#F8FAFC] px-[10px] py-[4px] sm:flex">
+    <span class="text-[24px] font-semibold leading-[38px] text-[#141219]">{{ thread().votes }}</span>
+    <span class="text-[16px] font-normal leading-[26px] text-[#64748B]">votes</span>
+  </div>
+  <div class="hidden shrink-0 flex-col items-center justify-center gap-[6px] rounded-2xl bg-[#F8FAFC] px-[10px] py-[4px] sm:flex">
+    <span class="text-[24px] font-semibold leading-[38px] text-[#141219]">{{ thread().replies }}</span>
+    <span class="text-[16px] font-normal leading-[26px] text-[#64748B]">réponses</span>
+  </div>
+</article>

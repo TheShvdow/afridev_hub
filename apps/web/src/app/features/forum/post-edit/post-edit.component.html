@@ -1,0 +1,90 @@
+<app-page-hero
+  title="Modifier la question"
+  subtitle="Mettez à jour votre question pour la rendre plus claire ou ajouter les précisions demandées par la communauté."
+/>
+
+<section class="bg-white">
+  <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-0 lg:py-10">
+    @if (loading()) {
+      <p class="py-16 text-center text-[16px] text-[#64748B]">Chargement de la question…</p>
+    } @else if (notFound()) {
+      <div class="mx-auto flex max-w-[800px] flex-col items-center gap-4 py-16 text-center">
+        <p class="text-[24px] font-bold text-[#141219]">Question introuvable</p>
+        <p class="text-[16px] leading-[26px] text-[#64748B]">
+          Cette question n'existe pas ou a été supprimée.
+        </p>
+        <a
+          routerLink="/forum"
+          class="mt-2 inline-flex h-12 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Revenir au forum
+        </a>
+      </div>
+    } @else if (forbidden()) {
+      <div class="mx-auto flex max-w-[800px] flex-col items-center gap-4 py-16 text-center">
+        <p class="text-[24px] font-bold text-[#141219]">Modification impossible</p>
+        <p class="text-[16px] leading-[26px] text-[#64748B]">
+          Seul l'auteur de la question peut la modifier.
+        </p>
+        <a
+          [routerLink]="['/forum', postId() ?? '']"
+          class="mt-2 inline-flex h-12 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Revenir à la question
+        </a>
+      </div>
+    } @else if (loadError()) {
+      <div class="mx-auto flex max-w-[800px] flex-col items-center gap-4 py-16 text-center">
+        <p class="text-[16px] leading-[26px] text-[#64748B]">{{ loadError() }}</p>
+        <button
+          type="button"
+          (click)="retry()"
+          class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink"
+        >
+          Réessayer
+        </button>
+      </div>
+    } @else {
+      <form
+        class="mx-auto flex w-full max-w-[800px] flex-col gap-8"
+        [formGroup]="form"
+        (ngSubmit)="submit()"
+        novalidate
+      >
+        <div class="flex flex-col gap-2">
+          <h1 class="text-[32px] font-bold text-[#141219]">Modifier la question</h1>
+          <p class="text-[16px] leading-[26px] text-[#64748B]">
+            Les champs marqués d'un astérisque sont obligatoires.
+          </p>
+        </div>
+
+        @if (errorMessage()) {
+          <p
+            role="alert"
+            class="rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium leading-5 text-[#FB2C36]"
+          >
+            {{ errorMessage() }}
+          </p>
+        }
+
+        <app-question-fields [form]="form" />
+
+        <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+          <a
+            [routerLink]="['/forum', postId() ?? '']"
+            class="inline-flex h-14 items-center justify-center rounded-full px-6 text-base font-semibold text-[#64748B] transition-colors hover:text-ink"
+          >
+            Annuler
+          </a>
+          <button
+            type="submit"
+            [disabled]="saving()"
+            class="inline-flex h-14 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            {{ saving() ? 'Enregistrement…' : 'Enregistrer les modifications' }}
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</section>

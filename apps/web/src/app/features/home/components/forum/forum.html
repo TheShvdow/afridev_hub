@@ -1,0 +1,65 @@
+<section id="forum" class="bg-white lg:min-h-[951px]">
+  <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-6 lg:pb-[37px] lg:pt-[40px] xl:px-0">
+    <app-section-heading label="FORUM" />
+
+    <div class="mt-6 flex flex-col gap-4 sm:mt-[24px] sm:flex-row sm:items-center sm:justify-between lg:mt-[34px]">
+      <p class="text-[28px] font-bold text-[#141219] sm:text-[32px]">Fils actifs</p>
+
+      <a
+        routerLink="/forum/ask"
+        class="inline-flex h-14 w-full shrink-0 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold leading-[26px] text-white transition-opacity hover:opacity-90 sm:w-auto"
+      >
+        Poser une question
+      </a>
+    </div>
+
+    <app-forum-filters
+      class="mt-[24px] block min-w-0 lg:mt-[32px]"
+      [tags]="tags()"
+      [selectedTag]="selectedTag()"
+      (selectedTagChange)="selectedTag.set($event)"
+    />
+
+    @if (loading()) {
+      <p class="py-10 text-center text-[16px] text-[#64748B]">Chargement des fils…</p>
+    } @else if (error()) {
+      <div class="flex flex-col items-center gap-4 py-10">
+        <p class="text-center text-[16px] text-[#64748B]">
+          Impossible de charger les fils pour le moment.
+        </p>
+        <button
+          type="button"
+          (click)="load()"
+          class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink"
+        >
+          Réessayer
+        </button>
+      </div>
+    } @else {
+      <div class="mt-8 flex flex-col gap-4 lg:mt-[58px]">
+        @for (thread of filteredThreads(); track thread.id) {
+          <app-card-thread [thread]="thread" (opened)="openThread($event)" />
+        }
+      </div>
+
+      @if (filteredThreads().length === 0) {
+        <p class="py-10 text-center text-[16px] text-[#64748B]">
+          Aucun fil ne correspond à ce tag.
+        </p>
+      }
+    }
+
+    <div class="mt-10 flex justify-center lg:mt-[40px]">
+      <a routerLink="/forum" class="btn-link text-[16px] font-semibold text-[#0F6932] flex gap-[10px]">
+        Tous les fils
+        <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14.4302 5.92969L20.5002 11.9997L14.4302 18.0697" fill="#0F6932"/>
+          <path d="M14.4302 5.92969L20.5002 11.9997L14.4302 18.0697" stroke="#0F6932" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3.5 12H20.33" stroke="#0F6932" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+
+  <app-thread-modal [thread]="selectedThread()" (closed)="closeThread()" />
+</section>
