@@ -45,12 +45,13 @@ Un membre, un recruteur, un modérateur et un administrateur accomplissent dans 
 
 **Decision:** 2026-10-27 — E7 de plus de trois entrées : le « Refactor sweep » (21) attend toutes les stories sauf le bout en bout (22).
 
-**État 2026-10-27 :** stories 1 à 9 livrées sur `feat/import-front` (PR #13), non fusionnée. La migration `20261027120000_notification_link` n'est pas appliquée à la base partagée (story 10).
+**Decision:** 2026-10-27 — les données de démonstration vivent dans une base Neon dédiée, jamais dans la base partagée de développement ni de production. Seule cette base reçoit `npm run prisma:seed:demo`.
+
+**État 2026-10-27 :** stories 1 à 9 livrées sur `feat/import-front` (PR #13), non fusionnée. La migration `20261027120000_notification_link` est appliquée à la base de démonstration (story 10) mais pas à la base partagée.
 
 **Open questions :**
 1. Déploiement du front sur Systalink : commande de build et variable `apiUrl` de production (hors dépôt à ce jour).
-2. Peuplement de la base partagée avec des comptes fictifs (story 10).
-3. Mentorat et communautés (story 20).
+2. Mentorat et communautés (story 20).
 
 ## References
 
