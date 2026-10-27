@@ -1,0 +1,46 @@
+<app-page-hero title="Postuler" subtitle="Présentez-vous au recruteur en quelques lignes." />
+
+<section class="bg-white">
+  <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-0 lg:py-10">
+    <form class="mx-auto flex w-full max-w-[800px] flex-col gap-6" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (errorMessage()) {
+        <p
+          role="alert"
+          class="rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium leading-5 text-[#FB2C36]"
+        >
+          {{ errorMessage() }}
+        </p>
+      }
+
+      <div class="flex flex-col gap-2">
+        <label for="application-message" class="text-[16px] font-semibold text-[#141219]">Message de motivation *</label>
+        <textarea
+          id="application-message"
+          formControlName="message"
+          rows="8"
+          [attr.maxlength]="maxLength"
+          class="rounded-2xl border border-[#E2E8F0] px-5 py-4 text-[16px] leading-[26px] text-[#141219] focus:border-[#0F1011] focus:outline-none"
+        ></textarea>
+        @if (form.controls.message.touched && form.controls.message.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">Le message est requis.</p>
+        }
+      </div>
+
+      <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <a
+          [routerLink]="['/jobs', jobId ?? '']"
+          class="inline-flex h-14 items-center justify-center rounded-full px-6 text-base font-semibold text-[#64748B] hover:text-ink"
+        >
+          Annuler
+        </a>
+        <button
+          type="submit"
+          [disabled]="sending()"
+          class="inline-flex h-14 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+        >
+          {{ sending() ? 'Envoi…' : 'Envoyer ma candidature' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</section>

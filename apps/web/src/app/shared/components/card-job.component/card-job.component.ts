@@ -1,6 +1,8 @@
 import { Component, input, output } from '@angular/core';
 
 export interface Job {
+  /** Identifiant de l'offre côté API (absent des données de démonstration). */
+  id?: string;
   logo: string;
   company: string;
   title: string;
@@ -8,16 +10,16 @@ export interface Job {
   country: string;
   type: string;
   mode: string;
-  experience: string;
+  experience?: string;
   skills: string[];
   salary: string;
   currency: string;
   posted: string;
   isNew?: boolean;
   description: string;
-  missions: string[];
-  profile: string[];
-  benefits: string[];
+  missions?: string[];
+  profile?: string[];
+  benefits?: string[];
 }
 
 @Component({

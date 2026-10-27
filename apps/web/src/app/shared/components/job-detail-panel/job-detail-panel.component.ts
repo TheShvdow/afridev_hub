@@ -1,10 +1,11 @@
 import { Component, HostListener, input, output } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Job } from '../card-job.component/card-job.component';
 
 @Component({
   selector: 'app-job-detail-panel',
   standalone: true,
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './job-detail-panel.component.html',
 })
 export class JobDetailPanelComponent {

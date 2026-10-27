@@ -25,7 +25,9 @@
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2.5">
                 <p class="text-[16px] leading-[26px] text-[#64748B]">{{ job.company }}</p>
-                <span class="rounded-full bg-[#FBBF24] px-[16px] py-[4px] text-[14px] font-medium leading-[22px] text-[#141219]">Nouveau</span>
+                @if (job.isNew !== false) {
+                  <span class="rounded-full bg-[#FBBF24] px-[16px] py-[4px] text-[14px] font-medium leading-[22px] text-[#141219]">Nouveau</span>
+                }
               </div>
               <h3 class="text-[22px] font-bold leading-[32px] text-[#141219]">{{ job.title }}</h3>
             </div>
@@ -46,7 +48,7 @@
           <div class="flex flex-col gap-[17px]">
             <div class="flex  items-center justify-between gap-[17px]">
               <div class="w-full bg-[#F8FAFC] flex flex-col items-start gap-[4px] rounded-[8px] border border-[#E2E8F0] px-[16px] py-[8px] text-[16px] leading-[26px] text-[#64748B]">
-                <span class="font-medium text-[20px] text-[#64748B]" class="font-medium text-[20px] text-[#64748B]">Contrat</span>
+                <span class="font-medium text-[20px] text-[#64748B]">Contrat</span>
                 <span class="font-medium text-[20px] text-[#141219]">{{ job.type }}</span>
               </div>
               <div class="w-full bg-[#F8FAFC] flex flex-col items-start gap-[4px] rounded-[8px] border border-[#E2E8F0] px-[16px] py-[8px] text-[16px] leading-[26px] text-[#64748B]">
@@ -55,10 +57,12 @@
               </div>
             </div>
             <div class="flex  items-center justify-between gap-[17px]">
-              <div class="w-full bg-[#F8FAFC] flex flex-col items-start gap-[4px] rounded-[8px] border border-[#E2E8F0] px-[16px] py-[8px] text-[16px] leading-[26px] text-[#64748B]">
-                <span class="font-medium text-[20px] text-[#64748B]">Expérience</span>
-                <span class="font-medium text-[20px] text-[#141219]">{{ job.experience }}</span>
-              </div>
+              @if (job.experience) {
+                <div class="w-full bg-[#F8FAFC] flex flex-col items-start gap-[4px] rounded-[8px] border border-[#E2E8F0] px-[16px] py-[8px] text-[16px] leading-[26px] text-[#64748B]">
+                  <span class="font-medium text-[20px] text-[#64748B]">Expérience</span>
+                  <span class="font-medium text-[20px] text-[#141219]">{{ job.experience }}</span>
+                </div>
+              }
               <div class="w-full bg-[#F8FAFC] flex flex-col items-start gap-[4px] rounded-[8px] border border-[#E2E8F0] px-[16px] py-[8px] text-[16px] leading-[26px] text-[#64748B]">
                 <span class="font-medium text-[20px] text-[#64748B]">Remunération</span>
                 <span class="font-medium text-[20px] text-[#141219]">{{ job.salary }}</span>
@@ -74,50 +78,56 @@
 
           <section class="mt-[24px]">
             <h4 class="text-[18px] font-bold leading-[28px] text-[#141219]">Description du poste</h4>
-            <p class="mt-2 text-[16px] leading-[26px] text-[#64748B]">{{ job.description }}</p>
+            <p class="mt-2 whitespace-pre-line text-[16px] leading-[26px] text-[#64748B]">{{ job.description }}</p>
           </section>
 
-          <section class="mt-[24px]">
-            <h4 class="text-[18px] font-bold leading-[28px] text-[#141219]">Missions</h4>
-            <ul class="mt-2 flex flex-col gap-2">
-              @for (mission of job.missions; track mission) {
-                <li class="flex items-start gap-[10px] text-[16px] leading-[26px] text-[#64748B]">
-                  <svg aria-hidden="true" class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 12.5L10 17.5L19 7" stroke="#0F6932" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span>{{ mission }}</span>
-                </li>
-              }
-            </ul>
-          </section>
+          @if (job.missions?.length) {
+            <section class="mt-[24px]">
+              <h4 class="text-[18px] font-bold leading-[28px] text-[#141219]">Missions</h4>
+              <ul class="mt-2 flex flex-col gap-2">
+                @for (mission of job.missions; track mission) {
+                  <li class="flex items-start gap-[10px] text-[16px] leading-[26px] text-[#64748B]">
+                    <svg aria-hidden="true" class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 12.5L10 17.5L19 7" stroke="#0F6932" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>{{ mission }}</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
 
-          <section class="mt-[24px]">
-            <h4 class="text-[18px] font-bold leading-[28px] text-[#141219]">Profil recherché</h4>
-            <ul class="mt-2 flex flex-col gap-2">
-              @for (item of job.profile; track item) {
-                <li class="flex items-start gap-[10px] text-[16px] leading-[26px] text-[#64748B]">
-                  <svg aria-hidden="true" class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 12.5L10 17.5L19 7" stroke="#0F6932" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span>{{ item }}</span>
-                </li>
-              }
-            </ul>
-          </section>
+          @if (job.profile?.length) {
+            <section class="mt-[24px]">
+              <h4 class="text-[18px] font-bold leading-[28px] text-[#141219]">Profil recherché</h4>
+              <ul class="mt-2 flex flex-col gap-2">
+                @for (item of job.profile; track item) {
+                  <li class="flex items-start gap-[10px] text-[16px] leading-[26px] text-[#64748B]">
+                    <svg aria-hidden="true" class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 12.5L10 17.5L19 7" stroke="#0F6932" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>{{ item }}</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
 
-          <section class="mt-[24px]">
-            <h4 class="text-[18px] font-bold leading-[28px] text-[#141219]">Avantages</h4>
-            <ul class="mt-2 flex flex-col gap-2">
-              @for (benefit of job.benefits; track benefit) {
-                <li class="flex items-start gap-[10px] text-[16px] leading-[26px] text-[#64748B]">
-                  <svg aria-hidden="true" class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 12.5L10 17.5L19 7" stroke="#0F6932" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span>{{ benefit }}</span>
-                </li>
-              }
-            </ul>
-          </section>
+          @if (job.benefits?.length) {
+            <section class="mt-[24px]">
+              <h4 class="text-[18px] font-bold leading-[28px] text-[#141219]">Avantages</h4>
+              <ul class="mt-2 flex flex-col gap-2">
+                @for (benefit of job.benefits; track benefit) {
+                  <li class="flex items-start gap-[10px] text-[16px] leading-[26px] text-[#64748B]">
+                    <svg aria-hidden="true" class="mt-[4px] shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 12.5L10 17.5L19 7" stroke="#0F6932" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>{{ benefit }}</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
 
           <section class="mt-[24px]">
             <span class="text-[14px] leading-[22px] text-[#64748B]">{{ job.posted }}</span>
@@ -125,12 +135,12 @@
         </div>
 
         <div class="border-t border-[#E2E8F0] p-[24px]">
-          <button
-            type="button"
-            class="w-full rounded-full bg-[#0F1011] px-[20px] py-[14px] text-[16px] font-semibold text-white transition-opacity hover:opacity-90"
+          <a
+            [routerLink]="job.id ? ['/jobs', job.id, 'apply'] : ['/jobs']"
+            class="block w-full rounded-full bg-[#0F1011] px-[20px] py-[14px] text-center text-[16px] font-semibold text-white transition-opacity hover:opacity-90"
           >
             Postuler
-          </button>
+          </a>
         </div>
       }
     </aside>

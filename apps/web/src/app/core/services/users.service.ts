@@ -93,6 +93,11 @@ export class UsersService {
     return this.http.patch<MyProfile>(`${this.base}/me`, dto);
   }
 
+  /** `POST /api/users/me/recruiter` — active le profil recruteur (nom de l'entreprise). */
+  enableRecruiter(companyName: string): Observable<unknown> {
+    return this.http.post(`${this.base}/me/recruiter`, { companyName });
+  }
+
   /** `GET /api/users/{username}` — profil public. */
   getPublicProfile(username: string): Observable<PublicUserProfile> {
     return this.http.get<PublicUserProfile>(
