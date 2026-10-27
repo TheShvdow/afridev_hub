@@ -84,12 +84,17 @@ describe('Navbar', () => {
     fixture.nativeElement
       .querySelector('button[aria-label="Menu du compte"]')
       .click();
+    controller
+      .expectOne((req) => req.url.endsWith('/notifications/unread-count'))
+      .flush({ data: { count: 3 } });
     fixture.detectChanges();
 
     const text = fixture.nativeElement.textContent;
 
     expect(text).toContain('idrissa_wade');
     expect(text).toContain('Mon profil');
+    expect(text).toContain('Notifications');
+    expect(text).toContain('3');
     expect(text).toContain('Déconnexion');
   });
 
@@ -101,6 +106,9 @@ describe('Navbar', () => {
     fixture.nativeElement
       .querySelector('button[aria-label="Menu du compte"]')
       .click();
+    controller
+      .expectOne((req) => req.url.endsWith('/notifications/unread-count'))
+      .flush({ data: { count: 0 } });
     fixture.detectChanges();
 
     const buttons = Array.from(
