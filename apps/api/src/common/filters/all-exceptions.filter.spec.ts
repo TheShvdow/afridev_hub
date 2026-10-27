@@ -32,6 +32,13 @@ describe('AllExceptionsFilter (AD-7)', () => {
     expect(body).toEqual({ error: { code: 'COMMON_NOT_FOUND', message: 'Cannot GET /api/unknown' } });
   });
 
+  it('replaces the throttler message by a readable French one on 429', () => {
+    const { status, body } = run(new HttpException('ThrottlerException: Too Many Requests', HttpStatus.TOO_MANY_REQUESTS));
+    expect(status).toBe(429);
+    expect(body).toEqual({ error: { code: 'COMMON_TOO_MANY_REQUESTS', message: 'Trop de requêtes. Réessayez dans un instant.' } });
+    expect(JSON.stringify(body)).not.toContain('Throttler');
+  });
+
   it('maps an unknown error to a 500 without leaking its message', () => {
     const { status, body } = run(new Error('connection string postgresql://user:secret@host'));
     expect(status).toBe(HttpStatus.INTERNAL_SERVER_ERROR);

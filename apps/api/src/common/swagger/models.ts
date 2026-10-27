@@ -46,6 +46,9 @@ export class UserProfileDto {
   @ApiProperty({ nullable: true }) bio!: string | null;
   @ApiProperty({ nullable: true }) avatarUrl!: string | null;
   @ApiProperty({ nullable: true }) location!: string | null;
+  @ApiProperty({ nullable: true, example: 'SN', description: 'Code ISO 3166-1 alpha-2' }) country!: string | null;
+  @ApiProperty({ type: [String], example: ['TypeScript', 'NestJS'] }) stack!: string[];
+  @ApiProperty({ enum: ['JUNIOR', 'MID', 'SENIOR'], nullable: true }) level!: 'JUNIOR' | 'MID' | 'SENIOR' | null;
   @ApiProperty({ nullable: true }) websiteUrl!: string | null;
   @ApiProperty({ nullable: true }) githubUsername!: string | null;
   @ApiProperty({ nullable: true }) linkedinUsername!: string | null;

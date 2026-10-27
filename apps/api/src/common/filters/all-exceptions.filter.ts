@@ -61,6 +61,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
         };
       }
 
+      // Le throttler renvoie un texte anglais technique ; on le remplace par un message lisible.
+      if (status === 429) {
+        return {
+          status,
+          body: { error: { code: 'COMMON_TOO_MANY_REQUESTS', message: 'Trop de requêtes. Réessayez dans un instant.' } },
+        };
+      }
+
       const message = typeof messages === 'string' ? messages : exception.message;
       return {
         status,
