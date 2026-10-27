@@ -3,6 +3,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angul
 import { of, throwError } from 'rxjs';
 import { PostDetailComponent } from './post-detail.component';
 import { ForumPostDetail, ForumService } from '../../../core/services/forum.service';
+import { ModerationService } from '../../../core/services/moderation.service';
 import { VotesService } from '../../../core/services/votes.service';
 import { AuthStore } from '../../../core/store/auth.store';
 
@@ -83,6 +84,7 @@ describe('PostDetailComponent', () => {
         { provide: ForumService, useValue: forumStub },
         { provide: AuthStore, useValue: authStub },
         { provide: VotesService, useValue: votesStub },
+        { provide: ModerationService, useValue: { report: jest.fn(() => of({})) } },
         {
           provide: ActivatedRoute,
           useValue: { paramMap: of(convertToParamMap({ id: DETAIL.id })) },
@@ -191,6 +193,13 @@ describe('PostDetailComponent', () => {
   it('should not offer to vote on the viewer\'s own question', () => {
     expect(fixture.nativeElement.querySelector('[aria-label="Voter pour cette question"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('[aria-label="Voter pour cette réponse"]')).toBeTruthy();
+  });
+
+  it('should offer to report an answer of another member', () => {
+    const buttons = Array.from(fixture.nativeElement.querySelectorAll('app-report-button button') as NodeListOf<HTMLButtonElement>);
+
+    // L'auteur de la question ne signale pas sa propre question, mais bien la réponse d'un autre membre.
+    expect(buttons.map((button) => button.textContent?.trim())).toEqual(['Signaler']);
   });
 
   it('should vote on an answer and show the new score', () => {

@@ -106,6 +106,8 @@
             </a>
           }
 
+          <app-report-button entityType="POST" [entityId]="question.id" [authorId]="question.userId" />
+
           @if (canDelete()) {
             <button
               type="button"
@@ -215,6 +217,7 @@
                       <button type="button" aria-label="Voter contre cette réponse" (click)="voteOnAnswer(answer, 'DOWN')" [disabled]="pendingActionId() === answer.id" class="inline-flex size-8 items-center justify-center rounded-full border border-[#E2E8F0] text-[#475569] transition-colors hover:border-ink hover:text-ink disabled:opacity-50"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     </span>
                   }
+                  <app-report-button entityType="ANSWER" [entityId]="answer.id" [authorId]="answer.user.id" />
                   @if (canAccept(answer)) {
                     <button
                       type="button"
