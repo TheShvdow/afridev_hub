@@ -3,6 +3,19 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+/** Niveau d'expérience déclaré (enum `ExperienceLevel` de l'API). */
+export type ExperienceLevel = 'JUNIOR' | 'MID' | 'SENIOR';
+
+export const EXPERIENCE_LEVELS: { value: ExperienceLevel; label: string }[] = [
+  { value: 'JUNIOR', label: 'Junior' },
+  { value: 'MID', label: 'Confirmé' },
+  { value: 'SENIOR', label: 'Senior' },
+];
+
+/** Contraintes de `UpdateUserDto.stack` : 10 technologies au plus, 30 caractères chacune. */
+export const MAX_STACK_ITEMS = 10;
+export const MAX_STACK_ITEM_LENGTH = 30;
+
 /**
  * Champs acceptés par `PATCH /api/users/me`.
  * L'API rejette tout champ non déclaré (`forbidNonWhitelisted`) : n'envoyer
@@ -12,6 +25,8 @@ export interface UpdateProfileDto {
   displayName?: string | null;
   bio?: string | null;
   location?: string | null;
+  country?: string | null;
+  level?: ExperienceLevel | null;
   stack?: string[];
   websiteUrl?: string | null;
   githubUsername?: string | null;
@@ -25,6 +40,8 @@ export interface MyProfile {
   username: string;
   displayName: string | null;
   bio: string | null;
+  country: string | null;
+  level: ExperienceLevel | null;
   stack: string[];
   reputation: number;
   isVerified: boolean;
@@ -37,6 +54,9 @@ export interface PublicUserProfile {
   bio: string | null;
   avatarUrl: string | null;
   location: string | null;
+  country: string | null;
+  stack: string[];
+  level: ExperienceLevel | null;
   websiteUrl: string | null;
   githubUsername: string | null;
   linkedinUsername: string | null;

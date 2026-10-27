@@ -177,7 +177,7 @@ describe('Connexion', () => {
 
     const profile = controller.expectOne(`${API}/users/me`);
     expect(profile.request.method).toBe('PATCH');
-    expect(profile.request.body).toEqual({ bio: 'Spécialité : Développement web' });
+    expect(profile.request.body).toEqual({ stack: ['Développement web'] });
     profile.flush({ data: {} });
 
     expect(sessionStorage.getItem('afridev_pending_speciality')).toBeNull();

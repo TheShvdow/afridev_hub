@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { AuthStore } from '../../../../core/store/auth.store';
+import { CountriesService } from '../../../../core/services/countries.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import {
   MyProfile,
@@ -34,6 +35,9 @@ const PROFILE: PublicUserProfile = {
   bio: 'Développeur full-stack basé à Dakar.',
   avatarUrl: null,
   location: 'Dakar, Sénégal',
+  country: 'SN',
+  stack: ['TypeScript', 'NestJS'],
+  level: 'MID',
   websiteUrl: 'https://idy.dev',
   githubUsername: 'idy-dev',
   linkedinUsername: 'idrissa-wade',
@@ -50,7 +54,9 @@ const UPDATED: MyProfile = {
   username: USER_ME.username,
   displayName: 'Idrissa W.',
   bio: PROFILE.bio,
-  stack: [],
+  country: 'SN',
+  level: 'MID',
+  stack: ['TypeScript', 'NestJS'],
   reputation: USER_ME.reputation,
   isVerified: USER_ME.isVerified,
 };
@@ -58,6 +64,15 @@ const UPDATED: MyProfile = {
 const usersStub = {
   getPublicProfile: jest.fn(() => of(PROFILE)),
   updateProfile: jest.fn(() => of(UPDATED)),
+};
+
+const countriesStub = {
+  list: jest.fn(() =>
+    of([
+      { code: 'SN', alpha3: 'SEN', name: 'Sénégal', region: 'AFRICA' as const },
+      { code: 'CI', alpha3: 'CIV', name: "Côte d'Ivoire", region: 'AFRICA' as const },
+    ]),
+  ),
 };
 
 const authStub = {
@@ -93,6 +108,7 @@ describe('AccountComponent', () => {
       providers: [
         provideRouter([]),
         { provide: UsersService, useValue: usersStub },
+        { provide: CountriesService, useValue: countriesStub },
         { provide: AuthStore, useValue: authStub },
         { provide: ToastService, useValue: toastStub },
       ],
@@ -118,6 +134,9 @@ describe('AccountComponent', () => {
       displayName: PROFILE.displayName,
       bio: PROFILE.bio,
       location: PROFILE.location,
+      country: 'SN',
+      level: 'MID',
+      stack: 'TypeScript, NestJS',
       websiteUrl: PROFILE.websiteUrl,
       githubUsername: PROFILE.githubUsername,
       linkedinUsername: PROFILE.linkedinUsername,
@@ -147,6 +166,9 @@ describe('AccountComponent', () => {
       displayName: 'Idrissa W.',
       bio: PROFILE.bio,
       location: PROFILE.location,
+      country: 'SN',
+      level: 'MID',
+      stack: ['TypeScript', 'NestJS'],
       websiteUrl: null,
       githubUsername: 'idy-dev',
       linkedinUsername: PROFILE.linkedinUsername,
@@ -159,6 +181,56 @@ describe('AccountComponent', () => {
     });
     expect(component.profile()?.displayName).toBe('Idrissa W.');
     expect(component.form.pristine).toBe(true);
+  });
+
+  it('should offer the countries returned by the API and keep the saved one selected', () => {
+    const select = fixture.nativeElement.querySelector('select[formcontrolname="country"]') as HTMLSelectElement;
+    const labels = Array.from(select.options).map((option) => option.textContent?.trim());
+
+    expect(labels).toEqual(['Non renseigné', 'Sénégal', "Côte d'Ivoire"]);
+    expect(select.value).toBe('SN');
+  });
+
+  it('should show the five conditions of the verified badge and which ones are met', () => {
+    const items = Array.from(
+      fixture.nativeElement.querySelectorAll('ul[aria-label="Conditions du badge dev vérifié"] li'),
+    ) as HTMLElement[];
+
+    expect(items).toHaveLength(5);
+    // La bio de test ne fait que 36 caractères : c'est la seule condition à compléter.
+    const toComplete = items.filter((item) => item.textContent?.includes('(à compléter)'));
+    expect(toComplete).toHaveLength(1);
+    expect(toComplete[0].textContent).toContain('Biographie');
+    expect(component.badgeReached()).toBe(false);
+  });
+
+  it('should update the badge checklist as the bio grows to 50 characters', () => {
+    component.form.controls.bio.setValue('a'.repeat(50));
+    fixture.detectChanges();
+
+    expect(component.badgeReached()).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('enregistrez pour recevoir le badge');
+  });
+
+  it('should send the stack as a list parsed from the comma separated input', () => {
+    component.form.patchValue({ stack: ' Angular, docker ,, ANGULAR ', country: '', level: '' });
+    component.form.markAsDirty();
+
+    component.submit();
+
+    expect(usersStub.updateProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ stack: ['Angular', 'docker'], country: null, level: null }),
+    );
+  });
+
+  it('should not submit a stack of more than ten technologies', () => {
+    component.form.controls.stack.setValue('a,b,c,d,e,f,g,h,i,j,k');
+    component.form.markAsDirty();
+
+    component.submit();
+
+    expect(usersStub.updateProfile).not.toHaveBeenCalled();
+    expect(component.form.controls.stack.errors).toEqual({ stackTooMany: true });
   });
 
   it('should not submit an invalid form', () => {

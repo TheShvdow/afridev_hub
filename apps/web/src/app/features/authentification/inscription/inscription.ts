@@ -43,7 +43,7 @@ export class Inscription {
   readonly specialities = [
     'Développement web',
     'Applications mobiles',
-    'Data & intelligence artificielle',
+    'Data & IA',
     'DevOps & Cloud',
     'UI/UX Design',
   ];
