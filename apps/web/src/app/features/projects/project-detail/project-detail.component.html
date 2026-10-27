@@ -245,7 +245,13 @@
 
   @if (confirmingDelete()) {
     <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
-      <div class="absolute inset-0 bg-[#0F1011]/50" (click)="cancelDelete()"></div>
+      <button
+        type="button"
+        tabindex="-1"
+        aria-label="Fermer"
+        class="absolute inset-0 cursor-default bg-[#0F1011]/50"
+        (click)="cancelDelete()"
+      ></button>
 
       <div
         role="dialog"

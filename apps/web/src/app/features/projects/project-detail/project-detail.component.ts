@@ -5,6 +5,7 @@ import {
   computed,
   inject,
   signal,
+  HostListener,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -272,6 +273,11 @@ export class ProjectDetailComponent implements OnInit {
     if (!this.canDelete()) return;
     this.deleteError.set(null);
     this.confirmingDelete.set(true);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.confirmingDelete()) this.cancelDelete();
   }
 
   cancelDelete(): void {

@@ -1,5 +1,9 @@
 <article
+  tabindex="0"
+  role="button"
   (click)="selected.emit(job())"
+  (keydown.enter)="selected.emit(job())"
+  (keydown.space)="$event.preventDefault(); selected.emit(job())"
   class="flex cursor-pointer flex-col rounded-[14px] bg-[#F8FAFC] py-[16px] px-[20px] transition-shadow hover:shadow-md"
 >
   <div class="flex items-center gap-[16px]">

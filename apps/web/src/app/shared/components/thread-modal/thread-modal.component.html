@@ -3,7 +3,13 @@
   [class.pointer-events-none]="!thread()"
   [class.opacity-0]="!thread()"
 >
-  <div class="absolute inset-0 bg-[#0F1011]/50" (click)="close()"></div>
+  <button
+    type="button"
+    tabindex="-1"
+    aria-label="Fermer"
+    class="absolute inset-0 cursor-default bg-[#0F1011]/50"
+    (click)="close()"
+  ></button>
 
   <div
     role="dialog"
