@@ -19,6 +19,8 @@ export const configValidationSchema = Joi.object({
   MODERATION_AUTO_HIDE_THRESHOLD: Joi.number().integer().min(1).default(3),
 
   // ── Optional ──────────────────────────────────────────────────────────────
+  // Origines CORS supplémentaires, séparées par des virgules (en plus de WEB_URL).
+  CORS_ORIGINS:                  Joi.string().optional().allow(''),
   // Jeton GitHub (lecture seule, sans scope) : relève la limite de 60 à 5 000 requêtes/heure
   // pour l'import des stats des projets (FR-23). Optionnel.
   GITHUB_API_TOKEN:              Joi.string().optional().allow(''),
