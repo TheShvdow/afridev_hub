@@ -48,6 +48,18 @@ const forumStub = {
       meta: { total: data.length, page: query.page ?? 1, limit: query.limit ?? 20, totalPages: 1 },
     });
   },
+  // La modale charge la question complète à son ouverture.
+  getPost(id: string) {
+    const post = POSTS.find((item) => item.id === id) ?? POSTS[0];
+    return of({
+      ...post,
+      userId: post.user.id,
+      body: 'Contenu de la question.',
+      isHidden: false,
+      updatedAt: post.createdAt,
+      answers: [],
+    });
+  },
 };
 
 describe('PostListComponent', () => {
