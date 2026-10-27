@@ -20,6 +20,17 @@ const GENERIC_CODE: Partial<Record<number, ErrorCode>> = {
   503: 'COMMON_SERVICE_UNAVAILABLE',
 };
 
+// Messages anglais par défaut de NestJS (guards, route inconnue) ; un message métier explicite est conservé.
+const FRENCH_DEFAULT: Record<string, string> = {
+  Unauthorized: 'Authentification requise.',
+  Forbidden: "Vous n'avez pas le droit d'effectuer cette action.",
+  'Forbidden resource': "Vous n'avez pas le droit d'effectuer cette action.",
+  'Not Found': 'Ressource introuvable.',
+  Conflict: 'Conflit avec l\'état actuel de la ressource.',
+  'Bad Request': 'Requête invalide.',
+  'Service Unavailable': 'Service momentanément indisponible.',
+};
+
 // Enveloppe d'erreur AD-7 : { error: { code, message, details? } }.
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -69,7 +80,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
         };
       }
 
-      const message = typeof messages === 'string' ? messages : exception.message;
+      const raw = typeof messages === 'string' ? messages : exception.message;
+      const message = /^Cannot (GET|POST|PUT|PATCH|DELETE) /.test(raw)
+        ? 'Ressource introuvable.'
+        : (FRENCH_DEFAULT[raw] ?? raw);
       return {
         status,
         body: { error: { code: GENERIC_CODE[status] ?? 'COMMON_BAD_REQUEST', message } },

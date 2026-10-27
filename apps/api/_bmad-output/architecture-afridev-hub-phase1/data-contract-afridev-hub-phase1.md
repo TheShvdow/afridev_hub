@@ -193,6 +193,9 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 | E10 | Règle « l'auteur d'une question ne peut pas y répondre » non appliquée. | `forum.service.ts` | **Résolu** : contrôle `FORUM_SELF_ANSWER_FORBIDDEN`, couvert par un test. |
 | E11 | Le paquet `@nestjs/testing` installé n'avait pas ses fichiers `.d.ts`. | `node_modules` | **Résolu** : installation complète constatée ; `nx test api` passe (voir section 8 pour le nombre à jour). |
 | E12 | Enum `PaymentProvider`, webhooks et service étaient écrits pour Wave, Orange Money, MTN MoMo et Stripe. | `schema.prisma`, `payments/` | **Résolu** pour le code (48a1f52). **Reste ouvert** : format du webhook et auth du remboursement à valider en sandbox (voir `bictorys-integration-notes.md`). |
+| E13 | Réponse ≥ 30 caractères (glossaire) non vérifiée : `CreateAnswerDto` n'avait qu'un `MaxLength`. | `create-answer.dto.ts`, front | **Résolu** : `@MinLength(30)` (hérité par `UpdateAnswerDto`) et validateur du front sur le texte rogné. |
+| E14 | Le front laissait les modérateurs ouvrir toutes les pages `/admin`, alors que `/admin/*` est réservé aux ADMIN. | `admin.routes.ts` | **Résolu** : seule la page des signalements (`/moderation/*`) reste ouverte aux modérateurs. |
+| E15 | Messages anglais du framework (401, 403, 404) dans l'enveloppe AD-7. | `all-exceptions.filter.ts` | **Résolu** : traduits ; un message métier explicite est conservé. |
 
 ## 7. Vérification (2026-10-14)
 
@@ -211,3 +214,10 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 - **Avatars** : `PATCH /api/users/me/avatar` prend la clé de l'objet et vérifie sa présence dans R2 (`HeadObject`). Le téléversement multipart est retiré.
 - **Paiements** : confirmation par l'API de statut et réconciliation planifiée. Voir `bictorys-integration-notes.md`, section « Confirmation et réconciliation ».
 - **Écarts restants** : E5 (corps du refresh côté front, hors périmètre), E12 (format du webhook et remboursement, à valider en sandbox), carte bloquée côté Bictorys.
+
+## 9. Alignement du front (2026-10-27)
+
+- **`GET /users/:username`** renvoie aussi `country`, `stack` et `level` (jamais l'e-mail). `UserProfileDto` (Swagger) et le type `PublicUserProfile` du front suivent.
+- **Badge « Développeur vérifié »** : la page « Mon compte » permet de saisir pays, niveau, stack et bio (≥ 50 caractères) et affiche la liste des conditions (`verifiedBadgeCriteria`, miroir de `isVerifiedProfile`). Limites de la stack : 10 éléments, 30 caractères chacun.
+- **Réponse ≥ 30 caractères** appliquée des deux côtés (E13). **Accès admin** aligné (E14). **429** : message français `COMMON_TOO_MANY_REQUESTS`.
+- **Fonctions Phase 1 sans écran** (à ouvrir en tickets front) : offres d'emploi branchées sur `/jobs`, vote, acceptation et modification d'une réponse, signalement, notifications, pages d'administration, paiements et plan recruteur. Mentorat et communautés sont en phase 2 ; leurs pages restent des vitrines à données statiques.

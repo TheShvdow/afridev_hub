@@ -1,4 +1,4 @@
-import { BadRequestException, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, UnauthorizedException, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { AllExceptionsFilter } from './all-exceptions.filter';
 import { DomainException } from '../errors/domain.exception';
 
@@ -29,7 +29,13 @@ describe('AllExceptionsFilter (AD-7)', () => {
   it('maps a framework HttpException to its generic COMMON_* code', () => {
     const { status, body } = run(new NotFoundException('Cannot GET /api/unknown'));
     expect(status).toBe(404);
-    expect(body).toEqual({ error: { code: 'COMMON_NOT_FOUND', message: 'Cannot GET /api/unknown' } });
+    expect(body).toEqual({ error: { code: 'COMMON_NOT_FOUND', message: 'Ressource introuvable.' } });
+  });
+
+  it('translates the default English guard messages and keeps explicit ones', () => {
+    expect(run(new UnauthorizedException()).body.error.message).toBe('Authentification requise.');
+    expect(run(new ForbiddenException()).body.error.message).toBe("Vous n'avez pas le droit d'effectuer cette action.");
+    expect(run(new ForbiddenException('Réservé aux administrateurs.')).body.error.message).toBe('Réservé aux administrateurs.');
   });
 
   it('replaces the throttler message by a readable French one on 429', () => {
