@@ -125,4 +125,20 @@ export class JobsService {
   apply(id: string, dto: { message: string }): Observable<JobApplication> {
     return this.http.post<JobApplication>(`${this.base}/${encodeURIComponent(id)}/apply`, dto);
   }
+
+  /** `GET /api/jobs/review` — offres en attente de validation (modérateur). */
+  listPendingReview(page = 1): Observable<Paginated<JobOffer>> {
+    const params = new HttpParams().set('page', page);
+    return this.http.get<Paginated<JobOffer>>(`${this.base}/review`, { params });
+  }
+
+  /** `PATCH /api/jobs/{id}/approve` */
+  approve(id: string): Observable<JobOffer> {
+    return this.http.patch<JobOffer>(`${this.base}/${encodeURIComponent(id)}/approve`, {});
+  }
+
+  /** `PATCH /api/jobs/{id}/reject` — motif de 5 à 500 caractères. */
+  reject(id: string, reason: string): Observable<JobOffer> {
+    return this.http.patch<JobOffer>(`${this.base}/${encodeURIComponent(id)}/reject`, { reason });
+  }
 }

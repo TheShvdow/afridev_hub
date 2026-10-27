@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NotificationsService } from '../../core/services/notifications.service';
 import { AuthStore } from '../../core/store/auth.store';
@@ -26,6 +26,12 @@ export class Navbar {
     { label: 'Emplois', link: '/jobs' },
     { label: 'Communautés', link: '/communautes' },
   ];
+
+  /** Les modérateurs et administrateurs accèdent à l'administration. */
+  readonly canModerate = computed(() => {
+    const role = this.authStore.currentUser()?.role;
+    return role === 'MODERATOR' || role === 'ADMIN';
+  });
 
   toggleUserMenu(event: Event): void {
     event.stopPropagation();

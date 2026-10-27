@@ -1,7 +1,8 @@
 import { Routes } from '@angular/router';
 import { roleGuard } from '../../core/guards/role.guard';
 
-// L'API réserve /admin/* aux ADMIN ; seuls les signalements (/moderation/*) restent ouverts aux modérateurs.
+// L'API réserve /admin/* aux ADMIN ; signalements (/moderation/*) et offres à valider (/jobs/review)
+// restent ouverts aux modérateurs.
 const ADMIN_ONLY = { canActivate: [roleGuard], data: { roles: ['ADMIN'] } };
 
 export const ADMIN_ROUTES: Routes = [
@@ -29,22 +30,12 @@ export const ADMIN_ROUTES: Routes = [
         title: 'Utilisateurs — Admin',
       },
       {
-        path: 'projects',
-        ...ADMIN_ONLY,
-        loadComponent: () =>
-          import('./projects/admin-projects.component').then(
-            (m) => m.AdminProjectsComponent
-          ),
-        title: 'Projets à approuver — Admin',
-      },
-      {
         path: 'jobs',
-        ...ADMIN_ONLY,
         loadComponent: () =>
           import('./jobs/admin-jobs.component').then(
             (m) => m.AdminJobsComponent
           ),
-        title: 'Offres d\'emploi — Admin',
+        title: 'Offres à valider — Admin',
       },
       {
         path: 'audit',
