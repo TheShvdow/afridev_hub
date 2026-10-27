@@ -122,6 +122,12 @@
           <div class="flex flex-col items-center justify-center rounded-2xl bg-[#F8FAFC] px-3 py-3">
             <span class="text-[22px] font-semibold leading-[30px] text-[#141219]">{{ question.voteScore }}</span>
             <span class="text-[13px] leading-[20px] text-[#64748B]">votes</span>
+            @if (canVote(question.userId)) {
+              <div class="mt-2 flex gap-2">
+                <button type="button" aria-label="Voter pour cette question" (click)="voteOnQuestion('UP')" [disabled]="pendingActionId() === question.id" class="inline-flex size-8 items-center justify-center rounded-full border border-[#E2E8F0] text-[#475569] transition-colors hover:border-ink hover:text-ink disabled:opacity-50"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 15l6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button type="button" aria-label="Voter contre cette question" (click)="voteOnQuestion('DOWN')" [disabled]="pendingActionId() === question.id" class="inline-flex size-8 items-center justify-center rounded-full border border-[#E2E8F0] text-[#475569] transition-colors hover:border-ink hover:text-ink disabled:opacity-50"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            }
           </div>
           <div class="flex flex-col items-center justify-center rounded-2xl bg-[#F8FAFC] px-3 py-3">
             <span class="text-[22px] font-semibold leading-[30px] text-[#141219]">{{ question.viewCount }}</span>
@@ -203,6 +209,22 @@
                   <span class="rounded-full bg-[#F8FAFC] px-3 py-1 text-[13px] font-medium text-[#64748B]">
                     {{ answer.voteScore }} votes
                   </span>
+                  @if (canVote(answer.user.id)) {
+                    <span class="flex gap-2">
+                      <button type="button" aria-label="Voter pour cette réponse" (click)="voteOnAnswer(answer, 'UP')" [disabled]="pendingActionId() === answer.id" class="inline-flex size-8 items-center justify-center rounded-full border border-[#E2E8F0] text-[#475569] transition-colors hover:border-ink hover:text-ink disabled:opacity-50"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 15l6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                      <button type="button" aria-label="Voter contre cette réponse" (click)="voteOnAnswer(answer, 'DOWN')" [disabled]="pendingActionId() === answer.id" class="inline-flex size-8 items-center justify-center rounded-full border border-[#E2E8F0] text-[#475569] transition-colors hover:border-ink hover:text-ink disabled:opacity-50"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    </span>
+                  }
+                  @if (canAccept(answer)) {
+                    <button
+                      type="button"
+                      (click)="acceptAnswer(answer)"
+                      [disabled]="pendingActionId() === answer.id"
+                      class="rounded-full border border-[#0F6932] px-3 py-1 text-[13px] font-semibold text-[#0F6932] transition-colors hover:bg-[#F0FDF4] disabled:opacity-50"
+                    >
+                      Accepter cette réponse
+                    </button>
+                  }
                 </div>
 
                 <p class="mt-4 whitespace-pre-line break-words text-[16px] leading-[26px] text-[#475569]">

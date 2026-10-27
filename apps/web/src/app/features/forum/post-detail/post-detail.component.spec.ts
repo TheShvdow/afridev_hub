@@ -3,6 +3,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angul
 import { of, throwError } from 'rxjs';
 import { PostDetailComponent } from './post-detail.component';
 import { ForumPostDetail, ForumService } from '../../../core/services/forum.service';
+import { VotesService } from '../../../core/services/votes.service';
 import { AuthStore } from '../../../core/store/auth.store';
 
 const DETAIL: ForumPostDetail = {
@@ -49,6 +50,12 @@ const forumStub = {
   getPost: jest.fn(() => of(DETAIL)),
   deletePost: jest.fn(() => of(undefined)),
   deleteAnswer: jest.fn(() => of(undefined)),
+  acceptAnswer: jest.fn(() => of({})),
+};
+
+const votesStub = {
+  votePost: jest.fn(() => of({ action: 'added', newScore: 4 })),
+  voteAnswer: jest.fn(() => of({ action: 'added', newScore: 2 })),
 };
 
 const authStub = {
@@ -64,6 +71,9 @@ describe('PostDetailComponent', () => {
     forumStub.getPost.mockClear();
     forumStub.deletePost.mockClear();
     forumStub.deleteAnswer.mockClear();
+    forumStub.acceptAnswer.mockClear();
+    votesStub.votePost.mockClear();
+    votesStub.voteAnswer.mockClear();
     authStub.currentUser.mockReturnValue({ id: DETAIL.userId, role: 'MEMBER' });
 
     await TestBed.configureTestingModule({
@@ -72,6 +82,7 @@ describe('PostDetailComponent', () => {
         provideRouter([]),
         { provide: ForumService, useValue: forumStub },
         { provide: AuthStore, useValue: authStub },
+        { provide: VotesService, useValue: votesStub },
         {
           provide: ActivatedRoute,
           useValue: { paramMap: of(convertToParamMap({ id: DETAIL.id })) },
@@ -176,5 +187,34 @@ describe('PostDetailComponent', () => {
     expect(notFoundFixture.nativeElement.textContent).toContain('Question introuvable');
 
     notFoundFixture.destroy();
+  });
+  it('should not offer to vote on the viewer\'s own question', () => {
+    expect(fixture.nativeElement.querySelector('[aria-label="Voter pour cette question"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[aria-label="Voter pour cette réponse"]')).toBeTruthy();
+  });
+
+  it('should vote on an answer and show the new score', () => {
+    const button = fixture.nativeElement.querySelector('[aria-label="Voter pour cette réponse"]') as HTMLButtonElement;
+    button.click();
+    fixture.detectChanges();
+
+    expect(votesStub.voteAnswer).toHaveBeenCalledWith('answer-1', 'UP');
+    expect(fixture.componentInstance.post()?.answers[0].voteScore).toBe(2);
+  });
+
+  it('should let the question author accept another answer', () => {
+    const component = fixture.componentInstance;
+    const other = { ...DETAIL.answers[0], id: 'answer-2', isAccepted: false };
+    component.post.set({ ...DETAIL, isResolved: false, answers: [{ ...DETAIL.answers[0], isAccepted: false }, other] });
+    fixture.detectChanges();
+
+    const accept = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+      .filter((button) => button.textContent?.includes('Accepter cette réponse'))[1];
+    accept.click();
+    fixture.detectChanges();
+
+    expect(forumStub.acceptAnswer).toHaveBeenCalledWith('answer-2');
+    expect(component.post()?.answers.map((answer) => answer.isAccepted)).toEqual([false, true]);
+    expect(component.post()?.isResolved).toBe(true);
   });
 });

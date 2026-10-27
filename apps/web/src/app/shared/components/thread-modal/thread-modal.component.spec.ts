@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 import { ThreadModalComponent } from './thread-modal.component';
 import { Thread } from '../card-thread/card-thread.component';
 import { ForumAnswer, ForumPostDetail, ForumService } from '../../../core/services/forum.service';
+import { VotesService } from '../../../core/services/votes.service';
 import { AuthStore } from '../../../core/store/auth.store';
 
 const THREAD: Thread = {
@@ -100,6 +101,7 @@ describe('ThreadModalComponent', () => {
         provideRouter([]),
         { provide: ForumService, useValue: forumStub },
         { provide: AuthStore, useValue: authStub },
+        { provide: VotesService, useValue: { votePost: jest.fn(), voteAnswer: jest.fn() } },
       ],
     }).compileComponents();
 

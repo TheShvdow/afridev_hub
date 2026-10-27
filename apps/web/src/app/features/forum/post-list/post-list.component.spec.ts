@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { PostListComponent } from './post-list.component';
 import { ForumPost, ForumService, ListPostsQuery } from '../../../core/services/forum.service';
+import { VotesService } from '../../../core/services/votes.service';
 import { AuthStore } from '../../../core/store/auth.store';
 
 function makePost(overrides: Partial<ForumPost> = {}): ForumPost {
@@ -72,6 +73,7 @@ describe('PostListComponent', () => {
       providers: [
         provideRouter([]),
         { provide: ForumService, useValue: forumStub },
+        { provide: VotesService, useValue: { votePost: jest.fn(), voteAnswer: jest.fn() } },
         { provide: AuthStore, useValue: { currentUser: () => null, isAuthenticated: () => false } },
       ],
     }).compileComponents();
