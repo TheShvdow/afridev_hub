@@ -154,6 +154,17 @@ describe('ThreadModalComponent', () => {
     expect(fixture.nativeElement.textContent).toContain(ANSWER.body);
   });
 
+  it('should refuse an answer shorter than 30 characters', () => {
+    const component = fixture.componentInstance;
+    forumStub.createAnswer.mockClear();
+    component.answerForm.setValue({ body: '   Trop court.   ' });
+
+    component.submitAnswer();
+
+    expect(component.answerForm.controls.body.hasError('minlength')).toBe(true);
+    expect(forumStub.createAnswer).not.toHaveBeenCalled();
+  });
+
   it('should delete an answer authored by the current user', () => {
     const component = fixture.componentInstance;
     component.requestAnswerDelete(DETAIL.answers[0].id);

@@ -279,7 +279,7 @@
               ></textarea>
               @if (answerForm.controls.body.touched && answerForm.controls.body.invalid) {
                 <p class="text-[14px] font-medium text-[#FB2C36]">
-                  La réponse est requise.
+                  {{ answerForm.controls.body.hasError('required') ? 'La réponse est requise.' : 'La réponse doit contenir au moins 30 caractères.' }}
                 </p>
               }
 

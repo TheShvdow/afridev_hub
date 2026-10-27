@@ -1,11 +1,21 @@
 import { Directive, WritableSignal, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { FormBuilder, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { ForumAnswer, ForumPostDetail, ForumService } from '../../core/services/forum.service';
 import { AuthStore } from '../../core/store/auth.store';
 import { ToastService } from '../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../core/utils/api-error';
 import { initialsFrom, relativeTime } from '../utils/forum-thread.mapper';
+
+/** Règle du glossaire : une réponse fait au moins 30 caractères (comme `CreateAnswerDto`). */
+export const ANSWER_MIN_LENGTH = 30;
+
+function trimmedMinLength(min: number): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const length = String(control.value ?? '').trim().length;
+    return length > 0 && length < min ? { minlength: { requiredLength: min, actualLength: length } } : null;
+  };
+}
 
 type AuthorLike = { displayName?: string | null; username: string };
 
@@ -26,7 +36,7 @@ export abstract class AnswerThreadBase {
   readonly answerDeleteError = signal<string | null>(null);
 
   readonly answerForm = inject(FormBuilder).nonNullable.group({
-    body: ['', [Validators.required, Validators.maxLength(50000)]],
+    body: ['', [Validators.required, trimmedMinLength(ANSWER_MIN_LENGTH), Validators.maxLength(50000)]],
   });
 
   submitAnswer(): void {
