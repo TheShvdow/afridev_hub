@@ -14,7 +14,7 @@ const inFlight = new Map<string, Observable<HttpEvent<unknown>>>();
 /** Identifiant du membre porté par un jeton JWT (`sub`), ou null si le jeton est illisible. */
 function subjectOf(token: string): string | null {
   try {
-    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = token.split('.')[1].replaceAll('-', '+').replaceAll('_', '/');
     const sub = (JSON.parse(atob(payload)) as { sub?: unknown }).sub;
     return typeof sub === 'string' && sub ? sub : null;
   } catch {
@@ -23,9 +23,9 @@ function subjectOf(token: string): string | null {
 }
 
 /** Numéro de page demandé (1 sans paramètre `page`). */
-const pageOf = (urlWithParams: string): number => Number(new URL(urlWithParams, 'http://local').searchParams.get('page') ?? 1) || 1;
+const pageOf = (urlWithParams: string): number => Number(new URL(urlWithParams, 'https://local.invalid').searchParams.get('page') ?? 1) || 1;
 
-const copy = <T>(value: T): T => (value === undefined ? value : (JSON.parse(JSON.stringify(value)) as T));
+const copy = <T>(value: T): T => (value === undefined ? value : structuredClone(value));
 
 /**
  * Cache des lectures, « périmé mais affiché » :

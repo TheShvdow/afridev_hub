@@ -22,8 +22,8 @@ const HARMLESS_WRITES: RegExp[] = [/^\/auth\/refresh$/, /^\/notifications(\/|$)/
 /** Chemin de la requête sous l'URL de l'API (`/forum/posts`), ou null si elle vise un autre serveur. */
 export function apiPath(url: string, apiUrl: string): string | null {
   try {
-    const target = new URL(url, 'http://local');
-    const base = new URL(apiUrl, 'http://local');
+    const target = new URL(url, 'https://local.invalid');
+    const base = new URL(apiUrl, 'https://local.invalid');
     if (target.origin !== base.origin || !target.pathname.startsWith(base.pathname)) return null;
     return target.pathname.slice(base.pathname.replace(/\/$/, '').length) || '/';
   } catch {

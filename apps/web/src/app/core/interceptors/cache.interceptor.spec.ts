@@ -149,8 +149,9 @@ describe('cacheInterceptor', () => {
     http.post(LIST, {}).subscribe({ error: () => undefined });
     backend.expectOne({ method: 'POST', url: LIST }).flush('no', { status: 400, statusText: 'Bad Request' });
 
-    get();
+    const seen = get();
     backend.expectNone(LIST);
+    expect(seen).toEqual([{ data: ['kept'] }]);
   });
 
   it('does not store a read that finished after the cache was cleared', () => {
@@ -160,8 +161,9 @@ describe('cacheInterceptor', () => {
     TestBed.inject(HttpCacheService).clear();
     pending.flush({ data: ['late'] });
 
-    get();
+    const seen = get();
     backend.expectOne(LIST).flush({ data: ['current'] });
+    expect(seen).toEqual([{ data: ['current'] }]);
   });
 
   it('keeps each member\'s data apart', () => {
@@ -181,29 +183,35 @@ describe('cacheInterceptor', () => {
     token = jwtFor('u7');
     get();
     backend.expectOne(LIST).flush({ data: ['mine'] });
-    get();
+    const again = get();
     backend.expectNone(LIST);
+    expect(again).toEqual([{ data: ['mine'] }]);
 
     // Le même jeton, profil chargé : c'est la même entrée.
     user = { id: 'u7' };
-    get();
+    const loaded = get();
     backend.expectNone(LIST);
+    expect(loaded).toEqual([{ data: ['mine'] }]);
   });
 
   it('skips the cache when the token cannot be read', () => {
     user = null;
     token = 'not-a-jwt';
-    get();
+    const first = get();
     backend.expectOne(LIST).flush({ data: [1] });
-    get();
-    backend.expectOne(LIST).flush({ data: [1] });
+    const second = get();
+    backend.expectOne(LIST).flush({ data: [2] });
+    expect(first).toEqual([{ data: [1] }]);
+    expect(second).toEqual([{ data: [2] }]);
   });
 
   it('never caches private or volatile reads', () => {
-    get(PLAN);
+    const first = get(PLAN);
     backend.expectOne(PLAN).flush({ data: { planType: 'FREE' } });
-    get(PLAN);
+    const second = get(PLAN);
     backend.expectOne(PLAN).flush({ data: { planType: 'PREMIUM' } });
+    expect(first).toEqual([{ data: { planType: 'FREE' } }]);
+    expect(second).toEqual([{ data: { planType: 'PREMIUM' } }]);
   });
 
   it('hands out copies: changing a result does not change the cache', () => {

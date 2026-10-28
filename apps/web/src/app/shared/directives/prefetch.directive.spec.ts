@@ -29,13 +29,17 @@ describe('PrefetchDirective', () => {
   it('loads the page when the pointer reaches the link', () => {
     const { link, backend } = setup();
     link.dispatchEvent(new Event('mouseenter'));
-    backend!.expectOne(`${environment.apiUrl}/forum/posts/abc`).flush({});
+    const request = backend!.expectOne(`${environment.apiUrl}/forum/posts/abc`);
+    expect(request.request.method).toBe('GET');
+    request.flush({});
   });
 
   it('loads the page when the link gets the focus', () => {
     const { link, backend } = setup();
     link.dispatchEvent(new Event('focus'));
-    backend!.expectOne(`${environment.apiUrl}/forum/posts/abc`).flush({});
+    const request = backend!.expectOne(`${environment.apiUrl}/forum/posts/abc`);
+    expect(request.request.method).toBe('GET');
+    request.flush({});
   });
 
   it('loads nothing without a path', () => {
@@ -43,14 +47,14 @@ describe('PrefetchDirective', () => {
     fixture.componentInstance.path.set(null);
     fixture.detectChanges();
     link.dispatchEvent(new Event('mouseenter'));
-    backend!.expectNone(() => true);
+    expect(backend!.match(() => true)).toHaveLength(0);
   });
 
   it('does nothing when the browser asks to save data', () => {
     const { link, backend } = setup();
     Object.defineProperty(navigator, 'connection', { value: { saveData: true }, configurable: true });
     link.dispatchEvent(new Event('mouseenter'));
-    backend!.expectNone(() => true);
+    expect(backend!.match(() => true)).toHaveLength(0);
     Reflect.deleteProperty(navigator, 'connection');
   });
 
