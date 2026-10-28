@@ -1,0 +1,53 @@
+@startuml
+title Plan premium : paiement Bictorys de bout en bout
+autonumber
+actor Recruteur
+participant Front
+participant API
+database Base
+participant Bictorys
+participant Notifications
+participant "E-mail" as Mail
+
+Recruteur -> Front : ouvre /jobs/plan
+Front -> API : GET /jobs/plan et GET /payments/products
+API --> Front : plan gratuit + produit à 25 000 XOF
+Recruteur -> Front : « Passer en premium »
+Front -> API : POST /payments/initiate (produit)
+API -> Base : paiement « en attente » + commission
+API -> Bictorys : POST /pay/v1/charges (sans moyen de paiement)
+Bictorys --> API : 202 lien de paiement + identifiant de charge
+API --> Front : adresse de la page de paiement
+Front -> Front : accepte seulement une adresse https
+Front -> Recruteur : redirige vers Bictorys
+
+== Sur la page Bictorys ==
+Recruteur -> Bictorys : choisit Wave, Orange Money ou carte et paie
+note right of Bictorys
+  Les frais du client s'ajoutent au prix :
+  25 000 devient 25 507,53 en sandbox.
+end note
+
+par confirmation côté serveur
+  Bictorys -> API : POST /payments/webhooks/bictorys
+  API -> API : vérifie la signature, le montant (prix ou prix + frais) et la devise
+  API -> Bictorys : GET /pay/v1/transactions/{id du paiement}/status
+  Bictorys --> API : succeeded
+  API -> Base : paiement capturé et plan premium actif 30 jours
+  API ->> Notifications : payments.payment.captured
+  Notifications -> Base : notification « Paiement confirmé »
+  Notifications --> Mail : reçu par e-mail
+else retour du navigateur
+  Bictorys --> Recruteur : redirection vers /payment/result?ref=…
+  loop toutes les 4 s, 15 fois au plus
+    Front -> API : GET /payments/{ref}
+    API --> Front : statut en base (le paramètre de l'URL n'est jamais cru)
+  end
+  Front -> Recruteur : « Paiement confirmé » ou « refusé » ou « en cours de confirmation »
+end
+
+== Filet de sécurité ==
+API -> Base : toutes les 10 min, paiements en attente depuis 5 min à 24 h
+API -> Bictorys : relit le statut de chacun
+API -> Base : règle ceux qui sont réussis ou échoués (une seule fois)
+@enduml

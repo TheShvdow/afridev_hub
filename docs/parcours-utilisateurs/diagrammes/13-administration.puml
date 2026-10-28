@@ -1,0 +1,42 @@
+@startuml
+title Administration : tableau de bord, bannissement, rôles, audit
+autonumber
+actor Administrateur
+actor Membre
+participant Front
+participant API
+database Base
+
+Administrateur -> Front : se connecte
+Front -> API : GET /auth/me
+API --> Front : rôle ADMIN
+Front -> Administrateur : tableau de bord
+
+Front -> API : GET /admin/stats
+API --> Front : indicateurs de succès avec progression
+
+== Bannir puis rétablir un compte ==
+Administrateur -> Front : « Utilisateurs » puis « Bannir »
+Front -> API : POST /moderation/users/ban (utilisateur, motif)
+API -> Base : compte banni + ligne d'audit USER_BANNED
+API --> Front : succès
+Membre -> Front : tente de se connecter
+Front -> API : POST /auth/login
+API --> Front : 403 « Compte suspendu »
+Administrateur -> Front : « Rétablir »
+Front -> API : PATCH /moderation/users/{id}/unban
+API -> Base : compte actif + ligne d'audit USER_UNBANNED
+
+== Rôles et audit ==
+Administrateur -> Front : change le rôle d'un compte
+Front -> API : PATCH /admin/users/{id}/role
+API -> Base : nouveau rôle + ligne d'audit
+Administrateur -> Front : « Journal d'audit »
+Front -> API : GET /admin/audit-log
+API --> Front : actions précédentes
+
+== Un membre sans droit ==
+Membre -> Front : ouvre une page d'administration
+Front -> Front : le garde de route attend /auth/me puis refuse
+Front -> Membre : retour à la connexion
+@enduml

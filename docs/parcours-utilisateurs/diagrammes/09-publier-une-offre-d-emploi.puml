@@ -1,0 +1,49 @@
+@startuml
+title Publier une offre, la faire valider, la corriger
+autonumber
+actor Recruteur
+actor Modérateur
+participant Front
+participant API
+database Base
+participant Notifications
+
+opt première fois
+  Recruteur -> Front : active son profil recruteur (nom de l'entreprise)
+  Front -> API : POST /users/me/recruiter
+end
+
+Recruteur -> Front : remplit le formulaire d'offre
+Front -> API : POST /jobs
+alt quota du plan gratuit non atteint
+  API -> Base : crée l'offre « en attente de validation »
+  API --> Front : offre créée
+  Front -> Recruteur : « elle sera publiée après validation »
+else quota atteint
+  API --> Front : 403 « Passez au plan premium »
+  Front -> Recruteur : lien vers /jobs/plan (parcours 12)
+end
+
+== Validation ==
+Modérateur -> Front : « Offres à valider »
+Front -> API : GET /jobs/review
+alt offre acceptée
+  Front -> API : PATCH /jobs/{id}/approve
+  API -> Base : offre active et visible publiquement
+  API ->> Notifications : jobs.offer.reviewed
+  Notifications -> Base : notification JOB_REVIEWED « Votre offre est publiée »
+  API ->> API : jobs.offer.published\n(recherche des alertes correspondantes, parcours 11)
+else offre refusée
+  Front -> API : PATCH /jobs/{id}/reject (motif)
+  API -> Base : offre refusée
+  API ->> Notifications : jobs.offer.reviewed
+  Notifications -> Base : notification avec le motif
+  Recruteur -> Front : modifie l'offre refusée
+  Front -> API : PATCH /jobs/{id}
+  API -> Base : l'offre repart en validation
+end
+
+== Vie de l'offre ==
+Recruteur -> Front : modifie, clôture ou renouvelle
+Front -> API : PATCH /jobs/{id}, /jobs/{id}/close ou /jobs/{id}/renew
+@enduml
