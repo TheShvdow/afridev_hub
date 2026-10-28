@@ -112,10 +112,24 @@ describe('Navbar', () => {
     const text = fixture.nativeElement.textContent;
 
     expect(text).toContain('idrissa_wade');
+    expect(text).toContain('Tableau de bord');
+    expect(fixture.nativeElement.querySelector('a[routerlink="/tableau-de-bord"]')).toBeTruthy();
     expect(text).toContain('Mon profil');
     expect(text).toContain('Notifications');
     expect(text).toContain('3');
     expect(text).toContain('Déconnexion');
+  });
+
+  it('propose le tableau de bord dans le menu mobile aux membres connectés seulement', () => {
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('button[aria-label="Ouvrir le menu"]').click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('nav ul li a[routerlink="/tableau-de-bord"]')).toBeNull();
+
+    store.setTokens('at-1', 'rt-1');
+    store.setUser(user);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('nav ul li a[routerlink="/tableau-de-bord"]')).toBeTruthy();
   });
 
   it('propose « Mes offres » aux recruteurs seulement', () => {
