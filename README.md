@@ -109,6 +109,10 @@ Le plan recruteur premium se paie par le checkout hébergé de Bictorys : l'API 
 - Les frais payés par le client s'ajoutent au prix (25 000 devient 25 507,53 en sandbox) ; le prix reste fixé par le serveur.
 - Détails vérifiés en sandbox : `apps/api/_bmad-output/architecture-afridev-hub-phase1/bictorys-integration-notes.md`.
 
+## Cache des lectures (front)
+
+`cacheInterceptor` garde en mémoire (et dans `sessionStorage`) les lectures publiques : forum, projets, offres, profils, pays. Moins de 30 s, la réponse vient du cache sans appel ; jusqu'à 10 min, elle s'affiche tout de suite puis la version fraîche la remplace si elle a changé. Toute écriture réussie et toute notification en temps réel vident le cache. Chaque entrée est rangée sous l'identifiant du membre. Le plan, les offres du recruteur, les candidatures, les notifications, les paiements, la modération et l'administration ne sont jamais gardés. Les cartes du forum et des offres chargent la page à l'avance au survol. Règles : `apps/web/src/app/core/cache/cache-policy.ts`.
+
 ## Parcours utilisateurs
 
 Les 14 parcours de l'application sont décrits en diagrammes de séquence PlantUML dans [docs/parcours-utilisateurs](docs/parcours-utilisateurs/README.md), avec les images JPEG rendues.

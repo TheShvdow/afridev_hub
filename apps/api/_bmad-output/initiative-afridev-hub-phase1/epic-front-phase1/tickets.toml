@@ -356,6 +356,7 @@ after = [19]
 hitl = false
 risk = "low"
 
+[[entry]]
 id = 28
 type = "story"
 title = "Cache des lectures côté front"
