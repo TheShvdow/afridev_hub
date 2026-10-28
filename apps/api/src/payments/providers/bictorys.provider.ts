@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PaymentProvider } from '@prisma/client';
 import { DomainException } from '../../common/errors/domain.exception';
+import { normalizeCharge } from './bictorys-charge';
 import type { ChargeRequest, ChargeResponse, IPaymentProvider } from './payment-provider.interface';
 
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -38,7 +39,12 @@ export class BictorysProvider implements IPaymentProvider {
       headers: { 'X-Api-Key': apiKey, 'Content-Type': 'application/json' },
       body:    JSON.stringify(body),
     });
-    return (await response.json()) as ChargeResponse;
+    try {
+      return normalizeCharge(await response.json());
+    } catch (error) {
+      this.logger.error(`Réponse Bictorys inexploitable : ${error instanceof Error ? error.message : String(error)}`);
+      throw new DomainException('PAYMENTS_PROVIDER_ERROR', 'Le fournisseur de paiement a renvoyé une réponse inattendue.', 502);
+    }
   }
 
   async getStatus(transactionId: string): Promise<string> {
