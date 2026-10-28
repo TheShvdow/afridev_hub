@@ -1,7 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { PageHeroComponent } from '../../shared/components/page-hero/page-hero.component';
 import { AppNotification, NotificationsService } from '../../core/services/notifications.service';
+import { RealtimeService } from '../../core/services/realtime.service';
 import { extractApiErrorMessage } from '../../core/utils/api-error';
 import { notificationLink } from '../../core/utils/notification-view';
 import { relativeTime } from '../../shared/utils/forum-thread.mapper';
@@ -17,6 +19,7 @@ const PAGE_SIZE = 20;
 export class NotificationsComponent {
   private readonly api = inject(NotificationsService);
   private readonly router = inject(Router);
+  private readonly realtime = inject(RealtimeService);
 
   readonly items = signal<AppNotification[]>([]);
   readonly unreadCount = signal(0);
@@ -29,6 +32,12 @@ export class NotificationsComponent {
 
   constructor() {
     this.load(1);
+
+    // Une notification reçue pendant que la page est ouverte s'affiche tout de suite, en tête de liste.
+    this.realtime.notification$.pipe(takeUntilDestroyed()).subscribe((notification) => {
+      this.items.update((list) => (list.some((item) => item.id === notification.id) ? list : [notification, ...list]));
+      this.unreadCount.update((count) => count + 1);
+    });
   }
 
   retry(): void {
@@ -52,6 +61,7 @@ export class NotificationsComponent {
       next: () => {
         this.items.update((list) => list.map((item) => ({ ...item, isRead: true })));
         this.unreadCount.set(0);
+        this.realtime.unreadCount.set(0);
       },
       error: (error) => this.errorMessage.set(extractApiErrorMessage(error)),
     });
@@ -68,6 +78,7 @@ export class NotificationsComponent {
       next: () => {
         this.items.update((list) => list.map((item) => (item.id === notification.id ? { ...item, isRead: true } : item)));
         this.unreadCount.update((count) => Math.max(0, count - 1));
+        this.realtime.unreadCount.update((count) => Math.max(0, count - 1));
       },
       // Lecture non enregistrée : la notification reste non lue, sans bloquer la navigation.
       error: () => undefined,
@@ -84,6 +95,7 @@ export class NotificationsComponent {
         this.page = page;
         this.items.update((current) => (append ? [...current, ...data] : data));
         this.unreadCount.set(meta.unreadCount);
+        this.realtime.unreadCount.set(meta.unreadCount);
         this.hasMore.set(meta.page < meta.totalPages);
         this.loading.set(false);
         this.loadingMore.set(false);

@@ -198,7 +198,6 @@ covers = ["CAP-2", "CAP-3"]
 after = [5, "2.6"]
 hitl = false
 risk = "medium"
-unknown = "Quel jeton d'authentification le gateway Socket.io attend-il à la connexion ?"
 
 [[entry]]
 id = 16
