@@ -62,6 +62,20 @@ describe('VerificationEmail', () => {
     expect(component.infoMessage()).toBe('E-mail vérifié.');
   });
 
+  it('valide via le formulaire sans recharger la page (ngSubmit actif)', () => {
+    component.onCode('k7q2mz');
+
+    const form = fixture.nativeElement.querySelector('form') as HTMLFormElement;
+    const event = new Event('submit', { cancelable: true });
+    form.dispatchEvent(event);
+
+    // Sans FormsModule, le formulaire part en GET natif : la page se recharge et l'email disparaît de l'URL.
+    expect(event.defaultPrevented).toBe(true);
+    const request = controller.expectOne(`${API}/auth/verify-email`);
+    expect(request.request.body).toEqual({ email: EMAIL, code: 'K7Q2MZ' });
+    request.flush({ data: { message: 'E-mail vérifié.' } });
+  });
+
   it('refuse un code incomplet', () => {
     component.onCode('K7Q');
     component.submit();
