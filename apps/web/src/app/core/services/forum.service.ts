@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import type { VoteValue } from './votes.service';
 import { environment } from '../../../environments/environment';
 
 export type ForumSort = 'newest' | 'votes' | 'unanswered' | 'active';
@@ -81,6 +82,8 @@ export interface ForumAnswer {
   body: string;
   isAccepted: boolean;
   voteScore: number;
+  /** Vote du membre connecté, absent ou null sans vote. */
+  userVote?: VoteValue | null;
   isHidden: boolean;
   createdAt: string;
   user: ForumAuthorSummary;
@@ -89,6 +92,7 @@ export interface ForumAnswer {
 /** Réponse de `GET /api/forum/posts/{id}` : la question avec ses réponses. */
 export interface ForumPostDetail extends ForumPost {
   userId: string;
+  userVote?: VoteValue | null;
   body: string;
   isHidden: boolean;
   updatedAt: string;

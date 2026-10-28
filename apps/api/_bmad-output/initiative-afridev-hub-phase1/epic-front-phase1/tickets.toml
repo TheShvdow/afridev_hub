@@ -152,7 +152,7 @@ id = 12
 type = "story"
 title = "Afficher le vote déjà donné"
 description = """
-L'API renvoie le vote du membre connecté sur chaque question et réponse (userVote) et le front met le bouton en évidence ; un second clic annule le vote.
+L'API renvoie le vote du membre connecté sur chaque question et réponse (userVote) et le front met le bouton en évidence ; un second clic annule le vote. Mise à jour immédiate du score et du pouce avec retour arrière en cas de refus. Commits de cette story : API `userVote`, composant `app-vote-control`.
 """
 verify = "Après rechargement, la flèche du vote donné est mise en évidence et un second clic l'annule."
 covers = ["CAP-3"]

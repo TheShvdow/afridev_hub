@@ -4,6 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ReportButtonComponent } from '../report-button/report-button.component';
+import { VoteControlComponent } from '../vote-control/vote-control.component';
 import { CommentItem } from '../comment-item/comment-item';
 import { Thread } from '../card-thread/card-thread.component';
 import { ForumPostDetail } from '../../../core/services/forum.service';
@@ -13,7 +14,7 @@ import { AnswerThreadBase } from '../../forum/answer-thread.base';
 @Component({
   selector: 'app-thread-modal',
   standalone: true,
-  imports: [CommentItem, ReactiveFormsModule, RouterLink, ReportButtonComponent],
+  imports: [CommentItem, ReactiveFormsModule, RouterLink, ReportButtonComponent, VoteControlComponent],
   templateUrl: './thread-modal.component.html',
 })
 export class ThreadModalComponent extends AnswerThreadBase {
@@ -21,6 +22,8 @@ export class ThreadModalComponent extends AnswerThreadBase {
 
   readonly thread = input<Thread | null>(null);
   readonly closed = output<void>();
+  /** Score de la question après chargement ou vote : la carte de la liste le reprend sans recharger. */
+  readonly scoreChanged = output<{ id: string; score: number }>();
 
   readonly post = signal<ForumPostDetail | null>(null);
   readonly loading = signal(false);
@@ -41,6 +44,11 @@ export class ThreadModalComponent extends AnswerThreadBase {
       this.load(thread.id);
     }, { allowSignalWrites: true });
   }
+
+  private readonly emitScore = effect(() => {
+    const question = this.post();
+    if (question) this.scoreChanged.emit({ id: question.id, score: question.voteScore });
+  }, { allowSignalWrites: true });
 
   @HostListener('document:keydown.escape')
   onEscape(): void {

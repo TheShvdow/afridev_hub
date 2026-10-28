@@ -102,30 +102,53 @@ export abstract class AnswerThreadBase {
     return !!me && !!question && me.id === question.userId && !answer.isAccepted && !question.isHidden;
   }
 
+  /** Change de score d'un vote : même sens = annulation, sens opposé = bascule (±2). */
+  private static voteChange(current: VoteValue | null | undefined, value: VoteValue) {
+    const sign = value === 'UP' ? 1 : -1;
+    if (current === value) return { next: null, delta: -sign };
+    return { next: value, delta: current ? 2 * sign : sign };
+  }
+
+  // Le score et le pouce changent tout de suite ; la réponse de l'API fait foi, et un refus
+  // rétablit l'état précédent.
   voteOnQuestion(value: VoteValue): void {
     const question = this.post();
     if (!question || this.pendingActionId()) return;
 
+    const previous = { voteScore: question.voteScore, userVote: question.userVote ?? null };
+    const { next, delta } = AnswerThreadBase.voteChange(previous.userVote, value);
+    this.patchQuestion({ voteScore: previous.voteScore + delta, userVote: next });
+
     this.pendingActionId.set(question.id);
     this.votes.votePost(question.id, value).subscribe({
-      next: ({ newScore }) => {
+      next: ({ action, newScore }) => {
         this.pendingActionId.set(null);
-        this.post.update((current) => (current ? { ...current, voteScore: newScore } : current));
+        this.patchQuestion({ voteScore: newScore, userVote: action === 'removed' ? null : value });
       },
-      error: (error: HttpErrorResponse) => this.failAction(error),
+      error: (error: HttpErrorResponse) => {
+        this.patchQuestion(previous);
+        this.failAction(error);
+      },
     });
   }
 
   voteOnAnswer(answer: ForumAnswer, value: VoteValue): void {
     if (this.pendingActionId()) return;
 
+    const previous = { voteScore: answer.voteScore, userVote: answer.userVote ?? null };
+    const { next, delta } = AnswerThreadBase.voteChange(previous.userVote, value);
+    this.patchAnswer(answer.id, { voteScore: previous.voteScore + delta, userVote: next });
+
     this.pendingActionId.set(answer.id);
     this.votes.voteAnswer(answer.id, value).subscribe({
-      next: ({ newScore }) => {
+      next: ({ action, newScore }) => {
         this.pendingActionId.set(null);
-        this.patchAnswer(answer.id, { voteScore: newScore });
+        this.patchAnswer(answer.id, { voteScore: newScore, userVote: action === 'removed' ? null : value });
       },
-      error: (error: HttpErrorResponse) => this.failAction(error),
+      error: (error: HttpErrorResponse) => {
+        this.patchAnswer(answer.id, previous);
+        this.failAction(error);
+      },
     });
   }
 
@@ -148,6 +171,11 @@ export abstract class AnswerThreadBase {
       },
       error: (error: HttpErrorResponse) => this.failAction(error),
     });
+  }
+
+  private patchQuestion(changes: Partial<ForumPostDetail>): void {
+    const existing = this.post();
+    if (existing) this.post.set({ ...existing, ...changes });
   }
 
   private patchAnswer(answerId: string, changes: Partial<ForumAnswer>): void {

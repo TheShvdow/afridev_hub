@@ -103,6 +103,14 @@ describe('PostListComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('passer de freelance à CTO');
   });
 
+  it('should update the vote count of a card when the modal reports a new score', () => {
+    component.updateScore({ id: 'post-1', score: 42 });
+    fixture.detectChanges();
+
+    expect(component.threads().find((thread) => thread.id === 'post-1')?.votes).toBe('42');
+    expect(component.threads().find((thread) => thread.id === 'post-2')?.votes).toBe('19');
+  });
+
   it('should open the discussion modal when a thread is opened', () => {
     component.openThread(component.threads()[0]);
     fixture.detectChanges();
