@@ -16,6 +16,7 @@ describe('AdminService', () => {
     commission: { aggregate: Mock };
     payment: { count: Mock };
     auditLog: { findMany: Mock; count: Mock; create: Mock };
+    moderationAction: { findMany: Mock };
   };
 
   beforeEach(async () => {
@@ -28,6 +29,7 @@ describe('AdminService', () => {
       commission: { aggregate: jest.fn().mockResolvedValue({ _sum: { amount: null } }) },
       payment:    { count: jest.fn().mockResolvedValue(0) },
       auditLog:   { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0), create: jest.fn() },
+      moderationAction: { findMany: jest.fn().mockResolvedValue([]) },
     };
 
     const moduleRef = await Test.createTestingModule({
@@ -118,6 +120,25 @@ describe('AdminService', () => {
         { username: { contains: 'amadou', mode: 'insensitive' } },
         { email:    { contains: 'amadou', mode: 'insensitive' } },
       ]);
+    });
+
+    it('indique les comptes bannis : le dernier BAN ou RESTORED décide', async () => {
+      prisma.user.findMany.mockResolvedValue([{ id: 'u1' }, { id: 'u2' }, { id: 'u3' }]);
+      prisma.moderationAction.findMany.mockResolvedValue([
+        { entityId: 'u1', action: 'BAN' },
+        { entityId: 'u2', action: 'BAN' },
+        { entityId: 'u2', action: 'RESTORED' },
+      ]);
+
+      const result = await service.listUsers(1, 30);
+
+      expect(result.data.map((user) => [user.id, user.isBanned])).toEqual([['u1', true], ['u2', false], ['u3', false]]);
+      expect(prisma.moderationAction.findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('ne lit pas les actions de modération quand la page est vide', async () => {
+      await service.listUsers(1, 30);
+      expect(prisma.moderationAction.findMany).not.toHaveBeenCalled();
     });
 
     it('ne filtre pas quand la recherche est absente', async () => {

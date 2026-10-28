@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, UserRole } from '@prisma/client';
+import { ModerationActionType, ModerationTargetType, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -114,7 +114,35 @@ export class AdminService {
       this.prisma.user.count({ where }),
     ]);
 
-    return { data: users, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+    const banned = await this.bannedUserIds(users.map((user) => user.id));
+
+    return {
+      data: users.map((user) => ({ ...user, isBanned: banned.has(user.id) })),
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  // Même règle que `isUserBanned` : un compte est banni si sa dernière action BAN ou RESTORED est un BAN.
+  // Une seule requête pour toute la page.
+  private async bannedUserIds(userIds: string[]): Promise<Set<string>> {
+    if (userIds.length === 0) return new Set();
+
+    const actions = await this.prisma.moderationAction.findMany({
+      where: {
+        entityType: ModerationTargetType.USER,
+        entityId:   { in: userIds },
+        action:     { in: [ModerationActionType.BAN, ModerationActionType.RESTORED] },
+      },
+      orderBy: { createdAt: 'asc' },
+      select:  { entityId: true, action: true },
+    });
+
+    const banned = new Set<string>();
+    for (const { entityId, action } of actions) {
+      if (action === ModerationActionType.BAN) banned.add(entityId);
+      else banned.delete(entityId);
+    }
+    return banned;
   }
 
   // Chaque changement de rôle est journalisé : qui, quel compte, quel rôle.
