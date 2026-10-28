@@ -36,10 +36,17 @@ export abstract class AnswerThreadBase {
   readonly confirmingAnswerId = signal<string | null>(null);
   readonly deletingAnswerId = signal<string | null>(null);
   readonly answerDeleteError = signal<string | null>(null);
+  readonly editingAnswerId = signal<string | null>(null);
+  readonly savingEdit = signal(false);
+  readonly editError = signal<string | null>(null);
   /** Identifiant du contenu dont un vote ou une acceptation est en cours. */
   readonly pendingActionId = signal<string | null>(null);
 
   readonly answerForm = inject(FormBuilder).nonNullable.group({
+    body: ['', [Validators.required, trimmedMinLength(ANSWER_MIN_LENGTH), Validators.maxLength(50000)]],
+  });
+
+  readonly editForm = inject(FormBuilder).nonNullable.group({
     body: ['', [Validators.required, trimmedMinLength(ANSWER_MIN_LENGTH), Validators.maxLength(50000)]],
   });
 
@@ -85,6 +92,55 @@ export abstract class AnswerThreadBase {
         }
 
         this.answerError.set(extractApiErrorMessage(error));
+      },
+    });
+  }
+
+  /** Seul l'auteur modifie sa réponse (même règle que l'API). */
+  canEditAnswer(answer: ForumAnswer): boolean {
+    const me = this.authStore.currentUser();
+    return !!me && me.id === answer.user.id && !answer.isHidden;
+  }
+
+  startAnswerEdit(answer: ForumAnswer): void {
+    if (this.savingEdit()) return;
+
+    this.editError.set(null);
+    this.editForm.reset({ body: answer.body });
+    this.editingAnswerId.set(answer.id);
+  }
+
+  cancelAnswerEdit(): void {
+    if (this.savingEdit()) return;
+
+    this.editingAnswerId.set(null);
+    this.editError.set(null);
+  }
+
+  saveAnswerEdit(answer: ForumAnswer): void {
+    if (this.savingEdit()) return;
+
+    if (this.editForm.invalid) {
+      this.editForm.markAllAsTouched();
+      return;
+    }
+
+    const body = this.editForm.getRawValue().body.trim();
+    this.savingEdit.set(true);
+    this.editError.set(null);
+
+    this.forum.updateAnswer(answer.id, { body }).subscribe({
+      next: (updated) => {
+        this.savingEdit.set(false);
+        this.patchAnswer(answer.id, { body: updated.body ?? body });
+        this.editingAnswerId.set(null);
+        this.toast.success('Réponse modifiée.');
+      },
+      error: (error: HttpErrorResponse) => {
+        this.savingEdit.set(false);
+        this.editError.set(
+          error.status === 403 ? "Vous n'êtes pas autorisé à modifier cette réponse." : extractApiErrorMessage(error),
+        );
       },
     });
   }

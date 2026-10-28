@@ -67,14 +67,22 @@ export class PaymentsService {
     const product = PRODUCTS[dto.product];
     const amount = this.priceOf(dto.product);
 
-    if (product.entityType === PaymentEntityType.RECRUITER_PLAN) {
-      const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { isRecruiter: true } });
-      if (!user?.isRecruiter) {
-        throw new DomainException('PAYMENTS_RECRUITER_REQUIRED', 'Activez votre profil recruteur avant de souscrire au plan premium.', 403);
-      }
+    const user = await this.prisma.user.findUnique({
+      where:  { id: userId },
+      select: { isRecruiter: true, email: true, displayName: true, username: true },
+    });
+    if (product.entityType === PaymentEntityType.RECRUITER_PLAN && !user?.isRecruiter) {
+      throw new DomainException('PAYMENTS_RECRUITER_REQUIRED', 'Activez votre profil recruteur avant de souscrire au plan premium.', 403);
     }
 
-    const input = { ...dto, userId, amount, currency: product.currency };
+    const country = dto.country ?? this.config.get<string>('BICTORYS_COUNTRY', 'SN');
+    // Identité du payeur : ce que le client envoie prime, sinon le compte connecté.
+    const customer = {
+      name:  user?.displayName ?? user?.username,
+      email: user?.email,
+      ...dto.customer,
+    };
+    const input = { ...dto, country, customer, userId, amount, currency: product.currency };
     const commissionAmount = Math.round(input.amount * this.commissionRate);
 
     const payment = await this.prisma.payment.create({

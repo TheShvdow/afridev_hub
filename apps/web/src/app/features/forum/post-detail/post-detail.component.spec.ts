@@ -51,6 +51,7 @@ const forumStub = {
   getPost: jest.fn(() => of(DETAIL)),
   deletePost: jest.fn(() => of(undefined)),
   deleteAnswer: jest.fn(() => of(undefined)),
+  updateAnswer: jest.fn((_id: string, dto: { body: string }) => of({ body: dto.body })),
   acceptAnswer: jest.fn(() => of({})),
 };
 
@@ -72,6 +73,7 @@ describe('PostDetailComponent', () => {
     forumStub.getPost.mockClear();
     forumStub.deletePost.mockClear();
     forumStub.deleteAnswer.mockClear();
+    forumStub.updateAnswer.mockClear();
     forumStub.acceptAnswer.mockClear();
     votesStub.votePost.mockClear();
     votesStub.voteAnswer.mockClear();
@@ -151,6 +153,61 @@ describe('PostDetailComponent', () => {
 
     expect(forumStub.deletePost).toHaveBeenCalledWith(DETAIL.id);
     expect(router.navigateByUrl).toHaveBeenCalledWith('/forum');
+  });
+
+  describe('answer edition', () => {
+    const NEW_BODY = 'Voici une réponse corrigée, assez longue pour dépasser les trente caractères.';
+
+    function openEditor() {
+      authStub.currentUser.mockReturnValue({ id: DETAIL.answers[0].user.id, role: 'MEMBER' });
+      const authorFixture = TestBed.createComponent(PostDetailComponent);
+      authorFixture.detectChanges();
+
+      const article = authorFixture.nativeElement.querySelectorAll('article')[1] as HTMLElement;
+      const editButton = Array.from(article.querySelectorAll('button')).find(
+        (button) => button.textContent?.trim() === 'Modifier',
+      ) as HTMLButtonElement;
+      editButton.click();
+      authorFixture.detectChanges();
+      return { authorFixture, article };
+    }
+
+    function type(article: HTMLElement, value: string) {
+      const textarea = article.querySelector('textarea') as HTMLTextAreaElement;
+      textarea.value = value;
+      textarea.dispatchEvent(new Event('input'));
+    }
+
+    it('should save the new version of the answer', () => {
+      const { authorFixture, article } = openEditor();
+
+      type(article, NEW_BODY);
+      (article.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+      authorFixture.detectChanges();
+
+      expect(forumStub.updateAnswer).toHaveBeenCalledWith(DETAIL.answers[0].id, { body: NEW_BODY });
+      expect(authorFixture.componentInstance.post()?.answers[0].body).toBe(NEW_BODY);
+      expect(article.querySelector('textarea')).toBeNull();
+      authorFixture.destroy();
+    });
+
+    it('should refuse an answer shorter than 30 characters', () => {
+      const { authorFixture, article } = openEditor();
+
+      type(article, 'trop court');
+      (article.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+      authorFixture.detectChanges();
+
+      expect(forumStub.updateAnswer).not.toHaveBeenCalled();
+      expect(article.textContent).toContain('au moins 30 caractères');
+      authorFixture.destroy();
+    });
+
+    it('should not offer to edit the answer of another member', () => {
+      const articles = fixture.nativeElement.querySelectorAll('article');
+      const labels = Array.from((articles[1] as HTMLElement).querySelectorAll('button')).map((b) => (b as HTMLElement).textContent?.trim());
+      expect(labels).not.toContain('Modifier');
+    });
   });
 
   it('should delete an answer after confirmation', () => {

@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
+import { AnswerEditFormComponent } from '../../../shared/components/answer-edit-form/answer-edit-form.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ForumPostDetail } from '../../../core/services/forum.service';
@@ -20,7 +21,7 @@ import { AnswerThreadBase } from '../../../shared/forum/answer-thread.base';
 @Component({
   selector: 'app-post-detail',
   standalone: true,
-  imports: [RouterLink, ReactiveFormsModule, ReportButtonComponent, VoteControlComponent],
+  imports: [RouterLink, ReactiveFormsModule, ReportButtonComponent, VoteControlComponent, AnswerEditFormComponent],
   templateUrl: './post-detail.component.html',
   styleUrl: './post-detail.component.css',
 })

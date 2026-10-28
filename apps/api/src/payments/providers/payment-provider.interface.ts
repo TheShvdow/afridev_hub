@@ -17,7 +17,7 @@ export interface ChargeRequest {
   amount:             number;   // entier, XOF, minimum 100
   currency:           'XOF';
   country:            string;
-  paymentType:        string;   // wave_money, orange_money, card, …
+  paymentType?:       string;   // wave_money, orange_money, card, … ; absent = checkout hébergé
   successRedirectUrl: string;
   errorRedirectUrl:   string;
   customer?:          ChargeCustomer;

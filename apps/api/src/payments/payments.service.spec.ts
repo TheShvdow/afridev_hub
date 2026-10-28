@@ -47,6 +47,14 @@ describe('PaymentsService.initiatePayment — prix côté serveur', () => {
     expect(prisma.payment.create.mock.calls[0][0].data.amount).toBe(30_000);
   });
 
+  it('uses the hosted checkout when no payment type or country is sent', async () => {
+    const { service, provider } = build();
+    await service.initiatePayment('rec', { product: 'RECRUITER_PREMIUM_MONTHLY' } as never);
+    const request = provider.initiate.mock.calls[0][0];
+    expect(request.paymentType).toBeUndefined();
+    expect(request).toMatchObject({ country: 'SN', customer: { email: 'rec@x.io' } });
+  });
+
   it('requires a recruiter profile for the premium plan', async () => {
     const { service, prisma } = build({ isRecruiter: false });
     await expect(service.initiatePayment('u1', dto)).rejects.toMatchObject({ code: 'PAYMENTS_RECRUITER_REQUIRED', status: 403 });

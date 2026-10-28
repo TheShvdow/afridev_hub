@@ -127,7 +127,11 @@
                       }
                     </div>
                     <p class="text-[13px] leading-[20px] text-[#64748B]">{{ answer.user.reputation }} points · {{ timeAgo(answer.createdAt) }}</p>
+@if (editingAnswerId() === answer.id) {
+  <app-answer-edit-form [form]="editForm" [saving]="savingEdit()" [error]="editError()" (saved)="saveAnswerEdit(answer)" (cancelled)="cancelAnswerEdit()" />
+} @else {
                     <p class="mt-2 whitespace-pre-line break-words text-[15px] leading-[24px] text-[#475569]">{{ answer.body }}</p>
+}
 
                     <div class="mt-3 flex flex-wrap items-center gap-2">
                       <app-vote-control
@@ -180,6 +184,15 @@
                             {{ deletingAnswerId() === answer.id ? 'Suppression…' : 'Supprimer' }}
                           </button>
                         } @else {
+@if (canEditAnswer(answer)) {
+<button
+  type="button"
+  (click)="startAnswerEdit(answer)"
+  class="rounded-full border border-[#E2E8F0] px-3 py-1 text-[13px] font-semibold text-[#64748B] transition-colors hover:border-[#0F6932]/40 hover:text-[#0F6932]"
+>
+  Modifier
+</button>
+}
                           <button
                             type="button"
                             (click)="requestAnswerDelete(answer.id)"

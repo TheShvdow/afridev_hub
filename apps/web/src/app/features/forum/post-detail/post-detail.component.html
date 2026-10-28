@@ -227,9 +227,13 @@
                   }
                 </div>
 
+@if (editingAnswerId() === answer.id) {
+  <app-answer-edit-form [form]="editForm" [saving]="savingEdit()" [error]="editError()" (saved)="saveAnswerEdit(answer)" (cancelled)="cancelAnswerEdit()" />
+} @else {
                 <p class="mt-4 whitespace-pre-line break-words text-[16px] leading-[26px] text-[#475569]">
                   {{ answer.body }}
                 </p>
+}
 
                 @if (answerDeleteError() && confirmingAnswerId() === answer.id) {
                   <p
@@ -261,6 +265,15 @@
                         {{ deletingAnswerId() === answer.id ? 'Suppression…' : 'Supprimer' }}
                       </button>
                     } @else {
+@if (canEditAnswer(answer)) {
+<button
+  type="button"
+  (click)="startAnswerEdit(answer)"
+  class="rounded-full border border-[#E2E8F0] px-3 py-1.5 text-[13px] font-semibold text-[#64748B] transition-colors hover:border-[#0F6932]/40 hover:text-[#0F6932]"
+>
+  Modifier
+</button>
+}
                       <button
                         type="button"
                         (click)="requestAnswerDelete(answer.id)"

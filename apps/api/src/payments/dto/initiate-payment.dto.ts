@@ -40,19 +40,20 @@ export class ChargeCustomerDto {
 }
 
 // Le montant, la devise et la cible viennent du catalogue côté serveur (catalog.ts) :
-// le client ne choisit que le produit, le moyen de paiement et le pays.
+// le client ne choisit que le produit. Sans moyen de paiement, Bictorys affiche sa page de choix
+// (checkout hébergé) ; sans pays, BICTORYS_COUNTRY s'applique (SN par défaut).
 export class InitiatePaymentDto {
   @ApiProperty({ enum: PRODUCT_CODES, example: 'RECRUITER_PREMIUM_MONTHLY' })
   @IsIn(PRODUCT_CODES)
   product!: ProductCode;
 
-  @ApiProperty({ enum: BictorysPaymentType, example: BictorysPaymentType.WAVE_MONEY })
-  @IsEnum(BictorysPaymentType)
-  paymentType!: BictorysPaymentType;
+  @ApiPropertyOptional({ enum: BictorysPaymentType, example: BictorysPaymentType.WAVE_MONEY, description: 'Absent : page de choix hébergée par Bictorys' })
+  @IsOptional() @IsEnum(BictorysPaymentType)
+  paymentType?: BictorysPaymentType;
 
-  @ApiProperty({ enum: BictorysCountry, example: BictorysCountry.SN })
-  @IsEnum(BictorysCountry)
-  country!: BictorysCountry;
+  @ApiPropertyOptional({ enum: BictorysCountry, example: BictorysCountry.SN })
+  @IsOptional() @IsEnum(BictorysCountry)
+  country?: BictorysCountry;
 
   @ApiPropertyOptional({ type: ChargeCustomerDto })
   @IsOptional()
