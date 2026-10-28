@@ -97,6 +97,15 @@ describe('MyJobsComponent', () => {
     expect(text).not.toContain('Clôturer');
   });
 
+  it('offers to edit an offer unless it is closed', () => {
+    jobs.listMine.mockReturnValue(of([offer('1'), offer('2', { status: 'CLOSED' })]));
+    const fixture = create();
+
+    const edits = Array.from(fixture.nativeElement.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>).filter((a) => a.textContent?.trim() === 'Modifier');
+
+    expect(edits.map((a) => a.getAttribute('href'))).toEqual(['/jobs/1/edit']);
+  });
+
   it('renews an offer and reloads the list', () => {
     jobs.renew.mockReturnValue(of(offer('1')));
     const fixture = create();

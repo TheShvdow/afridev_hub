@@ -35,6 +35,12 @@ export const JOBS_ROUTES: Routes = [
       ),
   },
   {
+    path: ':id/edit',
+    canActivate: [authGuard],
+    loadComponent: () => import('./job-post/job-post.component').then((m) => m.JobPostComponent),
+    title: 'Modifier une offre — AfriDev Hub',
+  },
+  {
     path: ':id/apply',
     canActivate: [authGuard],
     loadComponent: () =>

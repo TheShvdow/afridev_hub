@@ -217,6 +217,11 @@ export class JobsService {
     return this.http.post<JobOffer>(this.base, dto);
   }
 
+  /** `PATCH /api/jobs/{id}` — auteur uniquement ; une offre refusée repart en validation. */
+  update(id: string, dto: Partial<CreateJobDto>): Observable<JobOffer> {
+    return this.http.patch<JobOffer>(`${this.base}/${encodeURIComponent(id)}`, dto);
+  }
+
   /** `POST /api/jobs/{id}/apply` */
   apply(id: string, dto: ApplyJobDto): Observable<JobApplication> {
     return this.http.post<JobApplication>(`${this.base}/${encodeURIComponent(id)}/apply`, dto);

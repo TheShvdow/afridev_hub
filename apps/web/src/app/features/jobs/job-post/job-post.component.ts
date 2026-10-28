@@ -1,12 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { PageHeroComponent } from '../../../shared/components/page-hero/page-hero.component';
 import { CountriesService } from '../../../core/services/countries.service';
 import { JOB_CURRENCY_CODES, JOB_LIMITS, JOB_MODES, JOB_TYPES, JobMode, JobType, JobsService } from '../../../core/services/jobs.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { AuthStore } from '../../../core/store/auth.store';
 import { UsersService } from '../../../core/services/users.service';
 import { extractApiErrorCode, extractApiErrorMessage } from '../../../core/utils/api-error';
 import { parseStackList } from '../../../core/utils/stack-list';
@@ -37,6 +38,8 @@ export class JobPostComponent {
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
   private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
+  private readonly authStore = inject(AuthStore);
 
   readonly countries = toSignal(inject(CountriesService).list().pipe(catchError(() => of([]))), {
     initialValue: [],
@@ -45,6 +48,14 @@ export class JobPostComponent {
   readonly modes = JOB_MODES;
   readonly currencies = JOB_CURRENCY_CODES;
   readonly limits = JOB_LIMITS;
+
+  /** Identifiant de l'offre en cours de modification ; absent pour une nouvelle offre. */
+  readonly editId = this.route.snapshot.paramMap.get('id');
+  readonly editing = this.editId !== null;
+  readonly loadingOffer = signal(this.editing);
+  /** `notFound` ou `forbidden` quand l'offre à modifier ne peut pas l'être. */
+  readonly offerProblem = signal<'notFound' | 'forbidden' | 'error' | null>(null);
+  readonly offerStatus = signal<string | null>(null);
 
   readonly sending = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -68,8 +79,44 @@ export class JobPostComponent {
     { validators: [salaryRangeValidator] },
   );
 
+  constructor() {
+    if (this.editId) this.loadOffer(this.editId);
+  }
+
+  private loadOffer(id: string): void {
+    this.jobs.get(id).subscribe({
+      next: (offer) => {
+        const me = this.authStore.currentUser();
+        if (me && offer.recruiter.id !== me.id) {
+          this.offerProblem.set('forbidden');
+          this.loadingOffer.set(false);
+          return;
+        }
+
+        this.offerStatus.set(offer.status);
+        this.form.patchValue({
+          title: offer.title,
+          company: offer.company,
+          country: offer.country,
+          type: offer.type,
+          mode: offer.mode,
+          salaryMin: offer.salaryMin,
+          salaryMax: offer.salaryMax,
+          currency: offer.currency,
+          stack: offer.stack.join(', '),
+          description: offer.description ?? '',
+        });
+        this.loadingOffer.set(false);
+      },
+      error: (error) => {
+        this.offerProblem.set(error?.status === 404 ? 'notFound' : 'error');
+        this.loadingOffer.set(false);
+      },
+    });
+  }
+
   submit(): void {
-    if (this.sending()) return;
+    if (this.sending() || this.loadingOffer()) return;
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -81,31 +128,40 @@ export class JobPostComponent {
     this.errorMessage.set(null);
     this.recruiterRequired.set(false);
 
-    this.jobs
-      .create({
-        title: value.title.trim(),
-        description: value.description.trim(),
-        company: value.company.trim(),
-        country: value.country,
-        type: value.type,
-        mode: value.mode,
-        salaryMin: Math.round(value.salaryMin ?? 0),
-        salaryMax: Math.round(value.salaryMax ?? 0),
-        currency: value.currency,
-        stack: parseStackList(value.stack),
-      })
-      .subscribe({
-        next: () => {
-          this.sending.set(false);
-          this.toast.success('Offre envoyée : elle sera publiée après validation par la modération.');
-          this.router.navigateByUrl('/jobs/mine');
-        },
-        error: (error) => {
-          this.sending.set(false);
-          this.recruiterRequired.set(extractApiErrorCode(error) === 'JOBS_RECRUITER_REQUIRED');
-          this.errorMessage.set(extractApiErrorMessage(error));
-        },
-      });
+    const payload = {
+      title: value.title.trim(),
+      description: value.description.trim(),
+      company: value.company.trim(),
+      country: value.country,
+      type: value.type,
+      mode: value.mode,
+      salaryMin: Math.round(value.salaryMin ?? 0),
+      salaryMax: Math.round(value.salaryMax ?? 0),
+      currency: value.currency,
+      stack: parseStackList(value.stack),
+    };
+
+    const request = this.editId ? this.jobs.update(this.editId, payload) : this.jobs.create(payload);
+    const wasRejected = this.offerStatus() === 'REJECTED';
+
+    request.subscribe({
+      next: () => {
+        this.sending.set(false);
+        this.toast.success(
+          !this.editId
+            ? 'Offre envoyée : elle sera publiée après validation par la modération.'
+            : wasRejected
+              ? 'Offre corrigée : elle repart en validation par la modération.'
+              : 'Offre mise à jour.',
+        );
+        this.router.navigateByUrl('/jobs/mine');
+      },
+      error: (error) => {
+        this.sending.set(false);
+        this.recruiterRequired.set(!this.editId && extractApiErrorCode(error) === 'JOBS_RECRUITER_REQUIRED');
+        this.errorMessage.set(extractApiErrorMessage(error));
+      },
+    });
   }
 
   /** Active le profil recruteur avec le nom d'entreprise saisi, puis relance la publication. */
