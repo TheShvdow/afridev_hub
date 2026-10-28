@@ -1,0 +1,61 @@
+<app-page-hero [title]="greeting()" subtitle="Tout ce que votre compte permet de faire, au même endroit." />
+
+<section class="bg-white">
+  <div class="mx-auto w-full max-w-[1000px] px-6 py-10 sm:px-10 lg:px-0 lg:py-12">
+    @if (!me()) {
+      <p class="py-12 text-center text-[16px] text-[#64748B]">Chargement de votre espace…</p>
+    } @else {
+      <div class="flex flex-wrap items-center gap-2" aria-label="Rôles du compte">
+        @for (role of roles(); track role) {
+          <span class="rounded-full bg-[#F0FDF4] px-3 py-1 text-[13px] font-semibold text-[#0F6932]">{{ role }}</span>
+        }
+        @if (me()?.isVerified) {
+          <span class="rounded-full bg-[#FEFCE8] px-3 py-1 text-[13px] font-semibold text-[#A16207]">Dev vérifié</span>
+        }
+      </div>
+
+      <dl class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        @for (item of highlights(); track item.id) {
+          <div class="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+            <dt class="text-[13px] font-medium text-[#64748B]">{{ item.label }}</dt>
+            <dd class="mt-1 text-[24px] font-bold leading-8 text-[#141219]">{{ item.value }}</dd>
+            @if (item.hint) {
+              <p class="mt-0.5 text-[12px] text-[#64748B]">{{ item.hint }}</p>
+            }
+          </div>
+        }
+      </dl>
+
+      @for (section of sections(); track section.id) {
+        <section class="mt-10" [attr.aria-labelledby]="'section-' + section.id">
+          <h2 [id]="'section-' + section.id" class="text-[20px] font-bold text-[#141219]">{{ section.title }}</h2>
+          <p class="mt-1 text-[14px] text-[#64748B]">{{ section.subtitle }}</p>
+
+          <ul class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            @for (item of section.items; track item.id) {
+              <li>
+                <a
+                  [routerLink]="item.link"
+                  class="group flex h-full items-start gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-4 transition-colors hover:border-[#0F6932]/50 hover:bg-[#F0FDF4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0F6932]"
+                >
+                  <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#0F1011] text-[#FBBF24]">
+                    <app-icon [name]="item.icon" class="size-5" />
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="flex flex-wrap items-center gap-2">
+                      <span class="text-[16px] font-semibold text-[#141219]">{{ item.title }}</span>
+                      @if (item.badge) {
+                        <span class="rounded-full bg-[#FBBF24] px-2 py-0.5 text-[12px] font-semibold text-[#141219]">{{ item.badge }}</span>
+                      }
+                    </span>
+                    <span class="mt-0.5 block text-[14px] leading-[22px] text-[#64748B]">{{ item.description }}</span>
+                  </span>
+                </a>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    }
+  </div>
+</section>

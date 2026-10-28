@@ -369,3 +369,16 @@ after = [3]
 hitl = false
 risk = "medium"
 
+[[entry]]
+id = 29
+type = "story"
+title = "Tableau de bord par rôle"
+description = """
+Page /tableau-de-bord qui range toutes les fonctions du compte selon son rôle (membre, recruteur, modérateur, administrateur) avec des chiffres clés ; lien dans le menu du compte, le menu mobile et le pied de page ; arrivée sur l'accueil après connexion ; le garde de route garde la page demandée.
+"""
+verify = "Un membre, un recruteur, un modérateur et un administrateur voient chacun les cartes de leur rôle, et chaque carte mène à une page ; après connexion on arrive sur l'accueil, ou sur la page protégée demandée."
+covers = ["CAP-2", "CAP-3", "CAP-5", "CAP-6"]
+after = [3]
+hitl = false
+risk = "low"
+

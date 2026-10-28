@@ -2,7 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthStore } from '../store/auth.store';
 
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = (_route, state) => {
   const authStore = inject(AuthStore);
   const router = inject(Router);
 
@@ -10,7 +10,9 @@ export const authGuard: CanActivateFn = () => {
     return true;
   }
 
+  // `state.url` est la page demandée. L'état du routeur (`routerState`) est encore vide pendant la
+  // toute première navigation : un lien direct vers une page protégée perdrait sa destination.
   return router.createUrlTree(['/auth/login'], {
-    queryParams: { returnUrl: router.routerState.snapshot.url },
+    queryParams: { returnUrl: state.url },
   });
 };

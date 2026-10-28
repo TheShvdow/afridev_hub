@@ -55,7 +55,7 @@ export class OauthCallback implements OnInit {
     this.authService.getMe().subscribe({
       next: (user) => {
         this.authStore.setUser(user);
-        this.router.navigateByUrl('/forum');
+        this.router.navigateByUrl('/');
       },
       error: (err) => {
         this.authStore.logout();

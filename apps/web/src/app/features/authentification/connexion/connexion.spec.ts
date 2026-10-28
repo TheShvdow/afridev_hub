@@ -90,7 +90,7 @@ describe('Connexion', () => {
       },
     });
 
-    expect(navigate).toHaveBeenCalledWith('/forum');
+    expect(navigate).toHaveBeenCalledWith('/');
   });
 
   it('conserve la session dans l\'onglet quand « rester connecté » est décoché', () => {

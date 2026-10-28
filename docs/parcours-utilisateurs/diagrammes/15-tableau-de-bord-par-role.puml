@@ -1,0 +1,58 @@
+@startuml
+title Tableau de bord : arrivée après connexion et fonctions rangées par rôle
+autonumber
+actor Membre
+participant Front
+participant API
+database Base
+
+== Après la connexion ==
+Membre -> Front : se connecte
+Front -> API : POST /auth/login
+API --> Front : jetons
+alt une page protégée avait été demandée
+  Front -> Membre : retour vers cette page (adresse de retour)
+else connexion directe
+  Front -> Membre : arrivée sur l'accueil
+end
+
+== Ouvrir le tableau de bord ==
+Membre -> Front : « Tableau de bord » (menu du compte, menu mobile ou pied de page)
+Front -> Front : le garde de route vérifie la connexion\n(sinon : connexion, puis retour ici)
+Front -> API : GET /auth/me
+API -> Base : lit le compte
+API --> Front : rôle, profil recruteur, réputation
+Front -> Membre : salutation, rôles du compte, cartes de toutes les fonctions
+
+par chiffres lus en plus (un échec n'empêche pas l'affichage)
+  Front -> API : GET /notifications/unread-count
+  API --> Front : notifications non lues
+else recruteur
+  Front -> API : GET /jobs/plan
+  API --> Front : plan gratuit ou premium, quota du mois
+else modérateur ou administrateur
+  Front -> API : GET /moderation/reports?status=PENDING
+  API --> Front : nombre de signalements en attente
+  Front -> API : GET /jobs/review
+  API --> Front : nombre d'offres à valider
+end
+
+== Ce que chaque rôle voit ==
+note over Front
+  Tous les comptes : Mon activité (question, forum, notifications,
+  alertes emploi, offres, profil public) et Mon compte (informations,
+  sécurité, préférences de notifications).
+  Recruteur : Espace recruteur (offres, publication, plan premium).
+  Autre membre : invitation à devenir recruteur.
+  Modérateur : signalements et offres à valider, avec leur nombre.
+  Administrateur : en plus, indicateurs, utilisateurs, journal d'audit.
+end note
+
+== Ouvrir une carte ==
+Membre -> Front : clique sur une carte
+alt page d'administration réservée aux administrateurs
+  Front -> Front : le garde de rôle attend le profil, puis autorise ou renvoie
+else autre page
+  Front -> Membre : ouvre la page
+end
+@enduml

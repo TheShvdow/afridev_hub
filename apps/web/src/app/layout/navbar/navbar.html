@@ -5,7 +5,7 @@
 
 
   <div class="w-full flex items-center justify-between">
-    <a href="#" class="flex shrink-0 items-center" aria-label="AfriDev Hub">
+    <a routerLink="/" class="flex shrink-0 items-center" aria-label="AfriDev Hub">
       <img src="assets/images/logo.png" alt="AfriDev Hub" class="h-8 w-auto" />
     </a>
 
@@ -44,6 +44,14 @@
               <p class="truncate px-3 py-2 text-sm font-semibold text-white">
                 {{ authStore.currentUser()?.username ?? 'Mon compte' }}
               </p>
+
+              <a
+                routerLink="/tableau-de-bord"
+                class="block rounded-xl px-3 py-2 text-sm font-semibold text-[#FBBF24] transition-colors hover:bg-white/10"
+                (click)="userMenuOpen.set(false)"
+              >
+                Tableau de bord
+              </a>
 
               <a
                 routerLink="/profile"
@@ -141,6 +149,15 @@
               class="block rounded-xl px-3 py-2.5 text-base font-semibold leading-7 text-white/90 transition-colors hover:bg-white/10 hover:text-white"
               (click)="menuOpen.set(false)"
             >{{ item.label }}</a>
+          </li>
+        }
+        @if (authStore.isAuthenticated()) {
+          <li>
+            <a
+              routerLink="/tableau-de-bord"
+              class="block rounded-xl px-3 py-2.5 text-base font-semibold leading-7 text-[#FBBF24] transition-colors hover:bg-white/10"
+              (click)="menuOpen.set(false)"
+            >Tableau de bord</a>
           </li>
         }
       </ul>

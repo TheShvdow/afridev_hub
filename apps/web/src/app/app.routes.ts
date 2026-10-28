@@ -76,6 +76,15 @@ export const appRoutes: Routes = [
     title: 'Paiement — AfriDev Hub',
   },
 
+  // ── Tableau de bord : toutes les fonctions du compte, selon son rôle ──
+  {
+    path: 'tableau-de-bord',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+    title: 'Tableau de bord — AfriDev Hub',
+  },
+
   // ── Profil utilisateur ────────────────────────────────────────────
   {
     path: 'profile',
