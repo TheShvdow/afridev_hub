@@ -5,13 +5,11 @@ import { Router, RouterLink } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { PageHeroComponent } from '../../../shared/components/page-hero/page-hero.component';
 import { CountriesService } from '../../../core/services/countries.service';
-import { JOB_LIMITS, JOB_MODES, JOB_TYPES, JobMode, JobType, JobsService } from '../../../core/services/jobs.service';
+import { JOB_CURRENCY_CODES, JOB_LIMITS, JOB_MODES, JOB_TYPES, JobMode, JobType, JobsService } from '../../../core/services/jobs.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { UsersService } from '../../../core/services/users.service';
 import { extractApiErrorCode, extractApiErrorMessage } from '../../../core/utils/api-error';
 import { parseStackList } from '../../../core/utils/stack-list';
-
-export const JOB_CURRENCY_CODES = ['XOF', 'XAF', 'NGN', 'GHS', 'KES', 'ZAR', 'MAD', 'EUR', 'USD'];
 
 /** Même limite que `CreateJobDto.stack` : 1 à 5 technologies. */
 function jobStackValidator(control: AbstractControl<string>): ValidationErrors | null {

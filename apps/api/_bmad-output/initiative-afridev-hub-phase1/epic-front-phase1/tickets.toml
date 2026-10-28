@@ -292,3 +292,30 @@ covers = ["CAP-1"]
 after = [21]
 hitl = false
 risk = "medium"
+
+[[entry]]
+id = 23
+type = "story"
+title = "Candidature enrichie : coordonnées, liens, profil et CV"
+description = """
+Formulaire de candidature complet (nom, téléphone, pays, ville, LinkedIn, GitHub, portfolio, années d'expérience, disponibilité, prétentions salariales, technologies, CV PDF, message) prérempli depuis le profil ; migration 20261028120000_job_application_details, ApplyJobDto étendu et validé, envoi du CV vers R2 par URL signée avec fetch.
+"""
+verify = "Un membre postule avec ses informations et un CV PDF ; la candidature enregistrée contient tous les champs et le CV est joint."
+covers = ["CAP-5"]
+after = [3, 17]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 24
+type = "story"
+title = "Accusé de réception de candidature par e-mail"
+description = """
+Le candidat reçoit un e-mail récapitulatif (offre, entreprise, date, CV joint, référence) à l'envoi de sa candidature, même s'il a désactivé les e-mails d'activité ; un échec d'envoi n'annule pas la candidature.
+"""
+verify = "Après une candidature, un e-mail de confirmation arrive à l'adresse du candidat avec les détails de l'offre."
+covers = ["CAP-5"]
+after = [3, "5.9"]
+hitl = false
+risk = "low"
+

@@ -82,6 +82,27 @@ export interface CreateJobDto {
   stack: string[];
 }
 
+/** Devises proposées pour une offre ou des prétentions salariales (codes ISO 4217). */
+export const JOB_CURRENCY_CODES = ['XOF', 'XAF', 'NGN', 'GHS', 'KES', 'ZAR', 'MAD', 'EUR', 'USD'];
+
+/** Contenu de `ApplyJobDto` : seuls `message` et `fullName` sont obligatoires. */
+export interface ApplyJobDto {
+  message: string;
+  fullName: string;
+  phone?: string;
+  country?: string;
+  city?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  portfolioUrl?: string;
+  experienceYears?: number;
+  availableFrom?: string;
+  expectedSalary?: number;
+  expectedCurrency?: string;
+  stack?: string[];
+  cvKey?: string;
+}
+
 export interface JobApplication {
   id: string;
   message: string;
@@ -122,7 +143,7 @@ export class JobsService {
   }
 
   /** `POST /api/jobs/{id}/apply` */
-  apply(id: string, dto: { message: string }): Observable<JobApplication> {
+  apply(id: string, dto: ApplyJobDto): Observable<JobApplication> {
     return this.http.post<JobApplication>(`${this.base}/${encodeURIComponent(id)}/apply`, dto);
   }
 
