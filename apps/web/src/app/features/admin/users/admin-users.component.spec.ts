@@ -72,6 +72,28 @@ describe('AdminUsersComponent', () => {
     expect(moderation.banUser).toHaveBeenCalledWith('u2', 'Harcèlement');
   });
 
+  it('shows the ban state and only the matching action', () => {
+    admin.listUsers.mockReturnValue(of({ data: [{ ...USER, isBanned: true }, { ...USER, id: 'u3', username: 'autre', isBanned: false }], meta: { total: 2, page: 1, limit: 30, totalPages: 1 } }));
+    const fixture = create();
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Banni');
+    expect(text.match(/Lever le ban/g)).toHaveLength(1);
+    expect(text.match(/Bannir/g)).toHaveLength(1);
+  });
+
+  it('updates the ban state in the list after banning and lifting', () => {
+    moderation.banUser.mockReturnValue(of({}));
+    moderation.unbanUser.mockReturnValue(of({}));
+    const component = create().componentInstance;
+
+    component.ban(USER, 'Harcèlement');
+    expect(component.users()[0].isBanned).toBe(true);
+
+    component.unban(component.users()[0]);
+    expect(component.users()[0].isBanned).toBe(false);
+  });
+
   it('lifts a ban', () => {
     moderation.unbanUser.mockReturnValue(of({}));
     create().componentInstance.unban(USER);

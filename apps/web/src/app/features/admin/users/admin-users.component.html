@@ -36,6 +36,9 @@
               @if (user.isVerified) {
                 <span class="ml-2 rounded-full bg-[#F0FDF4] px-2 py-0.5 text-[12px] font-medium text-[#0F6932]">Vérifié</span>
               }
+              @if (user.isBanned) {
+                <span class="ml-2 rounded-full bg-[#FB2C36]/10 px-2 py-0.5 text-[12px] font-semibold text-[#FB2C36]">Banni</span>
+              }
             </p>
             <p class="truncate text-[13px] text-[#64748B]">{{ user.email }} · {{ user.reputation }} points</p>
           </div>
@@ -55,21 +58,24 @@
           </label>
 
           @if (!isMe(user)) {
-            <button
-              type="button"
-              (click)="startBan(user)"
-              class="rounded-full border border-[#FB2C36]/40 px-3 py-1.5 text-[13px] font-semibold text-[#FB2C36]"
-            >
-              Bannir
-            </button>
-            <button
-              type="button"
-              (click)="unban(user)"
-              [disabled]="busyId() === user.id"
-              class="rounded-full border border-[#E2E8F0] px-3 py-1.5 text-[13px] font-semibold text-[#475569] disabled:opacity-60"
-            >
-              Lever le ban
-            </button>
+            @if (user.isBanned) {
+              <button
+                type="button"
+                (click)="unban(user)"
+                [disabled]="busyId() === user.id"
+                class="rounded-full border border-[#E2E8F0] px-3 py-1.5 text-[13px] font-semibold text-[#475569] disabled:opacity-60"
+              >
+                Lever le ban
+              </button>
+            } @else {
+              <button
+                type="button"
+                (click)="startBan(user)"
+                class="rounded-full border border-[#FB2C36]/40 px-3 py-1.5 text-[13px] font-semibold text-[#FB2C36]"
+              >
+                Bannir
+              </button>
+            }
           }
         </div>
 

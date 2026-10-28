@@ -1,4 +1,6 @@
+import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
+import { AuthStore } from '../../core/store/auth.store';
 import { roleGuard } from '../../core/guards/role.guard';
 
 // L'API réserve /admin/* aux ADMIN ; signalements (/moderation/*) et offres à valider (/jobs/review)
@@ -13,7 +15,19 @@ export const ADMIN_ROUTES: Routes = [
         (m) => m.AdminShellComponent
       ),
     children: [
-      { path: '', redirectTo: 'reports', pathMatch: 'full' },
+      // Les administrateurs arrivent sur le tableau de bord, les modérateurs sur les signalements.
+      {
+        path: '',
+        pathMatch: 'full',
+        redirectTo: () => (inject(AuthStore).currentUser()?.role === 'ADMIN' ? 'dashboard' : 'reports'),
+      },
+      {
+        path: 'dashboard',
+        ...ADMIN_ONLY,
+        loadComponent: () =>
+          import('./dashboard/admin-dashboard.component').then((m) => m.AdminDashboardComponent),
+        title: 'Tableau de bord — Admin',
+      },
       {
         path: 'reports',
         loadComponent: () =>
