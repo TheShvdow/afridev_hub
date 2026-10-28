@@ -49,7 +49,7 @@ export class JobApplyComponent {
     this.jobs.apply(this.jobId, { message }).subscribe({
       next: () => {
         this.sending.set(false);
-        this.toast.success('Votre candidature a été envoyée.');
+        this.toast.success('Votre candidature a été envoyée. Un e-mail de confirmation vous a été adressé.');
         this.router.navigate(['/jobs', this.jobId]);
       },
       error: (error) => {
