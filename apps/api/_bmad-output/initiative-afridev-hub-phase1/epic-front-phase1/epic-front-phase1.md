@@ -49,6 +49,8 @@ Un membre, un recruteur, un modérateur et un administrateur accomplissent dans 
 
 **État 2026-10-27 :** stories 1 à 9 livrées sur `feat/import-front` (PR #13), non fusionnée. La migration `20261027120000_notification_link` est appliquée à la base de démonstration (story 10) mais pas à la base partagée.
 
+**Decision:** 2026-10-28 — Mentorat et communautés (phase 2) restent en vitrine avec contenu d'exemple : bandeau « Aperçu » sur les deux pages, sections et boutons d'action désactivés (réservation, rejoindre, participer, charger plus), mention « Aperçu · bientôt disponible » sur la section Mentors de l'accueil. Les liens du menu sont conservés. Les profils affichés restent fictifs jusqu'à la phase 2.
+
 **Open questions :**
 1. Déploiement du front sur Systalink : commande de build et variable `apiUrl` de production (hors dépôt à ce jour).
 2. Mentorat et communautés (story 20).

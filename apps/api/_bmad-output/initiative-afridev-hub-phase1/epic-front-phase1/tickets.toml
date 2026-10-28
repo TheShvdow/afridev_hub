@@ -259,12 +259,11 @@ title = "Décision sur les pages Mentorat et Communautés"
 description = """
 Décider avec le product owner si ces pages de phase 2, à données statiques, restent en vitrine ou sont masquées du menu.
 """
-verify = "La décision est consignée dans les Notes de l'épic et le menu la reflète."
+verify = "La décision est consignée dans les Notes de l'épic et le menu la reflète. Décision du 2026-10-28 : garder en vitrine avec bandeau « Aperçu » et actions désactivées ; livré."
 covers = ["CAP-1"]
 after = []
 hitl = true
 risk = "low"
-unknown = "Garde-t-on Mentorat et Communautés en vitrine statique ou les masque-t-on jusqu'à la phase 2 ?"
 
 [[entry]]
 id = 21

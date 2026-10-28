@@ -41,4 +41,17 @@ describe('MentorListComponent', () => {
     expect(cards.length).toBe(1);
     expect(fixture.nativeElement.textContent).toContain('Data Scientist');
   });
+
+  it('shows the preview banner and offers no booking', () => {
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('app-preview-banner')?.textContent).toContain('Le mentorat arrive bientôt');
+    // Les filtres fonctionnent sur les exemples ; seules la réservation et « Charger plus » sont indisponibles.
+    const booking = Array.from(root.querySelectorAll('app-card-mentor button')) as HTMLButtonElement[];
+    const loadMore = Array.from(root.querySelectorAll('button')).find((button) => button.textContent?.includes('Charger plus'));
+    expect(booking.length).toBeGreaterThan(0);
+    expect(booking.every((button) => button.disabled)).toBe(true);
+    expect(loadMore?.disabled).toBe(true);
+  });
 });
+

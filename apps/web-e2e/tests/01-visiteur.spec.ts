@@ -40,4 +40,20 @@ test.describe('Visiteur sans compte', () => {
 
     await expect(page).toHaveURL(/\/auth\/login/);
   });
+
+  // Fonctions de la phase 2 : contenu d'exemple, signalé comme tel et sans action possible.
+  for (const [route, fonction, action] of [
+    ['/mentorat', 'Le mentorat', 'Réserver'],
+    ['/communautes', 'Les communautés', 'Rejoindre le groupe'],
+  ] as const) {
+    test(`${route} est un aperçu : bandeau visible et « ${action} » désactivé`, async ({ page }) => {
+      await page.goto(route);
+
+      await expect(page.getByRole('status').filter({ hasText: `${fonction} arrive bientôt` })).toBeVisible();
+      const boutons = page.getByRole('button', { name: action });
+      await expect(boutons.first()).toBeVisible();
+      for (const bouton of await boutons.all()) await expect(bouton).toBeDisabled();
+    });
+  }
 });
+
