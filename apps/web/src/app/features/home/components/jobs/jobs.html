@@ -5,7 +5,7 @@
 
     <app-job-filters
       class="mt-[24px] lg:mt-[32px]"
-      [countries]="countries"
+      [countries]="countries()"
       [workTypes]="workTypes"
       [currencies]="currencies"
       [(selectedCountry)]="selectedCountry"
@@ -14,7 +14,7 @@
     />
 
     <div class="mt-10 grid grid-cols-1 gap-8 lg:mt-[60px] lg:grid-cols-2 lg:gap-10">
-      @for (job of filteredJobs(); track job.title) {
+      @for (job of jobs(); track job.id) {
         <app-card-job [job]="job" (selected)="openJob($event)" />
       }
     </div>

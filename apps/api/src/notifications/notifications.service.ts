@@ -15,7 +15,7 @@ interface CreateNotificationInput {
   targetType?:  string;
   targetId?:    string;
   actorId?:     string;
-  // Chemin côté web (ex. /forum/<id>) : sert au lien de l'email, n'est pas stocké.
+  // Chemin côté web (ex. /forum/<id>) : stocké pour la liste des notifications, repris dans l'email.
   link?:        string;
 }
 
@@ -43,6 +43,7 @@ export class NotificationsService {
         message:    input.message,
         targetType: input.targetType,
         targetId:   input.targetId,
+        link:       input.link,
         actorId:    input.actorId,
       },
       include: {

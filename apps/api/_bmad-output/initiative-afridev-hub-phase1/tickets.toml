@@ -42,3 +42,17 @@ slug = "epic-paiements"
 title = "Paiements Africains"
 covers = ["CAP-6"]
 after = [{ epic = 5, needs = "entité Job + rôle RECRUITER + plan premium trigger (FR-34)" }]
+
+[[epic]]
+id = 7
+slug = "epic-front-phase1"
+title = "Interfaces web Phase 1"
+covers = ["CAP-1", "CAP-2", "CAP-3", "CAP-4", "CAP-5", "CAP-6"]
+after = [
+  { epic = 2, needs = "badge vérifié, NotificationsModule et gateway" },
+  { epic = 3, needs = "forum, modération et réponses" },
+  { epic = 4, needs = "indicateur SM-6 des stats admin (4.8)" },
+  { epic = 5, needs = "jobs, validation des offres, CV et alertes" },
+  { epic = 6, needs = "plan premium et paiement Bictorys (6.6 pour l'écran de paiement)" },
+]
+

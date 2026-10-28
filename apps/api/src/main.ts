@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import helmet from 'helmet';
 import type { Request, Response } from 'express';
 import * as compression from 'compression';
+import { corsOrigins } from './common/cors';
 import { applyEnvelopeToDocument } from './common/swagger/envelope.document';
 import { SWAGGER_OAUTH_SCRIPT, SWAGGER_OAUTH_SCRIPT_PATH } from './common/swagger/oauth-login.script';
 
@@ -22,9 +23,9 @@ async function bootstrap() {
   app.use(helmet());
   app.use(compression());
 
-  // CORS — autoriser le front Angular
+  // CORS — autoriser le front Angular (WEB_URL et CORS_ORIGINS)
   app.enableCors({
-    origin: process.env['WEB_URL'] ?? 'http://localhost:4200',
+    origin: corsOrigins(process.env),
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

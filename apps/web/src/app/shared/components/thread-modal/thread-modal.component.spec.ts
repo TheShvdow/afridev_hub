@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 import { ThreadModalComponent } from './thread-modal.component';
 import { Thread } from '../card-thread/card-thread.component';
 import { ForumAnswer, ForumPostDetail, ForumService } from '../../../core/services/forum.service';
+import { VotesService } from '../../../core/services/votes.service';
 import { AuthStore } from '../../../core/store/auth.store';
 
 const THREAD: Thread = {
@@ -100,6 +101,7 @@ describe('ThreadModalComponent', () => {
         provideRouter([]),
         { provide: ForumService, useValue: forumStub },
         { provide: AuthStore, useValue: authStub },
+        { provide: VotesService, useValue: { votePost: jest.fn(), voteAnswer: jest.fn() } },
       ],
     }).compileComponents();
 
@@ -152,6 +154,17 @@ describe('ThreadModalComponent', () => {
     });
     expect(component.post()?.answers.length).toBe(DETAIL.answers.length + 1);
     expect(fixture.nativeElement.textContent).toContain(ANSWER.body);
+  });
+
+  it('should refuse an answer shorter than 30 characters', () => {
+    const component = fixture.componentInstance;
+    forumStub.createAnswer.mockClear();
+    component.answerForm.setValue({ body: '   Trop court.   ' });
+
+    component.submitAnswer();
+
+    expect(component.answerForm.controls.body.hasError('minlength')).toBe(true);
+    expect(forumStub.createAnswer).not.toHaveBeenCalled();
   });
 
   it('should delete an answer authored by the current user', () => {

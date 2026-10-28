@@ -45,6 +45,7 @@ Une plateforme en production où des développeurs africains peuvent poser des q
 - Decision: 2026-10-13 — 6 épics, une CAP par épic, chaque épic livré en production par un owner.
 - Decision: 2026-10-13 — Ordre de build recommandé : E1 → E2 → E3 → E5 → E4 → E6. E3, E4, E5 sont techniquement parallèles après E2 ; E6 attend E5 (trigger recruiter premium FR-34).
 - Decision: 2026-10-13 — Architecture spine AD-1 à AD-12 est le document de décision cross-épic autoritaire ; aucun contrat supplémentaire n'est nécessaire à ce niveau.
+- Decision: 2026-10-27 — 7e épic `epic-front-phase1` : le front Angular est suivi à part des épics d'API E1 à E6, qui restent clos (voir son envelope).
 - Decision: 2026-10-13 — `bmad setup` à lancer avant l'inception du premier épic pour mettre à jour `_bmad/method/scripts/`.
 
 ## Notes

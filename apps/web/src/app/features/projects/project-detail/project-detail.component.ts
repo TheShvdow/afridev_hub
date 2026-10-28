@@ -16,13 +16,14 @@ import { CountriesService } from '../../../core/services/countries.service';
 import { AuthStore } from '../../../core/store/auth.store';
 import { ToastService } from '../../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
+import { ReportButtonComponent } from '../../../shared/components/report-button/report-button.component';
 import { compactCount } from '../../../shared/utils/project-card.mapper';
 import { initialsFrom, relativeTime } from '../../../shared/utils/forum-thread.mapper';
 
 @Component({
   selector: 'app-project-detail',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, ReportButtonComponent],
   templateUrl: './project-detail.component.html',
   styleUrl: './project-detail.component.css',
 })

@@ -15,6 +15,17 @@ describe('NotificationsService — notify (story E2-6)', () => {
     expect(gateway.sendToUser).toHaveBeenCalledWith('u1', 'notification', created);
     expect(result).toBe(created);
   });
+
+  it('stores the web link of the target so the list can open it', async () => {
+    const prisma = { notification: { create: jest.fn().mockResolvedValue({ id: 'n1' }), }, user: { findUnique: jest.fn().mockResolvedValue(null) } };
+    const service = new NotificationsService(prisma as never, { sendToUser: jest.fn() } as never);
+
+    await service.notifyNewAnswer('author', 'a1', 'p1', 'helper');
+
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ link: '/forum/p1' }) }),
+    );
+  });
 });
 
 describe('NotificationsService — email (FR-18)', () => {

@@ -1,19 +1,10 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SectionHeading } from '../section-heading/section-heading';
-import { CardJobComponent, Job } from '../../../../shared/components/card-job.component/card-job.component';
+import { CardJobComponent } from '../../../../shared/components/card-job.component/card-job.component';
 import { JobDetailPanelComponent } from '../../../../shared/components/job-detail-panel/job-detail-panel.component';
 import { JobFiltersComponent } from '../../../../shared/components/job-filters/job-filters.component';
-import {
-  ALL_COUNTRIES,
-  ALL_CURRENCIES,
-  ALL_WORK_TYPES,
-  filterJobs,
-  JOB_COUNTRIES,
-  JOB_CURRENCIES,
-  JOB_WORK_TYPES,
-  JOBS,
-} from '../../../../shared/data/jobs.data';
+import { JobsBoardBase } from '../../../../shared/jobs/jobs-board.base';
 
 @Component({
   selector: 'app-jobs',
@@ -21,32 +12,6 @@ import {
   imports: [SectionHeading, RouterLink, CardJobComponent, JobDetailPanelComponent, JobFiltersComponent],
   templateUrl: './jobs.html',
 })
-export class Jobs {
-  readonly jobs: Job[] = JOBS;
-
-  readonly countries = JOB_COUNTRIES;
-  readonly workTypes = JOB_WORK_TYPES;
-  readonly currencies = JOB_CURRENCIES;
-
-  readonly selectedCountry = signal(ALL_COUNTRIES);
-  readonly selectedWorkType = signal(ALL_WORK_TYPES);
-  readonly selectedCurrency = signal(ALL_CURRENCIES);
-
-  readonly selectedJob = signal<Job | null>(null);
-
-  readonly filteredJobs = computed(() =>
-    filterJobs(this.jobs, {
-      country: this.selectedCountry(),
-      workType: this.selectedWorkType(),
-      currency: this.selectedCurrency(),
-    }),
-  );
-
-  openJob(job: Job): void {
-    this.selectedJob.set(job);
-  }
-
-  closeJob(): void {
-    this.selectedJob.set(null);
-  }
+export class Jobs extends JobsBoardBase {
+  protected readonly pageSize = 4;
 }

@@ -1,0 +1,38 @@
+<h2 class="text-[24px] font-bold text-[#141219]">Journal d'audit</h2>
+
+@if (loading()) {
+  <p class="py-12 text-center text-[16px] text-[#64748B]">Chargement du journal…</p>
+} @else if (errorMessage()) {
+  <div class="flex flex-col items-center gap-4 py-12 text-center">
+    <p role="alert" class="text-[16px] text-[#64748B]">{{ errorMessage() }}</p>
+    <button type="button" (click)="retry()" class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink">
+      Réessayer
+    </button>
+  </div>
+} @else if (entries().length === 0) {
+  <p class="py-12 text-center text-[16px] text-[#64748B]">Le journal est vide.</p>
+} @else {
+  <div class="mt-4 overflow-x-auto">
+    <table class="w-full min-w-[640px] text-left text-[14px]">
+      <thead>
+        <tr class="border-b border-[#E2E8F0] text-[#64748B]">
+          <th scope="col" class="py-2 pr-4 font-semibold">Date</th>
+          <th scope="col" class="py-2 pr-4 font-semibold">Auteur</th>
+          <th scope="col" class="py-2 pr-4 font-semibold">Action</th>
+          <th scope="col" class="py-2 font-semibold">Cible</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of entries(); track entry.id) {
+          <tr class="border-b border-[#F1F5F9]">
+            <td class="py-2 pr-4 text-[#64748B]">{{ formatDate(entry.createdAt) }}</td>
+            <td class="py-2 pr-4 text-[#141219]">{{ entry.user?.username ?? 'Système' }}</td>
+            <td class="py-2 pr-4 font-medium text-[#141219]">{{ entry.action }}</td>
+            <td class="py-2 text-[#64748B]">{{ entry.entityType }} · {{ entry.entityId }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <app-pager [page]="page()" [totalPages]="totalPages()" (pageChange)="goTo($event)" />
+}

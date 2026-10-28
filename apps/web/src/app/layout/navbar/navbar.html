@@ -49,6 +49,27 @@
                 Mon profil
               </a>
 
+              <a
+                routerLink="/notifications"
+                class="flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+                (click)="userMenuOpen.set(false)"
+              >
+                Notifications
+                @if (unreadCount() > 0) {
+                  <span class="rounded-full bg-[#FBBF24] px-2 py-0.5 text-[12px] font-semibold text-[#141219]">{{ unreadCount() }}</span>
+                }
+              </a>
+
+              @if (canModerate()) {
+                <a
+                  routerLink="/admin"
+                  class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+                  (click)="userMenuOpen.set(false)"
+                >
+                  Administration
+                </a>
+              }
+
               <button
                 type="button"
                 class="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-white/90 transition-colors hover:bg-white/10"

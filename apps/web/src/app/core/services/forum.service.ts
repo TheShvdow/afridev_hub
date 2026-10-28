@@ -153,6 +153,11 @@ export class ForumService {
     );
   }
 
+  /** `PATCH /api/forum/answers/{answerId}/accept` — auteur de la question uniquement. */
+  acceptAnswer(answerId: string): Observable<unknown> {
+    return this.http.patch(`${this.base}/answers/${encodeURIComponent(answerId)}/accept`, {});
+  }
+
   /** `DELETE /api/forum/answers/{answerId}` — auteur ou modérateur. */
   deleteAnswer(answerId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/answers/${encodeURIComponent(answerId)}`);

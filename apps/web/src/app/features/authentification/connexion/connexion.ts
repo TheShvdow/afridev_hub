@@ -133,13 +133,17 @@ export class Connexion implements OnInit {
     });
   }
 
-  /** Écrit la spécialité choisie à l'inscription, une fois la session ouverte. */
+  /**
+   * Écrit la spécialité choisie à l'inscription dans la stack du profil, une fois la session
+   * ouverte. La stack est l'une des conditions du badge « dev vérifié » ; la bio, qui exige
+   * 50 caractères pour ce badge, reste à la main de l'utilisateur.
+   */
   private applyPendingSpeciality(): void {
     const speciality = takeSpeciality();
     if (!speciality) return;
 
     this.usersService
-      .updateProfile({ bio: `Spécialité : ${speciality}` })
+      .updateProfile({ stack: [speciality] })
       .subscribe({ error: () => undefined });
   }
 

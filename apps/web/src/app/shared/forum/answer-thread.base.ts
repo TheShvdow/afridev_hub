@@ -1,11 +1,22 @@
 import { Directive, WritableSignal, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { FormBuilder, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { ForumAnswer, ForumPostDetail, ForumService } from '../../core/services/forum.service';
+import { VotesService, VoteValue } from '../../core/services/votes.service';
 import { AuthStore } from '../../core/store/auth.store';
 import { ToastService } from '../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../core/utils/api-error';
 import { initialsFrom, relativeTime } from '../utils/forum-thread.mapper';
+
+/** Règle du glossaire : une réponse fait au moins 30 caractères (comme `CreateAnswerDto`). */
+export const ANSWER_MIN_LENGTH = 30;
+
+function trimmedMinLength(min: number): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const length = String(control.value ?? '').trim().length;
+    return length > 0 && length < min ? { minlength: { requiredLength: min, actualLength: length } } : null;
+  };
+}
 
 type AuthorLike = { displayName?: string | null; username: string };
 
@@ -16,6 +27,7 @@ export abstract class AnswerThreadBase {
   protected readonly forum = inject(ForumService);
   protected readonly authStore = inject(AuthStore);
   protected readonly toast = inject(ToastService);
+  protected readonly votes = inject(VotesService);
 
   abstract readonly post: WritableSignal<ForumPostDetail | null>;
 
@@ -24,9 +36,11 @@ export abstract class AnswerThreadBase {
   readonly confirmingAnswerId = signal<string | null>(null);
   readonly deletingAnswerId = signal<string | null>(null);
   readonly answerDeleteError = signal<string | null>(null);
+  /** Identifiant du contenu dont un vote ou une acceptation est en cours. */
+  readonly pendingActionId = signal<string | null>(null);
 
   readonly answerForm = inject(FormBuilder).nonNullable.group({
-    body: ['', [Validators.required, Validators.maxLength(50000)]],
+    body: ['', [Validators.required, trimmedMinLength(ANSWER_MIN_LENGTH), Validators.maxLength(50000)]],
   });
 
   submitAnswer(): void {
@@ -73,6 +87,82 @@ export abstract class AnswerThreadBase {
         this.answerError.set(extractApiErrorMessage(error));
       },
     });
+  }
+
+  /** Un membre connecté peut voter sur le contenu des autres (la réputation est vérifiée par l'API). */
+  canVote(authorId: string): boolean {
+    const me = this.authStore.currentUser();
+    return !!me && me.id !== authorId;
+  }
+
+  /** Seul l'auteur de la question accepte une réponse, une seule à la fois. */
+  canAccept(answer: ForumAnswer): boolean {
+    const me = this.authStore.currentUser();
+    const question = this.post();
+    return !!me && !!question && me.id === question.userId && !answer.isAccepted && !question.isHidden;
+  }
+
+  voteOnQuestion(value: VoteValue): void {
+    const question = this.post();
+    if (!question || this.pendingActionId()) return;
+
+    this.pendingActionId.set(question.id);
+    this.votes.votePost(question.id, value).subscribe({
+      next: ({ newScore }) => {
+        this.pendingActionId.set(null);
+        this.post.update((current) => (current ? { ...current, voteScore: newScore } : current));
+      },
+      error: (error: HttpErrorResponse) => this.failAction(error),
+    });
+  }
+
+  voteOnAnswer(answer: ForumAnswer, value: VoteValue): void {
+    if (this.pendingActionId()) return;
+
+    this.pendingActionId.set(answer.id);
+    this.votes.voteAnswer(answer.id, value).subscribe({
+      next: ({ newScore }) => {
+        this.pendingActionId.set(null);
+        this.patchAnswer(answer.id, { voteScore: newScore });
+      },
+      error: (error: HttpErrorResponse) => this.failAction(error),
+    });
+  }
+
+  acceptAnswer(answer: ForumAnswer): void {
+    if (this.pendingActionId()) return;
+
+    this.pendingActionId.set(answer.id);
+    this.forum.acceptAnswer(answer.id).subscribe({
+      next: () => {
+        this.pendingActionId.set(null);
+        const existing = this.post();
+        if (existing) {
+          this.post.set({
+            ...existing,
+            isResolved: true,
+            answers: existing.answers.map((item) => ({ ...item, isAccepted: item.id === answer.id })),
+          });
+        }
+        this.toast.success('Réponse acceptée.');
+      },
+      error: (error: HttpErrorResponse) => this.failAction(error),
+    });
+  }
+
+  private patchAnswer(answerId: string, changes: Partial<ForumAnswer>): void {
+    const existing = this.post();
+    if (!existing) return;
+
+    this.post.set({
+      ...existing,
+      answers: existing.answers.map((item) => (item.id === answerId ? { ...item, ...changes } : item)),
+    });
+  }
+
+  private failAction(error: HttpErrorResponse): void {
+    this.pendingActionId.set(null);
+    this.toast.error(error.status === 401 ? 'Connectez-vous pour effectuer cette action.' : extractApiErrorMessage(error));
   }
 
   authorName(author: AuthorLike): string {

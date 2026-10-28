@@ -151,6 +151,7 @@
                   Modifier le projet
                 </a>
               }
+              <app-report-button entityType="PROJECT" [entityId]="item.id" [authorId]="item.user.id" [dark]="true" />
               @if (canDelete()) {
                 <button
                   type="button"

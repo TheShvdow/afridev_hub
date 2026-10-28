@@ -1,0 +1,57 @@
+<app-page-hero title="Offre d'emploi" subtitle="Consultez le détail de l'offre avant de postuler." />
+
+<section class="bg-white">
+  <div class="mx-auto w-full max-w-[800px] px-6 py-16 sm:px-10 lg:px-0 lg:py-10">
+    <a routerLink="/jobs" class="inline-flex items-center gap-2 text-[16px] font-semibold text-[#0F6932] hover:opacity-80">
+      Retour aux offres
+    </a>
+
+    @if (loading()) {
+      <p class="py-16 text-center text-[16px] text-[#64748B]">Chargement de l'offre…</p>
+    } @else if (notFound()) {
+      <div class="flex flex-col items-center gap-4 py-16 text-center">
+        <p class="text-[24px] font-bold text-[#141219]">Offre introuvable</p>
+        <p class="text-[16px] leading-[26px] text-[#64748B]">Cette offre n'existe pas ou n'est plus publiée.</p>
+      </div>
+    } @else if (loadError()) {
+      <div class="flex flex-col items-center gap-4 py-16 text-center">
+        <p role="alert" class="text-[16px] text-[#64748B]">{{ loadError() }}</p>
+        <button
+          type="button"
+          (click)="retry()"
+          class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink"
+        >
+          Réessayer
+        </button>
+      </div>
+    } @else if (job()) {
+      <article class="mt-8 flex flex-col gap-6">
+        <header>
+          <p class="text-[16px] leading-[26px] text-[#64748B]">{{ job()!.company }}</p>
+          <h1 class="text-[32px] font-bold leading-[40px] text-[#141219]">{{ job()!.title }}</h1>
+          <p class="mt-2 text-[16px] text-[#64748B]">{{ job()!.location }} · {{ job()!.type }}</p>
+          <p class="mt-2 text-[20px] font-bold text-[#141219]">{{ job()!.salary }}</p>
+          <p class="text-[14px] text-[#64748B]">{{ job()!.posted }}</p>
+        </header>
+
+        <div class="flex flex-wrap gap-4">
+          @for (skill of job()!.skills; track skill) {
+            <span class="rounded-[1000px] bg-[#F0FDF4] px-[16px] py-[4px] text-[16px] font-medium text-[#0F6932]">{{ skill }}</span>
+          }
+        </div>
+
+        <section>
+          <h2 class="text-[18px] font-bold leading-[28px] text-[#141219]">Description du poste</h2>
+          <p class="mt-2 whitespace-pre-line text-[16px] leading-[26px] text-[#64748B]">{{ job()!.description }}</p>
+        </section>
+
+        <a
+          [routerLink]="['/jobs', job()!.id, 'apply']"
+          class="inline-flex h-14 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90 sm:self-start"
+        >
+          Postuler
+        </a>
+      </article>
+    }
+  </div>
+</section>

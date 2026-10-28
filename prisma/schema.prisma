@@ -638,6 +638,7 @@ model Notification {
   message    String
   targetType String?
   targetId   String?
+  link       String? // chemin web du contenu concerné (ex. /forum/<id>)
   actorId    String?
   isRead     Boolean          @default(false)
   readAt     DateTime?

@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { PostListComponent } from './post-list.component';
 import { ForumPost, ForumService, ListPostsQuery } from '../../../core/services/forum.service';
+import { VotesService } from '../../../core/services/votes.service';
 import { AuthStore } from '../../../core/store/auth.store';
 
 function makePost(overrides: Partial<ForumPost> = {}): ForumPost {
@@ -48,6 +49,18 @@ const forumStub = {
       meta: { total: data.length, page: query.page ?? 1, limit: query.limit ?? 20, totalPages: 1 },
     });
   },
+  // La modale charge la question complète à son ouverture.
+  getPost(id: string) {
+    const post = POSTS.find((item) => item.id === id) ?? POSTS[0];
+    return of({
+      ...post,
+      userId: post.user.id,
+      body: 'Contenu de la question.',
+      isHidden: false,
+      updatedAt: post.createdAt,
+      answers: [],
+    });
+  },
 };
 
 describe('PostListComponent', () => {
@@ -60,6 +73,7 @@ describe('PostListComponent', () => {
       providers: [
         provideRouter([]),
         { provide: ForumService, useValue: forumStub },
+        { provide: VotesService, useValue: { votePost: jest.fn(), voteAnswer: jest.fn() } },
         { provide: AuthStore, useValue: { currentUser: () => null, isAuthenticated: () => false } },
       ],
     }).compileComponents();
