@@ -4,7 +4,7 @@
       [value]="selectedCountry()"
       (change)="selectedCountry.set($any($event.target).value)"
       aria-label="Filtrer par pays"
-      class="rounded-full border border-[#E2E8F0] bg-white px-[16px] py-[4px] text-[16px] font-medium text-[#141219]"
+      class="max-w-full rounded-full border border-[#E2E8F0] bg-white px-[16px] py-[4px] text-[16px] font-medium text-[#141219]"
     >
       @for (country of countries(); track country) {
         <option [value]="country">{{ country }}</option>

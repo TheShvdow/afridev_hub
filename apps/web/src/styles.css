@@ -94,12 +94,15 @@
 
 /* ── Reset / base ────────────────────────────────────────────────── */
 html {
+  /* Filet de sécurité : un élément trop large ne doit jamais élargir la page sur téléphone. */
+  overflow-x: clip;
   font-size: 16px;
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
+  overflow-x: clip;
   font-family: var(--font-family-base);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-regular);
@@ -236,6 +239,32 @@ code[class*='language-'] {
   .auth-field__input:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  /* Champ avec bouton « afficher » : l'œil reste dans le cadre, l'astérisque se place avant lui. */
+  .auth-field__input--with-toggle {
+    padding-right: 4.5rem;
+  }
+
+  .auth-field__toggle {
+    position: absolute;
+    right: 0.75rem;
+    display: flex;
+    height: 2rem;
+    width: 2rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    color: #64748B;
+    transition: color var(--transition-fast);
+  }
+
+  .auth-field__toggle:hover {
+    color: #141219;
+  }
+
+  .auth-field__required.auth-field__required--with-toggle {
+    right: 3.25rem;
   }
 
   .auth-field__required {
