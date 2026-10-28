@@ -175,6 +175,18 @@ export class JobApplicationDto {
   @ApiPropertyOptional({ description: 'Profil candidat tronqué (plan gratuit)' }) profileTruncated?: boolean;
   @ApiProperty({ enum: ApplicationStatus }) status!: ApplicationStatus;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
+  @ApiPropertyOptional({ nullable: true, example: 'Aminata Diallo' }) fullName?: string | null;
+  @ApiPropertyOptional({ nullable: true, example: '+221 77 123 45 67' }) phone?: string | null;
+  @ApiPropertyOptional({ nullable: true, example: 'SN', description: 'Pays de résidence' }) country?: string | null;
+  @ApiPropertyOptional({ nullable: true, example: 'Dakar' }) city?: string | null;
+  @ApiPropertyOptional({ nullable: true }) linkedinUrl?: string | null;
+  @ApiPropertyOptional({ nullable: true }) githubUrl?: string | null;
+  @ApiPropertyOptional({ nullable: true }) portfolioUrl?: string | null;
+  @ApiPropertyOptional({ nullable: true, example: 3 }) experienceYears?: number | null;
+  @ApiPropertyOptional({ nullable: true, format: 'date', example: '2026-12-01' }) availableFrom?: string | null;
+  @ApiPropertyOptional({ nullable: true, example: 900000 }) expectedSalary?: number | null;
+  @ApiPropertyOptional({ nullable: true, example: 'XOF' }) expectedCurrency?: string | null;
+  @ApiPropertyOptional({ type: [String], example: ['Angular', 'NestJS'] }) stack?: string[];
 }
 
 export class RecruiterPlanDto {

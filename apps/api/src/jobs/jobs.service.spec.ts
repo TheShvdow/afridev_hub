@@ -142,26 +142,61 @@ describe('JobsService — modification, fermeture et renouvellement', () => {
 describe('JobsService — candidatures (FR-31)', () => {
   it('stores the checked CV key and notifies the recruiter through an event', async () => {
     const { service, uploads, events } = build({ job: offer });
-    const result = await service.apply('j1', 'u2', { message: 'Bonjour', cvKey: 'cvs/u2/x.pdf' });
+    const result = await service.apply('j1', 'u2', { message: 'Bonjour', fullName: 'Aminata Diallo', cvKey: 'cvs/u2/x.pdf' });
     expect(uploads.confirmCv).toHaveBeenCalledWith('u2', 'cvs/u2/x.pdf');
     expect(result).toMatchObject({ hasCv: true });
     expect(result).not.toHaveProperty('cvUrl');
     expect(events.emit).toHaveBeenCalledWith('jobs.application.created', expect.objectContaining({ recruiterId: 'owner', applicantId: 'u2' }));
   });
 
+  it('stores the applicant details sent with the application', async () => {
+    const { service, prisma } = build({ job: offer });
+
+    await service.apply('j1', 'u2', {
+      message: 'Bonjour',
+      fullName: 'Aminata Diallo',
+      phone: '+221 77 123 45 67',
+      country: 'SN',
+      city: 'Dakar',
+      githubUrl: 'https://github.com/aminata-dev',
+      experienceYears: 3,
+      availableFrom: '2026-12-01',
+      expectedSalary: 900000,
+      expectedCurrency: 'XOF',
+      stack: ['Angular', 'NestJS'],
+    });
+
+    expect(prisma.jobApplication.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        jobId: 'j1',
+        userId: 'u2',
+        fullName: 'Aminata Diallo',
+        phone: '+221 77 123 45 67',
+        country: 'SN',
+        city: 'Dakar',
+        githubUrl: 'https://github.com/aminata-dev',
+        experienceYears: 3,
+        availableFrom: new Date('2026-12-01'),
+        expectedSalary: 900000,
+        expectedCurrency: 'XOF',
+        stack: ['Angular', 'NestJS'],
+      }),
+    });
+  });
+
   it('returns 409 on a second application', async () => {
     const { service } = build({ job: offer, existingApplication: { id: 'a0' } });
-    await expect(service.apply('j1', 'u2', { message: 'x' })).rejects.toMatchObject({ code: 'JOBS_ALREADY_APPLIED', status: 409 });
+    await expect(service.apply('j1', 'u2', { message: 'x', fullName: 'Aminata Diallo' })).rejects.toMatchObject({ code: 'JOBS_ALREADY_APPLIED', status: 409 });
   });
 
   it('refuses an application to an expired offer', async () => {
     const { service } = build({ job: { ...offer, expiresAt: new Date(Date.now() - 1000) } });
-    await expect(service.apply('j1', 'u2', { message: 'x' })).rejects.toMatchObject({ code: 'JOBS_OFFER_CLOSED' });
+    await expect(service.apply('j1', 'u2', { message: 'x', fullName: 'Aminata Diallo' })).rejects.toMatchObject({ code: 'JOBS_OFFER_CLOSED' });
   });
 
   it('refuses an application from the recruiter of the offer', async () => {
     const { service } = build({ job: offer });
-    await expect(service.apply('j1', 'owner', { message: 'x' })).rejects.toMatchObject({ code: 'JOBS_FORBIDDEN' });
+    await expect(service.apply('j1', 'owner', { message: 'x', fullName: 'Aminata Diallo' })).rejects.toMatchObject({ code: 'JOBS_FORBIDDEN' });
   });
 });
 

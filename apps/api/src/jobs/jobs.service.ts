@@ -277,7 +277,24 @@ export class JobsService {
     let application;
     try {
       application = await this.prisma.jobApplication.create({
-        data: { jobId, userId, message: dto.message, cvUrl: cvKey },
+        data: {
+          jobId,
+          userId,
+          message:          dto.message,
+          cvUrl:            cvKey,
+          fullName:         dto.fullName,
+          phone:            dto.phone,
+          country:          dto.country,
+          city:             dto.city,
+          linkedinUrl:      dto.linkedinUrl,
+          githubUrl:        dto.githubUrl,
+          portfolioUrl:     dto.portfolioUrl,
+          experienceYears:  dto.experienceYears,
+          availableFrom:    dto.availableFrom ? new Date(dto.availableFrom) : undefined,
+          expectedSalary:   dto.expectedSalary,
+          expectedCurrency: dto.expectedCurrency,
+          stack:            dto.stack ?? [],
+        },
       });
     } catch (error) {
       // Deux envois simultanés : la contrainte unique tranche.

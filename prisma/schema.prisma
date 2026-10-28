@@ -546,6 +546,21 @@ model JobApplication {
   status    ApplicationStatus @default(PENDING)
   createdAt DateTime          @default(now())
 
+  // Informations saisies par le candidat avec sa candidature (toutes facultatives en base :
+  // les candidatures antérieures n'en ont pas).
+  fullName         String?
+  phone            String?
+  country          String? // code pays ISO 3166-1 alpha-2 (liste de common/countries.ts)
+  city             String?
+  linkedinUrl      String?
+  githubUrl        String?
+  portfolioUrl     String?
+  experienceYears  Int?
+  availableFrom    DateTime? @db.Date
+  expectedSalary   Int? // unités de base, dans expectedCurrency
+  expectedCurrency String? // ISO 4217
+  stack            String[]  @default([])
+
   job  JobOffer @relation(fields: [jobId], references: [id], onDelete: Cascade)
   user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
