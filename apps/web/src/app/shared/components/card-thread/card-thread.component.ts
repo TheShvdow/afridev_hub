@@ -1,5 +1,6 @@
 import { Component, input, output } from '@angular/core';
 import { CommentData } from '../comment-item/comment-item';
+import { PrefetchDirective } from '../../directives/prefetch.directive';
 
 export interface Thread {
   id: string;
@@ -16,7 +17,7 @@ export interface Thread {
 @Component({
   selector: 'app-card-thread',
   standalone: true,
-  imports: [],
+  imports: [PrefetchDirective],
   templateUrl: './card-thread.component.html',
 })
 export class CardThreadComponent {

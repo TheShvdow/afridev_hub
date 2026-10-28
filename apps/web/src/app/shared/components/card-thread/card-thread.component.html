@@ -1,4 +1,5 @@
 <article
+  [appPrefetch]="'/forum/posts/' + thread().id"
   tabindex="0"
   role="button"
   (click)="opened.emit(thread())"

@@ -355,3 +355,16 @@ covers = ["CAP-1", "CAP-2", "CAP-3", "CAP-5", "CAP-6"]
 after = [19]
 hitl = false
 risk = "low"
+
+id = 28
+type = "story"
+title = "Cache des lectures côté front"
+description = """
+Intercepteur de cache des lectures publiques (forum, projets, offres, profils) : réponse immédiate depuis le cache puis relecture en arrière-plan, vidé par toute écriture réussie et par les notifications en temps réel, une entrée par membre, doublé dans sessionStorage ; préchargement au survol des cartes.
+"""
+verify = "Rouvrir une page déjà vue s'affiche sans attente ; une écriture ou une notification vide le cache et la page affiche les données à jour."
+covers = ["CAP-2", "CAP-3", "CAP-5"]
+after = [3]
+hitl = false
+risk = "medium"
+

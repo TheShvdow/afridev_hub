@@ -1,4 +1,5 @@
 import { Component, input, output } from '@angular/core';
+import { PrefetchDirective } from '../../directives/prefetch.directive';
 
 export interface Job {
   /** Identifiant de l'offre côté API (absent des données de démonstration). */
@@ -25,7 +26,7 @@ export interface Job {
 @Component({
   selector: 'app-card-job',
   standalone: true,
-  imports: [],
+  imports: [PrefetchDirective],
   templateUrl: './card-job.component.html',
 })
 export class CardJobComponent {
