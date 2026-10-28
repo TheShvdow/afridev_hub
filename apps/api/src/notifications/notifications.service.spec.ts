@@ -57,3 +57,55 @@ describe('NotificationsService — email (FR-18)', () => {
     expect(mail.send).not.toHaveBeenCalled();
   });
 });
+
+describe('NotificationsService — accusé de réception de candidature', () => {
+  const application = {
+    id: 'abcdef12-0000-0000-0000-000000000000',
+    createdAt: new Date('2026-10-28T09:30:00Z'),
+    cvUrl: null as string | null,
+    job:  { id: 'job-1', title: 'Développeur Angular', company: 'Wave' },
+    user: { email: 'aminata@example.com', username: 'aminata', displayName: 'Aminata' },
+  };
+
+  function build(found: typeof application | null, emailNotifications = false) {
+    const prisma = {
+      jobApplication: { findUnique: jest.fn().mockResolvedValue(found) },
+      user: { findUnique: jest.fn().mockResolvedValue({ email: 'aminata@example.com', emailNotifications }) },
+    };
+    const mail = { send: jest.fn().mockResolvedValue(undefined) };
+    const config = { get: jest.fn().mockReturnValue('https://afridevhub.com') };
+    const service = new NotificationsService(prisma as never, { sendToUser: jest.fn() } as never, mail as never, config as never);
+    return { service, mail, prisma };
+  }
+
+  it('emails the applicant a receipt with the offer details, even with activity emails turned off', async () => {
+    const { service, mail } = build(application, false);
+
+    await service.sendApplicationReceipt(application.id);
+
+    expect(mail.send).toHaveBeenCalledTimes(1);
+    const [to, subject, html] = mail.send.mock.calls[0];
+    expect(to).toBe('aminata@example.com');
+    expect(subject).toBe('Candidature envoyée : Développeur Angular chez Wave');
+    expect(html).toContain('Développeur Angular');
+    expect(html).toContain('Wave');
+    expect(html).toContain('ABCDEF12');
+    expect(html).toContain('https://afridevhub.com/jobs/job-1');
+  });
+
+  it('says whether a CV was attached', async () => {
+    const { service, mail } = build({ ...application, cvUrl: 'cvs/u1/x.pdf' });
+
+    await service.sendApplicationReceipt(application.id);
+
+    expect(mail.send.mock.calls[0][2]).toMatch(/CV joint[\s\S]*Oui/);
+  });
+
+  it('sends nothing when the application no longer exists', async () => {
+    const { service, mail } = build(null);
+
+    await service.sendApplicationReceipt('missing');
+
+    expect(mail.send).not.toHaveBeenCalled();
+  });
+});

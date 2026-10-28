@@ -1,20 +1,20 @@
 <nav
-  class="fixed top-0 left-0 right-0 z-50 flex justify-center top-3 sm:p-[14px] md:p-[16px] pointer-events-auto w-full max-w-[1000px] mx-auto rounded-[1000px] border border-slate-[#E2E8F029] bg-[#1e1e1e]/90 backdrop-blur-md"
+  class="fixed top-0 left-0 right-0 z-50 flex justify-center top-3 px-4 py-2 sm:px-[14px] md:px-[16px] pointer-events-auto w-full max-w-[1000px] mx-auto rounded-[1000px] border border-slate-[#E2E8F029] bg-[#1e1e1e]/90 backdrop-blur-md"
   aria-label="Navigation principale">
 
 
   <div class="w-full flex items-center justify-between">
     <a href="#" class="flex shrink-0 items-center" aria-label="AfriDev Hub">
-      <img src="assets/images/logo.png" alt="AfriDev Hub" class="w-full h-auto" />
+      <img src="assets/images/logo.png" alt="AfriDev Hub" class="h-8 w-auto" />
     </a>
 
-    <ul class="hidden items-center lg:flex lg:gap-[23px]">
+    <ul class="hidden items-center lg:flex lg:gap-2">
       @for (item of links; track item.label) {
         <li>
           <a
             [routerLink]="item.link"
             [fragment]="item.fragment"
-            class="flex h-[46px] items-center px-4 text-base font-semibold leading-[26px] text-white transition-colors hover:text-white/80"
+            class="flex h-9 items-center px-3 text-[15px] font-semibold leading-6 text-white transition-colors hover:text-white/80"
           >{{ item.label }}</a>
         </li>
       }
@@ -25,7 +25,7 @@
         <div class="relative">
           <button
             type="button"
-            class="inline-flex size-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/10"
+            class="inline-flex size-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/10"
             (click)="toggleUserMenu($event)"
             aria-label="Menu du compte"
             [attr.aria-expanded]="userMenuOpen()"
@@ -60,6 +60,16 @@
                 }
               </a>
 
+              @if (authStore.currentUser()?.isRecruiter) {
+                <a
+                  routerLink="/jobs/mine"
+                  class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+                  (click)="userMenuOpen.set(false)"
+                >
+                  Mes offres
+                </a>
+              }
+
               @if (canModerate()) {
                 <a
                   routerLink="/admin"
@@ -81,13 +91,13 @@
           }
         </div>
       } @else {
-        <a routerLink="/auth/login" class="text-[#0F6932] border border-[#0F6932] rounded-[1000px] px-[20px] py-[14px] text-[16px] font-semibold leading-[26px] transition-colors hover:bg-[#0F6932] hover:text-white">
+        <a routerLink="/auth/login" class="text-[#0F6932] border border-[#0F6932] rounded-[1000px] px-4 py-2 text-[15px] font-semibold leading-6 transition-colors hover:bg-[#0F6932] hover:text-white">
           Rejoindre
         </a>
       }
       <button
         type="button"
-        class="inline-flex size-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/10 lg:hidden"
+        class="inline-flex size-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/10 lg:hidden"
         (click)="menuOpen.set(!menuOpen())"
         [attr.aria-label]="menuOpen() ? 'Fermer le menu' : 'Ouvrir le menu'"
         [attr.aria-expanded]="menuOpen()"

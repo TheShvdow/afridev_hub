@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { PostListComponent } from './post-list.component';
 import { ForumPost, ForumService, ListPostsQuery } from '../../../core/services/forum.service';
+import { ModerationService } from '../../../core/services/moderation.service';
 import { VotesService } from '../../../core/services/votes.service';
 import { AuthStore } from '../../../core/store/auth.store';
 
@@ -74,6 +75,7 @@ describe('PostListComponent', () => {
         provideRouter([]),
         { provide: ForumService, useValue: forumStub },
         { provide: VotesService, useValue: { votePost: jest.fn(), voteAnswer: jest.fn() } },
+        { provide: ModerationService, useValue: { report: jest.fn() } },
         { provide: AuthStore, useValue: { currentUser: () => null, isAuthenticated: () => false } },
       ],
     }).compileComponents();
@@ -99,6 +101,14 @@ describe('PostListComponent', () => {
     const cards = fixture.nativeElement.querySelectorAll('app-card-thread');
     expect(cards.length).toBe(1);
     expect(fixture.nativeElement.textContent).toContain('passer de freelance à CTO');
+  });
+
+  it('should update the vote count of a card when the modal reports a new score', () => {
+    component.updateScore({ id: 'post-1', score: 42 });
+    fixture.detectChanges();
+
+    expect(component.threads().find((thread) => thread.id === 'post-1')?.votes).toBe('42');
+    expect(component.threads().find((thread) => thread.id === 'post-2')?.votes).toBe('19');
   });
 
   it('should open the discussion modal when a thread is opened', () => {

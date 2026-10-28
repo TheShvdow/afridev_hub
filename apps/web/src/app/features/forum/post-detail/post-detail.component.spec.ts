@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { PostDetailComponent } from './post-detail.component';
 import { ForumPostDetail, ForumService } from '../../../core/services/forum.service';
 import { ModerationService } from '../../../core/services/moderation.service';
@@ -209,6 +209,50 @@ describe('PostDetailComponent', () => {
 
     expect(votesStub.voteAnswer).toHaveBeenCalledWith('answer-1', 'UP');
     expect(fixture.componentInstance.post()?.answers[0].voteScore).toBe(2);
+  });
+
+  it('should show the vote immediately, before the API answers', () => {
+    const pending = new Subject<{ action: string; newScore: number }>();
+    votesStub.voteAnswer.mockReturnValueOnce(pending as never);
+
+    const button = fixture.nativeElement.querySelector('[aria-label="Voter pour cette réponse"]') as HTMLButtonElement;
+    button.click();
+    fixture.detectChanges();
+
+    // Score 1 → 2 et pouce plein dès le clic, sans attendre la réponse.
+    expect(fixture.componentInstance.post()?.answers[0].voteScore).toBe(2);
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+
+    pending.next({ action: 'added', newScore: 2 });
+    fixture.detectChanges();
+    expect(fixture.componentInstance.post()?.answers[0].userVote).toBe('UP');
+  });
+
+  it('should restore the previous score and thumb when the API refuses the vote', () => {
+    votesStub.voteAnswer.mockReturnValueOnce(
+      throwError(() => ({ status: 403, error: { error: { message: 'Il faut au moins 10 points de réputation pour voter.' } } })) as never,
+    );
+
+    (fixture.nativeElement.querySelector('[aria-label="Voter pour cette réponse"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const answer = fixture.componentInstance.post()?.answers[0];
+    expect(answer?.voteScore).toBe(1);
+    expect(answer?.userVote ?? null).toBeNull();
+  });
+
+  it('should cancel an existing vote on a second click and switch it with +2', () => {
+    const component = fixture.componentInstance;
+    component.post.set({ ...DETAIL, answers: [{ ...DETAIL.answers[0], voteScore: 4, userVote: 'UP' }] });
+    votesStub.voteAnswer
+      .mockReturnValueOnce(of({ action: 'removed', newScore: 3 }) as never)
+      .mockReturnValueOnce(of({ action: 'changed', newScore: 1 }) as never);
+
+    component.voteOnAnswer(component.post()!.answers[0], 'UP');
+    expect(component.post()?.answers[0]).toMatchObject({ voteScore: 3, userVote: null });
+
+    component.voteOnAnswer(component.post()!.answers[0], 'DOWN');
+    expect(component.post()?.answers[0]).toMatchObject({ voteScore: 1, userVote: 'DOWN' });
   });
 
   it('should let the question author accept another answer', () => {

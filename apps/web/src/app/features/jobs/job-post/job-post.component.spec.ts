@@ -57,7 +57,7 @@ describe('JobPostComponent', () => {
     expect(component.form.controls.stack.hasError('stackTooMany')).toBe(true);
   });
 
-  it('sends a normalized offer and goes back to the list', () => {
+  it('sends a normalized offer and goes to my offers', () => {
     jobs.create.mockReturnValue(of({ id: 'job-1' }));
     const component = create();
     const navigate = jest.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
@@ -68,7 +68,7 @@ describe('JobPostComponent', () => {
     expect(jobs.create).toHaveBeenCalledWith(
       expect.objectContaining({ company: 'GTECH', stack: ['NestJS', 'Docker'], salaryMin: 500000, country: 'SN' }),
     );
-    expect(navigate).toHaveBeenCalledWith('/jobs');
+    expect(navigate).toHaveBeenCalledWith('/jobs/mine');
   });
 
   it('offers to activate the recruiter profile, then retries the submission', () => {

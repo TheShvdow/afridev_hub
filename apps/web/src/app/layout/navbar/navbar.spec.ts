@@ -98,6 +98,20 @@ describe('Navbar', () => {
     expect(text).toContain('Déconnexion');
   });
 
+  it('propose « Mes offres » aux recruteurs seulement', () => {
+    store.setTokens('at-1', 'rt-1');
+    store.setUser({ ...user, isRecruiter: true });
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('button[aria-label="Menu du compte"]').click();
+    controller
+      .expectOne((req) => req.url.endsWith('/notifications/unread-count'))
+      .flush({ data: { count: 0 } });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Mes offres');
+  });
+
   it('déconnecte et ferme le menu au clic sur « Déconnexion »', () => {
     store.setTokens('at-1', 'rt-1');
     store.setUser(user);

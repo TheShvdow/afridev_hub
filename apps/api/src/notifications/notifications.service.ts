@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { escapeHtml } from '../mail/escape-html';
-import { emailButton, emailNote } from '../mail/email-layout';
+import { emailButton, emailDetails, emailNote } from '../mail/email-layout';
 import { NotificationsGateway } from './notifications.gateway';
 import { NotificationType } from '@prisma/client';
 
@@ -185,6 +185,45 @@ export class NotificationsService {
       actorId:    applicantId,
       link:       `/jobs/${jobId}`,
     });
+  }
+
+  // Accusé de réception envoyé au candidat. Email transactionnel : il part même si le membre a
+  // désactivé les emails d'activité, puisqu'il confirme une action qu'il vient de faire.
+  async sendApplicationReceipt(applicationId: string) {
+    if (!this.mail) return;
+
+    const application = await this.prisma.jobApplication.findUnique({
+      where:  { id: applicationId },
+      select: {
+        id: true,
+        createdAt: true,
+        cvUrl: true,
+        job:  { select: { id: true, title: true, company: true } },
+        user: { select: { email: true, username: true, displayName: true } },
+      },
+    });
+    if (!application) return;
+
+    const { job, user } = application;
+    const webUrl = this.config?.get<string>('WEB_URL') ?? 'http://localhost:4200';
+    const sentAt = application.createdAt.toLocaleString('fr-FR', {
+      day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+    });
+    const html = `
+      <h1 style="margin:0 0 16px;font-size:20px">Votre candidature a bien été envoyée</h1>
+      <p>Bonjour ${escapeHtml(user.displayName ?? user.username)},</p>
+      <p>Nous confirmons l'envoi de votre candidature. Le recruteur en a été informé.</p>
+      ${emailDetails([
+        ['Offre', job.title],
+        ['Entreprise', job.company],
+        ['Envoyée le', `${sentAt} (UTC)`],
+        ['CV joint', application.cvUrl ? 'Oui' : 'Non'],
+        ['Référence', application.id.slice(0, 8).toUpperCase()],
+      ])}
+      ${emailButton(`${webUrl}/jobs/${job.id}`, "Revoir l'offre")}
+      ${emailNote('Ce message confirme la réception de votre candidature par AfriDev Hub, il ne préjuge pas de la suite donnée par le recruteur.')}`;
+
+    await this.mail.send(user.email, `Candidature envoyée : ${job.title} chez ${job.company}`, html);
   }
 
   async notifyJobReviewed(recruiterId: string, jobId: string, jobTitle: string, approved: boolean, reason?: string) {

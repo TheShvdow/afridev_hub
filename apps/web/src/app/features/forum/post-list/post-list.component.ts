@@ -80,6 +80,13 @@ export class PostListComponent implements OnInit {
     this.selectedThread.set(thread);
   }
 
+  /** Reprend dans la carte le score modifié par un vote dans la fenêtre, sans recharger la liste. */
+  updateScore({ id, score }: { id: string; score: number }): void {
+    this.threads.update((threads) =>
+      threads.map((thread) => (thread.id === id && thread.votes !== String(score) ? { ...thread, votes: String(score) } : thread)),
+    );
+  }
+
   closeThread(): void {
     this.selectedThread.set(null);
   }

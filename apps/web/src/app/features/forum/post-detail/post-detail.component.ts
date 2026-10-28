@@ -14,12 +14,13 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ForumPostDetail } from '../../../core/services/forum.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
 import { ReportButtonComponent } from '../../../shared/components/report-button/report-button.component';
+import { VoteControlComponent } from '../../../shared/components/vote-control/vote-control.component';
 import { AnswerThreadBase } from '../../../shared/forum/answer-thread.base';
 
 @Component({
   selector: 'app-post-detail',
   standalone: true,
-  imports: [RouterLink, ReactiveFormsModule, ReportButtonComponent],
+  imports: [RouterLink, ReactiveFormsModule, ReportButtonComponent, VoteControlComponent],
   templateUrl: './post-detail.component.html',
   styleUrl: './post-detail.component.css',
 })

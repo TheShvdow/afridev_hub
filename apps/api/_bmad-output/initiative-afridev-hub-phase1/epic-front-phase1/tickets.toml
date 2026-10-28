@@ -152,7 +152,7 @@ id = 12
 type = "story"
 title = "Afficher le vote déjà donné"
 description = """
-L'API renvoie le vote du membre connecté sur chaque question et réponse (userVote) et le front met le bouton en évidence ; un second clic annule le vote.
+L'API renvoie le vote du membre connecté sur chaque question et réponse (userVote) et le front met le bouton en évidence ; un second clic annule le vote. Mise à jour immédiate du score et du pouce avec retour arrière en cas de refus. Commits de cette story : API `userVote`, composant `app-vote-control`.
 """
 verify = "Après rechargement, la flèche du vote donné est mise en évidence et un second clic l'annule."
 covers = ["CAP-3"]
@@ -205,7 +205,7 @@ id = 16
 type = "story"
 title = "Recruteur : tableau de bord des offres, quota et renouvellement"
 description = """
-Écran « Mes offres » (GET /jobs/mine) avec statuts et motifs de refus, quota du plan (GET /jobs/plan), modifier, fermer et renouveler.
+Écran « Mes offres » (GET /jobs/mine) avec statuts et motifs de refus, quota du plan (GET /jobs/plan), modifier, fermer et renouveler. Livré : liste, motifs de refus, quota, renouveler, clôturer et lecture des candidatures reçues (coordonnées, liens, CV) ; la modification d'une offre reste à faire.
 """
 verify = "Un recruteur voit ses offres refusées avec le motif, en renouvelle une et voit son quota du mois."
 covers = ["CAP-5"]
@@ -292,3 +292,30 @@ covers = ["CAP-1"]
 after = [21]
 hitl = false
 risk = "medium"
+
+[[entry]]
+id = 23
+type = "story"
+title = "Candidature enrichie : coordonnées, liens, profil et CV"
+description = """
+Formulaire de candidature complet (nom, téléphone, pays, ville, LinkedIn, GitHub, portfolio, années d'expérience, disponibilité, prétentions salariales, technologies, CV PDF, message) prérempli depuis le profil ; migration 20261028120000_job_application_details, ApplyJobDto étendu et validé, envoi du CV vers R2 par URL signée avec fetch.
+"""
+verify = "Un membre postule avec ses informations et un CV PDF ; la candidature enregistrée contient tous les champs et le CV est joint."
+covers = ["CAP-5"]
+after = [3, 17]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 24
+type = "story"
+title = "Accusé de réception de candidature par e-mail"
+description = """
+Le candidat reçoit un e-mail récapitulatif (offre, entreprise, date, CV joint, référence) à l'envoi de sa candidature, même s'il a désactivé les e-mails d'activité ; un échec d'envoi n'annule pas la candidature.
+"""
+verify = "Après une candidature, un e-mail de confirmation arrive à l'adresse du candidat avec les détails de l'offre."
+covers = ["CAP-5"]
+after = [3, "5.9"]
+hitl = false
+risk = "low"
+
