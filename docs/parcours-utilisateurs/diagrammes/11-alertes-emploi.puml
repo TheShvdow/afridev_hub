@@ -1,0 +1,35 @@
+@startuml
+title Alertes emploi
+autonumber
+actor Candidat
+participant Front
+participant API
+database Base
+participant Notifications
+participant "E-mail" as Mail
+
+Candidat -> Front : « Mes alertes » puis pays, mode, pile technique
+Front -> API : POST /jobs/alerts
+alt au moins un critère et limite non atteinte
+  API -> Base : crée l'alerte
+  API --> Front : alerte créée
+else aucun critère
+  API --> Front : 400
+else limite atteinte
+  API --> Front : 400 « supprimez-en une »
+end
+
+== Une offre correspondante est publiée ==
+API ->> API : jobs.offer.published
+API -> Base : cherche les alertes dont tous les critères sont satisfaits
+API ->> Notifications : jobs.alert.matched
+Notifications -> Base : notification JOB_ALERT (dans l'application)
+Notifications --> Candidat : notification en temps réel
+
+== Chaque lundi ==
+API -> Base : offres de la semaine par alerte
+API --> Mail : récapitulatif hebdomadaire
+
+Candidat -> Front : supprime une alerte
+Front -> API : DELETE /jobs/alerts/{id}
+@enduml

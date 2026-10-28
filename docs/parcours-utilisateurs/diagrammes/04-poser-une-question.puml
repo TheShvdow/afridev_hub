@@ -1,0 +1,30 @@
+@startuml
+title Poser une question sur le forum
+autonumber
+actor Membre
+participant Front
+participant API
+database Base
+participant Gamification
+
+Membre -> Front : ouvre « Poser une question »
+loop pendant la saisie du titre
+  Front -> API : GET /forum/posts/similar?title=…
+  API -> Base : cherche des titres proches
+  API --> Front : jusqu'à 3 questions
+  Front -> Membre : « Une question proche existe déjà »
+end
+
+Membre -> Front : titre, corps, tags, envoi
+Front -> API : POST /forum/posts
+alt données valides
+  API -> Base : crée la question et ses tags
+  API --> Front : question créée
+  API ->> Gamification : événement forum.question.created
+  Gamification -> Base : +5 points de réputation
+  Front -> Membre : ouvre la question
+else données invalides
+  API --> Front : 400 avec le détail des champs
+  Front -> Membre : messages sous les champs
+end
+@enduml

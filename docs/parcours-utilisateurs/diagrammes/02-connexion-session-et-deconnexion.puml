@@ -1,0 +1,40 @@
+@startuml
+title Connexion, renouvellement silencieux et déconnexion
+autonumber
+actor Membre
+participant Front
+participant API
+database Base
+
+Membre -> Front : e-mail et mot de passe
+Front -> API : POST /auth/login
+alt identifiants corrects
+  API -> Base : lit le compte
+  API --> Front : jeton d'accès + jeton de renouvellement
+  Front -> API : GET /auth/me
+  API --> Front : profil et rôle
+  Front -> Membre : accueil connecté
+else identifiants incorrects
+  API --> Front : 401 « Email ou mot de passe incorrect »
+  Front -> Membre : message sur la page de connexion
+else compte banni
+  API --> Front : 403 « Compte suspendu »
+end
+
+== Plus tard : le jeton d'accès a expiré ==
+Front -> API : requête avec le jeton expiré
+API --> Front : 401
+Front -> API : POST /auth/refresh (jeton de renouvellement)
+alt renouvellement accepté
+  API --> Front : nouvelle paire de jetons (rotation)
+  Front -> API : rejoue la requête initiale
+else renouvellement refusé
+  Front -> Membre : retour à la connexion
+end
+
+== Déconnexion ==
+Membre -> Front : « Se déconnecter »
+Front -> API : POST /auth/logout
+API -> Base : révoque le jeton de renouvellement
+Front -> Membre : page publique
+@enduml

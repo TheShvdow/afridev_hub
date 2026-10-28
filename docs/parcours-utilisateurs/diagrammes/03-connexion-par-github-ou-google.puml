@@ -1,0 +1,40 @@
+@startuml
+title Connexion par GitHub ou Google, avec liaison de compte
+autonumber
+actor Visiteur
+participant Front
+participant API
+participant "GitHub / Google" as Idp
+database Base
+
+Visiteur -> Front : « Continuer avec GitHub »
+Front -> API : GET /auth/github
+API --> Visiteur : redirection vers le fournisseur
+Visiteur -> Idp : autorise l'application
+Idp --> API : GET /auth/github/callback (profil)
+
+alt identité déjà liée à un compte
+  API -> Base : retrouve le compte
+  alt compte banni
+    API --> Visiteur : 403 « Compte suspendu »
+  else compte actif
+    API --> Visiteur : redirection vers /auth/github/callback#jetons
+    Visiteur -> Front : page de retour OAuth
+    Front -> Front : range les jetons, nettoie l'URL
+    Front -> Visiteur : accueil connecté
+  end
+else nouvelle personne, e-mail inconnu
+  API -> Base : crée le compte
+  API --> Visiteur : redirection vers /auth/github/callback#jetons
+else l'e-mail appartient déjà à un compte
+  API --> Visiteur : redirection vers /auth/oauth/link#jeton-de-liaison
+  Visiteur -> Front : saisit le mot de passe du compte existant
+  Front -> API : POST /auth/oauth/link (jeton de liaison, mot de passe)
+  alt mot de passe correct
+    API -> Base : lie l'identité au compte
+    API --> Front : jetons de connexion
+  else mot de passe faux
+    API --> Front : 401
+  end
+end
+@enduml

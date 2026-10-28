@@ -330,3 +330,42 @@ after = [16, "5.6"]
 hitl = false
 risk = "low"
 
+[[entry]]
+id = 26
+type = "story"
+title = "Paiement Bictorys en checkout hébergé validé en sandbox"
+description = """
+Appel sans payment_type (page de choix hébergée par Bictorys), moyen de paiement et pays facultatifs, payeur repris du compte, réponse { link, chargeId } normalisée, webhook accepté avec les frais client (montant = prix ou prix + customerFees) et statut lu avec l'identifiant du paiement.
+"""
+verify = "Un paiement Wave réel en sandbox règle le paiement, active le plan premium et envoie le reçu ; le webhook réel est consigné dans les notes d'intégration."
+covers = ["CAP-6"]
+after = [19, "6.6"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 27
+type = "story"
+title = "Documentation des parcours en diagrammes PlantUML"
+description = """
+Dossier docs/parcours-utilisateurs : un README et un diagramme de séquence PlantUML par parcours (14), avec les images JPEG rendues.
+"""
+verify = "Les 14 diagrammes se rendent sans erreur et correspondent aux routes et aux règles de l'API."
+covers = ["CAP-1", "CAP-2", "CAP-3", "CAP-5", "CAP-6"]
+after = [19]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 28
+type = "story"
+title = "Cache des lectures côté front"
+description = """
+Intercepteur de cache des lectures publiques (forum, projets, offres, profils) : réponse immédiate depuis le cache puis relecture en arrière-plan, vidé par toute écriture réussie et par les notifications en temps réel, une entrée par membre, doublé dans sessionStorage ; préchargement au survol des cartes.
+"""
+verify = "Rouvrir une page déjà vue s'affiche sans attente ; une écriture ou une notification vide le cache et la page affiche les données à jour."
+covers = ["CAP-2", "CAP-3", "CAP-5"]
+after = [3]
+hitl = false
+risk = "medium"
+

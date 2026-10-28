@@ -101,6 +101,22 @@ npm run docker:reset        # repart de zéro (supprime les volumes)
 - Front : des erreurs de compilation sans rapport avec l'API subsistent (composants non générés, `@angular/platform-server`).
 - Front : `AuthService.refreshToken()` envoie un corps vide, alors que l'API exige `refreshToken` (voir l'écart E5 du contrat de données).
 
+## Paiements (Bictorys)
+
+Le plan recruteur premium se paie par le checkout hébergé de Bictorys : l'API crée la charge sans moyen de paiement, le front redirige vers la page de Bictorys, puis un webhook (`POST /api/payments/webhooks/bictorys`) et une réconciliation toutes les 10 minutes règlent le paiement. Variables : `BICTORYS_API_URL`, `BICTORYS_API_KEY` (clé publique), `BICTORYS_WEBHOOK_SECRET`, `BICTORYS_COUNTRY` (SN par défaut).
+
+- `WEB_URL` doit être une adresse publique, même en local : Bictorys refuse (403) les URLs de retour qui contiennent `localhost`.
+- Les frais payés par le client s'ajoutent au prix (25 000 devient 25 507,53 en sandbox) ; le prix reste fixé par le serveur.
+- Détails vérifiés en sandbox : `apps/api/_bmad-output/architecture-afridev-hub-phase1/bictorys-integration-notes.md`.
+
+## Cache des lectures (front)
+
+`cacheInterceptor` garde en mémoire (et dans `sessionStorage`) les lectures publiques : forum, projets, offres, profils, pays. Moins de 30 s, la réponse vient du cache sans appel ; jusqu'à 10 min, elle s'affiche tout de suite puis la version fraîche la remplace si elle a changé. Toute écriture réussie et toute notification en temps réel vident le cache. Chaque entrée est rangée sous l'identifiant du membre. Le plan, les offres du recruteur, les candidatures, les notifications, les paiements, la modération et l'administration ne sont jamais gardés. Les cartes du forum et des offres chargent la page à l'avance au survol. Règles : `apps/web/src/app/core/cache/cache-policy.ts`.
+
+## Parcours utilisateurs
+
+Les 14 parcours de l'application sont décrits en diagrammes de séquence PlantUML dans [docs/parcours-utilisateurs](docs/parcours-utilisateurs/README.md), avec les images JPEG rendues.
+
 ## Documentation de projet
 
 Le dossier `apps/api/_bmad-output/` contient le PRD, le glossaire, la spine d'architecture (AD-1 à AD-12), le contrat de données et les epics. Les règles métier de référence sont dans `spec-afridev-hub-phase1/glossary.md`.
