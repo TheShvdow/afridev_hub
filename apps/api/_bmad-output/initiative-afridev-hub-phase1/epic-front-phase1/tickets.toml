@@ -270,7 +270,7 @@ id = 21
 type = "story"
 title = "Refactor sweep — E7"
 description = """
-Nettoyage du front à partir des plans et des constats différés : notes SonarCloud restantes (rôles ARIA, jest.config.ts), doublons de logique de pagination.
+Nettoyage du front à partir des plans et des constats différés : notes SonarCloud restantes (rôles ARIA, jest.config.ts), doublons de logique de pagination. Livré le 2026-10-28 : vulnérabilité (nombre pseudo-aléatoire), bug (promesse non attendue au démarrage), point critique (complexité de l'enveloppe Swagger, avec tests de caractérisation), imports en double, chaînes `String.raw`, `node:crypto`, `async` inutiles, seed dupliqué supprimé, boucles du seed en transactions, section Formations retirée de l'accueil. Reste volontairement : 12 « await dans une boucle » de l'API (traitements séquentiels voulus : relances d'e-mails, réconciliation des paiements, nouvelles tentatives Bictorys).
 """
 verify = "Le Quality Gate reste au vert et les tests web passent."
 covers = ["CAP-1"]
