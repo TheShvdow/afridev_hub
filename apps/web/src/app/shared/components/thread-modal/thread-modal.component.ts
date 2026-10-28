@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { ReportButtonComponent } from '../report-button/report-button.component';
 import { CommentItem } from '../comment-item/comment-item';
 import { Thread } from '../card-thread/card-thread.component';
 import { ForumPostDetail } from '../../../core/services/forum.service';
@@ -12,7 +13,7 @@ import { AnswerThreadBase } from '../../forum/answer-thread.base';
 @Component({
   selector: 'app-thread-modal',
   standalone: true,
-  imports: [CommentItem, ReactiveFormsModule, RouterLink],
+  imports: [CommentItem, ReactiveFormsModule, RouterLink, ReportButtonComponent],
   templateUrl: './thread-modal.component.html',
 })
 export class ThreadModalComponent extends AnswerThreadBase {
