@@ -115,7 +115,7 @@ Le plan recruteur premium se paie par le checkout hébergé de Bictorys : l'API 
 
 ## Parcours utilisateurs
 
-Les 14 parcours de l'application sont décrits en diagrammes de séquence PlantUML dans [docs/parcours-utilisateurs](docs/parcours-utilisateurs/README.md), avec les images JPEG rendues.
+Les 15 parcours de l'application sont décrits en diagrammes de séquence PlantUML dans [docs/parcours-utilisateurs](docs/parcours-utilisateurs/README.md), avec les images JPEG rendues.
 
 ## Documentation de projet
 

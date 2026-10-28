@@ -10,7 +10,7 @@ Ce document décrit chaque parcours de l'application sous forme de diagramme de 
 
 ## Fichiers
 
-- Ce document réunit les 14 parcours avec leurs explications.
+- Ce document réunit les 15 parcours avec leurs explications.
 - Chaque diagramme existe aussi seul dans [diagrammes/](diagrammes/), un fichier `.puml` par parcours, pour le rendre en image ou l'intégrer ailleurs.
 - Les images rendues sont dans [images/jpeg/](images/jpeg/), en JPEG de 2 000 pixels de large. Elles portent le même nom que le fichier `.puml`. Le SVG et le PNG ne sont pas conservés (trop lourds) : ils se régénèrent depuis les `.puml`.
 
@@ -30,6 +30,7 @@ Ce document décrit chaque parcours de l'application sous forme de diagramme de 
 | 12. Plan recruteur premium et paiement Bictorys | [12-plan-recruteur-premium-et-paiement-bictorys.puml](diagrammes/12-plan-recruteur-premium-et-paiement-bictorys.puml) |
 | 13. Administration | [13-administration.puml](diagrammes/13-administration.puml) |
 | 14. Profil et avatar | [14-profil-et-avatar.puml](diagrammes/14-profil-et-avatar.puml) |
+| 15. Tableau de bord par rôle | [15-tableau-de-bord-par-role.puml](diagrammes/15-tableau-de-bord-par-role.puml) |
 
 ## Les acteurs et les systèmes
 
@@ -59,6 +60,7 @@ Ce document décrit chaque parcours de l'application sous forme de diagramme de 
 12. [Plan recruteur premium et paiement Bictorys](#12-plan-recruteur-premium-et-paiement-bictorys)
 13. [Administration](#13-administration)
 14. [Profil et avatar](#14-profil-et-avatar)
+15. [Tableau de bord par rôle](#15-tableau-de-bord-par-rôle)
 
 Le mentorat et les communautés sont des vitrines (bandeau « Aperçu », actions désactivées) : ils n'ont pas de parcours.
 
@@ -760,5 +762,72 @@ API -> Base : met à jour le profil
 API ->> Gamification : users.profile.updated
 Gamification -> Base : attribue ou retire le badge « Dev vérifié »
 API --> Front : profil mis à jour
+@enduml
+```
+
+---
+
+## 15. Tableau de bord par rôle
+
+Après la connexion, l'arrivée se fait sur l'accueil, ou sur la page protégée qui avait été demandée. Le tableau de bord (`/tableau-de-bord`) range toutes les fonctions du compte selon son rôle : un membre voit son activité et son compte, un recruteur son espace (offres, publication, plan premium), un modérateur les signalements et les offres à valider avec leur nombre, un administrateur en plus les indicateurs, les utilisateurs et le journal d'audit. Les chiffres lus en plus (notifications, plan, éléments à modérer) n'empêchent pas l'affichage s'ils manquent.
+
+```plantuml
+@startuml
+title Tableau de bord : arrivée après connexion et fonctions rangées par rôle
+autonumber
+actor Membre
+participant Front
+participant API
+database Base
+
+== Après la connexion ==
+Membre -> Front : se connecte
+Front -> API : POST /auth/login
+API --> Front : jetons
+alt une page protégée avait été demandée
+  Front -> Membre : retour vers cette page (adresse de retour)
+else connexion directe
+  Front -> Membre : arrivée sur l'accueil
+end
+
+== Ouvrir le tableau de bord ==
+Membre -> Front : « Tableau de bord » (menu du compte, menu mobile ou pied de page)
+Front -> Front : le garde de route vérifie la connexion\n(sinon : connexion, puis retour ici)
+Front -> API : GET /auth/me
+API -> Base : lit le compte
+API --> Front : rôle, profil recruteur, réputation
+Front -> Membre : salutation, rôles du compte, cartes de toutes les fonctions
+
+par chiffres lus en plus (un échec n'empêche pas l'affichage)
+  Front -> API : GET /notifications/unread-count
+  API --> Front : notifications non lues
+else recruteur
+  Front -> API : GET /jobs/plan
+  API --> Front : plan gratuit ou premium, quota du mois
+else modérateur ou administrateur
+  Front -> API : GET /moderation/reports?status=PENDING
+  API --> Front : nombre de signalements en attente
+  Front -> API : GET /jobs/review
+  API --> Front : nombre d'offres à valider
+end
+
+== Ce que chaque rôle voit ==
+note over Front
+  Tous les comptes : Mon activité (question, forum, notifications,
+  alertes emploi, offres, profil public) et Mon compte (informations,
+  sécurité, préférences de notifications).
+  Recruteur : Espace recruteur (offres, publication, plan premium).
+  Autre membre : invitation à devenir recruteur.
+  Modérateur : signalements et offres à valider, avec leur nombre.
+  Administrateur : en plus, indicateurs, utilisateurs, journal d'audit.
+end note
+
+== Ouvrir une carte ==
+Membre -> Front : clique sur une carte
+alt page d'administration réservée aux administrateurs
+  Front -> Front : le garde de rôle attend le profil, puis autorise ou renvoie
+else autre page
+  Front -> Membre : ouvre la page
+end
 @enduml
 ```
