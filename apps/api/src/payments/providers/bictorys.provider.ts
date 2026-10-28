@@ -18,9 +18,10 @@ export class BictorysProvider implements IPaymentProvider {
 
   async initiate(request: ChargeRequest): Promise<ChargeResponse> {
     const apiKey = this.requirePublicKey();
-    const query = request.paymentType === 'card'
-      ? 'payment_type=card&payment_category=card'
-      : `payment_type=${encodeURIComponent(request.paymentType)}`;
+    // Sans payment_type, Bictorys passe en checkout hébergé : sa page propose les moyens de paiement.
+    let query = '';
+    if (request.paymentType === 'card') query = '?payment_type=card&payment_category=card';
+    else if (request.paymentType) query = `?payment_type=${encodeURIComponent(request.paymentType)}`;
 
     const body: Record<string, unknown> = {
       amount:             request.amount,
@@ -30,9 +31,9 @@ export class BictorysProvider implements IPaymentProvider {
       successRedirectUrl: request.successRedirectUrl,
       ErrorRedirectUrl:   request.errorRedirectUrl,   // E majuscule : tel que dans la doc
     };
-    if (request.customer) body['customerObject'] = request.customer;
+    if (request.customer) body['customerObject'] = { country: request.country, ...request.customer };
 
-    const response = await this.send(`/pay/v1/charges?${query}`, {
+    const response = await this.send(`/pay/v1/charges${query}`, {
       method:  'POST',
       headers: { 'X-Api-Key': apiKey, 'Content-Type': 'application/json' },
       body:    JSON.stringify(body),
