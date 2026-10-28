@@ -60,6 +60,14 @@
                 }
               </a>
 
+              <a
+                routerLink="/jobs/alerts"
+                class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+                (click)="userMenuOpen.set(false)"
+              >
+                Mes alertes emploi
+              </a>
+
               @if (authStore.currentUser()?.isRecruiter) {
                 <a
                   routerLink="/jobs/mine"

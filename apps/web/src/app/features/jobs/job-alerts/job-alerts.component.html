@@ -1,0 +1,111 @@
+<app-page-hero title="Mes alertes emploi" subtitle="Soyez prévenu dès qu'une offre correspond à vos critères, et recevez un récapitulatif chaque lundi." />
+
+<section class="bg-white">
+  <div class="mx-auto w-full max-w-[800px] px-6 py-12 sm:px-10 lg:px-0 lg:py-10">
+    @if (loading()) {
+      <p class="py-12 text-center text-[16px] text-[#64748B]">Chargement de vos alertes…</p>
+    } @else if (loadError()) {
+      <div class="flex flex-col items-center gap-4 py-12 text-center">
+        <p role="alert" class="text-[16px] text-[#64748B]">{{ loadError() }}</p>
+        <button type="button" (click)="retry()" class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink">Réessayer</button>
+      </div>
+    } @else {
+      <form class="flex flex-col gap-5 rounded-2xl border border-[#E2E8F0] p-5 sm:p-6" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 class="text-[20px] font-bold text-[#141219]">Nouvelle alerte</h2>
+          <span class="text-[14px] text-[#64748B]">{{ alerts().length }} sur {{ maxAlerts }} alertes</span>
+        </div>
+        <p class="-mt-3 text-[14px] text-[#64748B]">Un critère laissé vide accepte toutes les valeurs. Une offre déclenche l'alerte quand tous les critères renseignés sont satisfaits.</p>
+
+        @if (limitReached()) {
+          <p role="status" class="rounded-2xl border border-[#FBBF24]/50 bg-[#FEFCE8] px-4 py-3 text-sm font-medium text-[#A16207]">
+            Vous avez atteint la limite de {{ maxAlerts }} alertes : supprimez-en une pour en créer une nouvelle.
+          </p>
+        }
+        @if (formError()) {
+          <p role="alert" class="rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium text-[#FB2C36]">{{ formError() }}</p>
+        }
+
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div class="flex flex-col gap-2">
+            <label for="alert-country" class="text-[16px] font-semibold text-[#141219]">Pays</label>
+            <select id="alert-country" formControlName="country" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none bg-white">
+              <option value="">Tous les pays</option>
+              @for (country of countries(); track country.code) {
+                <option [value]="country.code">{{ country.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="alert-mode" class="text-[16px] font-semibold text-[#141219]">Mode de travail</label>
+            <select id="alert-mode" formControlName="mode" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none bg-white">
+              <option value="">Tous les modes</option>
+              @for (mode of modes; track mode.value) {
+                <option [value]="mode.value">{{ mode.label }}</option>
+              }
+            </select>
+          </div>
+          <div class="flex flex-col gap-2 sm:col-span-2">
+            <label for="alert-stack" class="text-[16px] font-semibold text-[#141219]">Technologies</label>
+            <input id="alert-stack" formControlName="stack" type="text" placeholder="Angular, NestJS" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none" />
+            <p class="text-[14px] text-[#64748B]">Séparées par des virgules ({{ maxStack }} au plus) : au moins une doit figurer dans l'offre.</p>
+            @if (form.controls.stack.touched && form.controls.stack.invalid) {
+              <p class="text-[14px] font-medium text-[#FB2C36]">{{ maxStack }} technologies au plus, de 30 caractères chacune.</p>
+            }
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="alert-salary" class="text-[16px] font-semibold text-[#141219]">Salaire minimum</label>
+            <input id="alert-salary" formControlName="salaryMin" type="number" min="1" step="1" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none" />
+            @if (form.controls.salaryMin.touched && form.controls.salaryMin.invalid) {
+              <p class="text-[14px] font-medium text-[#FB2C36]">Indiquez un montant positif.</p>
+            }
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="alert-currency" class="text-[16px] font-semibold text-[#141219]">Devise du salaire</label>
+            <select id="alert-currency" formControlName="currency" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none bg-white">
+              @for (currency of currencies; track currency) {
+                <option [value]="currency">{{ currency }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="submit"
+            [disabled]="saving() || limitReached()"
+            class="inline-flex h-12 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            {{ saving() ? 'Création…' : "Créer l'alerte" }}
+          </button>
+        </div>
+      </form>
+
+      <h2 class="mt-10 text-[20px] font-bold text-[#141219]">Mes alertes</h2>
+      @if (alerts().length === 0) {
+        <p class="mt-4 text-[16px] text-[#64748B]">Vous n'avez aucune alerte. Créez-en une ci-dessus, ou depuis <a routerLink="/jobs" class="font-semibold text-[#0F6932] hover:underline">la liste des offres</a>.</p>
+      } @else {
+        <ul class="mt-4 flex flex-col gap-3">
+          @for (alert of alerts(); track alert.id) {
+            <li class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E2E8F0] px-5 py-4">
+              <p class="min-w-0 text-[16px] font-medium text-[#141219]">
+                @for (part of summary(alert); track $index) {
+                  <span class="mr-2 inline-block rounded-full bg-[#F8FAFC] px-3 py-1 text-[14px] text-[#475569]">{{ part }}</span>
+                }
+              </p>
+              <div class="flex items-center gap-2">
+                @if (confirmingId() === alert.id) {
+                  <span class="text-[14px] font-medium text-[#64748B]">Supprimer ?</span>
+                  <button type="button" (click)="confirmDelete(alert)" [disabled]="deletingId() === alert.id" class="rounded-full bg-[#FB2C36] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-60">Confirmer</button>
+                  <button type="button" (click)="askDelete(alert)" class="rounded-full border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#141219]">Annuler</button>
+                } @else {
+                  <button type="button" (click)="askDelete(alert)" class="rounded-full border border-[#FB2C36]/40 px-4 py-2 text-[14px] font-semibold text-[#FB2C36]">Supprimer</button>
+                }
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </div>
+</section>

@@ -18,6 +18,12 @@
         [(selectedCurrency)]="selectedCurrency"
       />
 
+      <p class="text-[15px] text-[#475569]">
+        Vous ne trouvez pas votre offre ?
+        <a routerLink="/jobs/alerts" [queryParams]="alertParams()" class="font-semibold text-[#0F6932] hover:underline">Créer une alerte</a>
+        et soyez prévenu des nouvelles offres correspondantes.
+      </p>
+
       @if (loading()) {
         <p class="py-10 text-center text-[16px] text-[#64748B]">Chargement des offres…</p>
       } @else if (loadError()) {

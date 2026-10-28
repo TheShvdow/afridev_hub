@@ -104,6 +104,19 @@ describe('JobListComponent', () => {
     expect(fixture.nativeElement.querySelectorAll('app-card-job').length).toBe(1);
   });
 
+  it('links to the alert form with the active country and mode', async () => {
+    await setup(jest.fn().mockReturnValue(of(page([]))));
+
+    component.selectedCountry.set('Sénégal');
+    component.selectedWorkType.set('Remote');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const link = Array.from(fixture.nativeElement.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>).find((a) => a.textContent?.includes('Créer une alerte'));
+    expect(link?.getAttribute('href')).toBe('/jobs/alerts?country=SN&mode=REMOTE');
+  });
+
   it('opens the detail panel when a card is selected', async () => {
     await setup(jest.fn().mockReturnValue(of(page([offer('1', 'Dev A')]))));
 

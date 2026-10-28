@@ -62,6 +62,12 @@ export abstract class JobsBoardBase {
     };
   }, { equal: (a, b) => JSON.stringify(a) === JSON.stringify(b) });
 
+  /** Filtres actifs repris par le lien « Créer une alerte » (pays et mode seulement : les autres filtres n'en sont pas). */
+  readonly alertParams = computed(() => {
+    const { country, mode } = this.query();
+    return { ...(country && { country }), ...(mode && { mode }) };
+  });
+
   private page = 1;
   private requestId = 0;
 
