@@ -1,0 +1,65 @@
+<app-page-hero title="Plan recruteur" subtitle="Publiez sans limite et consultez le profil complet des candidats." />
+
+<section class="bg-white">
+  <div class="mx-auto w-full max-w-[800px] px-6 py-12 sm:px-10 lg:px-0 lg:py-10">
+    @if (loading()) {
+      <p class="py-12 text-center text-[16px] text-[#64748B]">Chargement de votre plan…</p>
+    } @else if (loadError()) {
+      <div class="flex flex-col items-center gap-4 py-12 text-center">
+        <p role="alert" class="text-[16px] text-[#64748B]">{{ loadError() }}</p>
+        <button type="button" (click)="load()" class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink">Réessayer</button>
+      </div>
+    } @else {
+      @if (plan(); as plan) {
+      <div class="rounded-2xl border border-[#E2E8F0] p-5 sm:p-6">
+        @if (plan.isPremium) {
+          <h2 class="text-[20px] font-bold text-[#0F6932]">Plan premium actif</h2>
+          @if (plan.premiumUntil) {
+            <p class="mt-2 text-[15px] text-[#475569]">Valable jusqu'au {{ premiumUntil(plan) }}.</p>
+          }
+          <p class="mt-1 text-[15px] text-[#475569]">Offres illimitées et profil complet des candidats.</p>
+          <div class="mt-5 flex flex-wrap gap-3">
+            <a routerLink="/jobs/post" class="inline-flex h-12 items-center justify-center rounded-full bg-ink px-5 text-base font-semibold text-white transition-opacity hover:opacity-90">Publier une offre</a>
+            <a routerLink="/jobs/mine" class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink">Mes offres</a>
+          </div>
+        } @else {
+          <h2 class="text-[20px] font-bold text-[#141219]">Plan gratuit</h2>
+          <p class="mt-2 text-[15px] text-[#475569]">
+            {{ plan.offersThisMonth }} offre{{ plan.offersThisMonth > 1 ? 's' : '' }} sur {{ plan.monthlyLimit }} ce mois-ci.
+          </p>
+        }
+      </div>
+
+      @if (!plan.isPremium && product(); as product) {
+        <div class="mt-6 rounded-2xl border border-[#0F6932]/30 bg-[#F0FDF4] p-5 sm:p-6">
+          <h2 class="text-[20px] font-bold text-[#141219]">{{ product.label }}</h2>
+          <p class="mt-1 text-[28px] font-bold text-[#0F6932]">
+            {{ product.amount | number: '1.0-0' }} <span class="text-[16px] font-semibold">{{ product.currency }}</span>
+          </p>
+          <ul class="mt-3 flex list-disc flex-col gap-1 pl-5 text-[15px] text-[#475569]">
+            <li>Offres d'emploi illimitées</li>
+            <li>Profil complet des candidats</li>
+            <li>Activation immédiate après le paiement</li>
+          </ul>
+          <p class="mt-3 text-[13px] text-[#64748B]">
+            Vous êtes redirigé vers la page de paiement sécurisée de Bictorys (Wave, Orange Money, carte…). Des frais de paiement peuvent s'ajouter au prix.
+          </p>
+
+          @if (payError()) {
+            <p role="alert" class="mt-4 rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium text-[#FB2C36]">{{ payError() }}</p>
+          }
+
+          <button
+            type="button"
+            (click)="pay()"
+            [disabled]="paying()"
+            class="mt-5 inline-flex h-12 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            {{ paying() ? 'Redirection…' : 'Passer en premium' }}
+          </button>
+        </div>
+      }
+      }
+    }
+  </div>
+</section>
