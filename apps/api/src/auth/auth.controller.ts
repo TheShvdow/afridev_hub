@@ -238,6 +238,7 @@ export class AuthController {
     }
 
     const hash = new URLSearchParams({ at: result.tokens.accessToken, rt: result.tokens.refreshToken }).toString();
-    res.redirect(toDocs ? `${OAUTH_DOCS_PATH}#${hash}` : `${new URL(`/auth/${provider}/callback`, webUrl)}#${hash}`);
+    const callbackUrl = new URL(`/auth/${provider}/callback`, webUrl).toString();
+    res.redirect(`${toDocs ? OAUTH_DOCS_PATH : callbackUrl}#${hash}`);
   }
 }

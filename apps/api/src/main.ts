@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { Logger as NestLogger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from 'nestjs-pino';
@@ -103,4 +103,8 @@ async function bootstrap() {
   }
 }
 
-bootstrap();
+bootstrap().catch((error: unknown) => {
+  // Démarrage impossible (base, Redis, configuration) : on le dit et on sort en erreur plutôt que de laisser une promesse rejetée.
+  new NestLogger('Bootstrap').error(`Démarrage de l'API impossible : ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`);
+  process.exit(1);
+});

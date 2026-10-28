@@ -1,6 +1,5 @@
-import { IsArray, IsOptional, IsString, IsIn, ArrayMaxSize, MaxLength, MinLength } from 'class-validator';
+import { IsArray, IsEnum, IsOptional, IsString, IsIn, ArrayMaxSize, MaxLength, MinLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum } from 'class-validator';
 import { ExperienceLevel } from '@prisma/client';
 import { COUNTRY_CODES, CountryCode, toCountryCode } from '../../common/countries';
 import { Transform } from 'class-transformer';

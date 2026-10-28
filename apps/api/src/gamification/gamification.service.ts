@@ -59,7 +59,7 @@ export class GamificationService {
     return this.addReputation({ userId, delta, reason, entityId });
   }
 
-  async getLeaderboard(page = 1, limit = 50) {
+  getLeaderboard(page = 1, limit = 50) {
     const skip = (page - 1) * limit;
     return this.prisma.user.findMany({
       orderBy: { reputation: 'desc' },
@@ -119,7 +119,7 @@ export class GamificationService {
     return userBadge;
   }
 
-  async listBadges() {
+  listBadges() {
     return this.prisma.badge.findMany({
       orderBy: [{ category: 'asc' }, { requiredPoints: 'asc' }],
     });

@@ -13,7 +13,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     private readonly config: ConfigService,
   ) {}
 
-  async onModuleInit(): Promise<void> {
+  onModuleInit(): void {
     this.client = new Redis(
       this.config.getOrThrow<string>('REDIS_URL'),
       {
@@ -42,7 +42,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async get(key: string): Promise<string | null> {
+  get(key: string): Promise<string | null> {
     return this.client.get(key);
   }
 
@@ -54,7 +54,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return (await this.client.exists(key)) === 1;
   }
 
-  async ttl(key: string): Promise<number> {
+  ttl(key: string): Promise<number> {
     return this.client.ttl(key);
   }
 

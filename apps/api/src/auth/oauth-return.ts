@@ -21,7 +21,7 @@ export function rememberOAuthReturn(req: Request, res: Response) {
 
 // Lit et efface le cookie : true si la connexion doit revenir sur Swagger.
 export function takeOAuthReturn(req: Request, res: Response): boolean {
-  const toDocs = new RegExp(`(?:^|;\\s*)${COOKIE}=docs(?:;|$)`).test(req.headers.cookie ?? '');
+  const toDocs = new RegExp(String.raw`(?:^|;\s*)${COOKIE}=docs(?:;|$)`).test(req.headers.cookie ?? '');
   if (toDocs) res.clearCookie(COOKIE, { path: COOKIE_PATH });
   return toDocs;
 }

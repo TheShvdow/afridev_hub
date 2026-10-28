@@ -81,7 +81,7 @@ export type CountryCode = keyof typeof COUNTRIES;
 export const COUNTRY_CODES = Object.keys(COUNTRIES) as CountryCode[];
 
 export function isCountryCode(value: string): value is CountryCode {
-  return Object.prototype.hasOwnProperty.call(COUNTRIES, value);
+  return Object.hasOwn(COUNTRIES, value);
 }
 
 // Nombre de pays africains en tête de COUNTRIES ; les suivants sont ceux de la diaspora.

@@ -173,7 +173,7 @@ export class AdminService {
     return { data: logs, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }
 
-  async createAuditEntry(
+  createAuditEntry(
     userId: string,
     action: string,
     entityType: string,               // was targetType

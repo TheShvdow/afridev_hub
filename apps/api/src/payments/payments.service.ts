@@ -165,13 +165,13 @@ export class PaymentsService {
 
   async getPayment(paymentId: string, userId: string) {
     const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
-    if (!payment || payment.userId !== userId) {
+    if (payment?.userId !== userId) {
       throw new DomainException('PAYMENTS_PAYMENT_NOT_FOUND', 'Paiement introuvable.', 404);
     }
     return payment;
   }
 
-  async getUserPayments(userId: string) {
+  getUserPayments(userId: string) {
     return this.prisma.payment.findMany({
       where:   { userId },
       orderBy: { createdAt: 'desc' },
@@ -239,7 +239,7 @@ export class PaymentsService {
         data:  {
           status:   outcome,
           metadata: {
-            ...((payment.metadata as Record<string, unknown>) ?? {}),
+            ...(payment.metadata as Record<string, unknown> | null),
             providerStatus,
             providerRef,
             ...(outcome === 'CAPTURED' && { capturedAt: now.toISOString() }),
