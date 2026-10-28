@@ -67,3 +67,5 @@ apps/api/node_modules/.prisma/
 
 request.http
 apps/api/_bmad/render/
+.agents/
+skills-lock.json

@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { RealtimeService } from '../../core/services/realtime.service';
@@ -7,7 +8,7 @@ import { Icon } from '../../features/home/components/icon/icon';
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [RouterLink, Icon],
+  imports: [NgClass, RouterLink, Icon],
   templateUrl: './navbar.html',
 })
 export class Navbar {
