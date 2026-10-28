@@ -170,13 +170,13 @@ export class Connexion implements OnInit {
     });
   }
 
-  /** Page d'origine demandée par `authGuard`, en repli sur le forum. */
+  /** Page d'origine demandée par `authGuard`, en repli sur l'accueil. */
   private returnUrl(): string {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
 
     // Un chemin relatif uniquement : jamais de redirection vers un site externe.
     return returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//')
       ? returnUrl
-      : '/forum';
+      : '/';
   }
 }
