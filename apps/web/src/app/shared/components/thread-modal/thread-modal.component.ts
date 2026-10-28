@@ -1,6 +1,7 @@
 import { Component, DestroyRef, HostListener, computed, effect, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
+import { AnswerEditFormComponent } from '../answer-edit-form/answer-edit-form.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ReportButtonComponent } from '../report-button/report-button.component';
@@ -14,7 +15,7 @@ import { AnswerThreadBase } from '../../forum/answer-thread.base';
 @Component({
   selector: 'app-thread-modal',
   standalone: true,
-  imports: [CommentItem, ReactiveFormsModule, RouterLink, ReportButtonComponent, VoteControlComponent],
+  imports: [CommentItem, ReactiveFormsModule, RouterLink, ReportButtonComponent, VoteControlComponent, AnswerEditFormComponent],
   templateUrl: './thread-modal.component.html',
 })
 export class ThreadModalComponent extends AnswerThreadBase {
