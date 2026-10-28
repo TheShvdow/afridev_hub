@@ -22,9 +22,15 @@
         <p class="mt-2 text-[28px] font-bold leading-[34px] text-[#141219]">{{ indicator.value }}{{ indicator.unit }} <span class="text-[16px] font-medium text-[#64748B]">/ {{ indicator.strict ? '&gt; ' : '' }}{{ indicator.target }}{{ indicator.unit }}</span></p>
         <p class="text-[14px] text-[#475569]">{{ indicator.label }}</p>
         <p class="text-[13px] text-[#94A3B8]">{{ indicator.detail }}</p>
-        <div class="mt-3 h-2 overflow-hidden rounded-full bg-[#F1F5F9]" role="progressbar" [attr.aria-valuenow]="progress(indicator)" aria-valuemin="0" aria-valuemax="100" [attr.aria-label]="'Avancement ' + indicator.code">
-          <div [class]="'h-full rounded-full ' + (reached(indicator) ? 'bg-[#0F6932]' : 'bg-[#FBBF24]')" [style.width.%]="progress(indicator)"></div>
-        </div>
+        <progress
+          class="mt-3 block h-2 w-full appearance-none overflow-hidden rounded-full [&::-webkit-progress-bar]:bg-[#F1F5F9] [&::-moz-progress-bar]:bg-[#FBBF24] [&::-webkit-progress-value]:bg-[#FBBF24] [&.reached::-webkit-progress-value]:bg-[#0F6932] [&.reached::-moz-progress-bar]:bg-[#0F6932]"
+          [class.reached]="reached(indicator)"
+          max="100"
+          [value]="progress(indicator)"
+          [attr.aria-label]="'Avancement ' + indicator.code"
+        >
+          {{ progress(indicator) }} %
+        </progress>
       </li>
     }
   </ul>

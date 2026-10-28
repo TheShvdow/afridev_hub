@@ -54,7 +54,7 @@ describe('NotificationsComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('1 non lue');
     expect(text).toContain('Kwame A.');
-    expect(fixture.componentInstance.items().length).toBe(2);
+    expect(fixture.componentInstance.items()).toHaveLength(2);
   });
 
   it('marks a notification as read and opens its target', () => {
@@ -93,7 +93,7 @@ describe('NotificationsComponent', () => {
     fixture.componentInstance.retry();
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.items().length).toBe(1);
+    expect(fixture.componentInstance.items()).toHaveLength(1);
   });
 
   it('puts a notification received live at the top of the list and counts it as unread', () => {

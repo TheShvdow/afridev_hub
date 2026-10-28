@@ -147,13 +147,7 @@ export class JobPostComponent {
     request.subscribe({
       next: () => {
         this.sending.set(false);
-        this.toast.success(
-          !this.editId
-            ? 'Offre envoyée : elle sera publiée après validation par la modération.'
-            : wasRejected
-              ? 'Offre corrigée : elle repart en validation par la modération.'
-              : 'Offre mise à jour.',
-        );
+        this.toast.success(this.successMessage(wasRejected));
         this.router.navigateByUrl('/jobs/mine');
       },
       error: (error) => {
@@ -162,6 +156,11 @@ export class JobPostComponent {
         this.errorMessage.set(extractApiErrorMessage(error));
       },
     });
+  }
+
+  private successMessage(wasRejected: boolean): string {
+    if (!this.editId) return 'Offre envoyée : elle sera publiée après validation par la modération.';
+    return wasRejected ? 'Offre corrigée : elle repart en validation par la modération.' : 'Offre mise à jour.';
   }
 
   /** Active le profil recruteur avec le nom d'entreprise saisi, puis relance la publication. */

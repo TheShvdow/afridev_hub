@@ -20,9 +20,9 @@
       </div>
     } @else {
     @if (editing && offerStatus() === 'REJECTED') {
-      <p role="status" class="mx-auto mb-6 max-w-[800px] rounded-2xl border border-[#FBBF24]/50 bg-[#FEFCE8] px-4 py-3 text-sm font-medium text-[#A16207]">
+      <output class="mx-auto mb-6 block max-w-[800px] rounded-2xl border border-[#FBBF24]/50 bg-[#FEFCE8] px-4 py-3 text-sm font-medium text-[#A16207]">
         Cette offre a été refusée par la modération. Une fois corrigée, elle repart en validation.
-      </p>
+      </output>
     }
     <form class="mx-auto flex w-full max-w-[800px] flex-col gap-6" [formGroup]="form" (ngSubmit)="submit()" novalidate>
       @if (errorMessage()) {

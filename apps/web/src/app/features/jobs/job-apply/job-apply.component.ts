@@ -16,10 +16,18 @@ import { parseStackList, stackListValidator } from '../../../core/utils/stack-li
 
 export const APPLICATION_MAX_LENGTH = 5000;
 
-/** Lien facultatif : vide, ou une adresse complète commençant par http(s)://. */
+/** Lien facultatif : vide, ou une adresse complète http(s):// avec un nom de domaine. */
 export function optionalUrlValidator(control: AbstractControl<string>): ValidationErrors | null {
   const value = (control.value ?? '').trim();
-  return !value || /^https?:\/\/\S+\.\S+$/i.test(value) ? null : { url: true };
+  if (!value) return null;
+
+  try {
+    // L'analyse par `URL` plutôt qu'une expression régulière : pas de risque de lenteur sur une saisie longue.
+    const url = new URL(value);
+    return (url.protocol === 'http:' || url.protocol === 'https:') && url.hostname.includes('.') ? null : { url: true };
+  } catch {
+    return { url: true };
+  }
 }
 
 /** Téléphone facultatif, mêmes caractères que l'API : chiffres, +, espaces, parenthèses, points, tirets. */

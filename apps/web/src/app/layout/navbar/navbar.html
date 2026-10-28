@@ -27,12 +27,12 @@
             type="button"
             class="relative inline-flex size-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/10"
             (click)="toggleUserMenu($event)"
-            aria-label="Menu du compte"
+            [attr.aria-label]="unreadCount() > 0 ? 'Menu du compte, ' + badgeCount() + ' notification(s) non lue(s)' : 'Menu du compte'"
             [attr.aria-expanded]="userMenuOpen()"
           >
             <app-icon name="user" class="size-5"></app-icon>
             @if (unreadCount() > 0) {
-              <span class="absolute -right-0.5 -top-0.5 flex min-w-[18px] items-center justify-center rounded-full bg-[#FBBF24] px-1 text-[11px] font-bold leading-[18px] text-[#141219]" aria-hidden="true">{{ unreadCount() > 9 ? '9+' : unreadCount() }}</span>
+              <span class="absolute -right-0.5 -top-0.5 flex min-w-[18px] items-center justify-center rounded-full bg-[#FBBF24] px-1 text-[11px] font-bold leading-[18px] text-[#141219]" aria-hidden="true">{{ badgeCount() }}</span>
             }
           </button>
 

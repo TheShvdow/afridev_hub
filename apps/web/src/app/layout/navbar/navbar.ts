@@ -19,6 +19,8 @@ export class Navbar {
   readonly userMenuOpen = signal(false);
   /** Compteur partagé, tenu à jour en direct par la connexion temps réel. */
   readonly unreadCount = this.realtime.unreadCount;
+  /** Nombre affiché sur la pastille, plafonné ; le même nombre est repris dans le nom accessible du bouton. */
+  readonly badgeCount = computed(() => Math.min(this.unreadCount(), 99));
 
   readonly links = [
     { label: 'Forum', link: '/forum' },

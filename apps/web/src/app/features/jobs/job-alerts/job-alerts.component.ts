@@ -83,9 +83,10 @@ export class JobAlertsComponent {
 
   /** Résumé lisible des critères d'une alerte. */
   summary(alert: JobAlert): string[] {
-    const parts: string[] = [];
-    parts.push(alert.country ? this.countryName(alert.country) : 'Tous les pays');
-    parts.push(alert.mode ? this.modeLabel(alert.mode) : 'Tous les modes');
+    const parts: string[] = [
+      alert.country ? this.countryName(alert.country) : 'Tous les pays',
+      alert.mode ? this.modeLabel(alert.mode) : 'Tous les modes',
+    ];
     if (alert.stack.length) parts.push(alert.stack.join(', '));
     if (alert.salaryMin && alert.currency) {
       parts.push(`à partir de ${alert.salaryMin.toLocaleString('fr-FR')} ${alert.currency}`);

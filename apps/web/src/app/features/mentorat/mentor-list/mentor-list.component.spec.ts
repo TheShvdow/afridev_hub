@@ -21,7 +21,7 @@ describe('MentorListComponent', () => {
 
   it('should render all mentors by default', () => {
     const cards = fixture.nativeElement.querySelectorAll('app-card-mentor');
-    expect(cards.length).toBe(component.mentors.length);
+    expect(cards).toHaveLength(component.mentors.length);
   });
 
   it('should filter mentors by specialty', () => {
@@ -29,7 +29,7 @@ describe('MentorListComponent', () => {
     fixture.detectChanges();
 
     const cards = fixture.nativeElement.querySelectorAll('app-card-mentor');
-    expect(cards.length).toBe(1);
+    expect(cards).toHaveLength(1);
     expect(fixture.nativeElement.textContent).toContain('Eleanor Pena');
   });
 
@@ -38,7 +38,7 @@ describe('MentorListComponent', () => {
     fixture.detectChanges();
 
     const cards = fixture.nativeElement.querySelectorAll('app-card-mentor');
-    expect(cards.length).toBe(1);
+    expect(cards).toHaveLength(1);
     expect(fixture.nativeElement.textContent).toContain('Data Scientist');
   });
 

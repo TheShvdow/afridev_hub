@@ -18,9 +18,9 @@
         <p class="-mt-3 text-[14px] text-[#64748B]">Un critère laissé vide accepte toutes les valeurs. Une offre déclenche l'alerte quand tous les critères renseignés sont satisfaits.</p>
 
         @if (limitReached()) {
-          <p role="status" class="rounded-2xl border border-[#FBBF24]/50 bg-[#FEFCE8] px-4 py-3 text-sm font-medium text-[#A16207]">
+          <output class="block rounded-2xl border border-[#FBBF24]/50 bg-[#FEFCE8] px-4 py-3 text-sm font-medium text-[#A16207]">
             Vous avez atteint la limite de {{ maxAlerts }} alertes : supprimez-en une pour en créer une nouvelle.
-          </p>
+          </output>
         }
         @if (formError()) {
           <p role="alert" class="rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium text-[#FB2C36]">{{ formError() }}</p>
