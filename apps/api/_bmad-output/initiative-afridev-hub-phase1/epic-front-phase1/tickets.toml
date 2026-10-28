@@ -284,7 +284,7 @@ id = 22
 type = "story"
 title = "Parcours de bout en bout du front"
 description = """
-Suite de bout en bout contre l'API réelle : inscription, profil et badge, question et réponse, vote, offre et candidature, signalement et modération.
+Suite de bout en bout contre l'API réelle : inscription, profil et badge, question et réponse, vote, offre et candidature, signalement et modération. Livré : apps/web-e2e (Playwright), 47 scénarios, comptes e2e_* créés puis supprimés ; branchement à la CI restant à faire.
 """
 verify = "La suite passe contre une base de test peuplée par le seed de démonstration."
 covers = ["CAP-1"]
