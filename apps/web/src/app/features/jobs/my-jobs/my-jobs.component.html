@@ -17,6 +17,9 @@
             @if (quotaReached(plan)) {
               <span class="font-semibold text-[#FB2C36]">Quota atteint.</span>
             }
+            @if (!plan.isPremium) {
+              <a routerLink="/jobs/plan" class="font-semibold text-[#0F6932] underline">Passer en premium</a>
+            }
           </p>
         } @else {
           <span></span>

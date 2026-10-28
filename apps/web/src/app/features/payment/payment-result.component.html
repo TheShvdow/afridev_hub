@@ -1,0 +1,33 @@
+<app-page-hero title="Paiement" subtitle="Résultat de votre paiement Bictorys." />
+
+<section class="bg-white">
+  <div class="mx-auto flex w-full max-w-[700px] flex-col items-center gap-5 px-6 py-14 text-center sm:px-10 lg:px-0">
+    @switch (state()) {
+      @case ('checking') {
+        <output class="text-[16px] text-[#64748B]">Confirmation de votre paiement en cours…</output>
+      }
+      @case ('CAPTURED') {
+        <h2 class="text-[24px] font-bold text-[#0F6932]">Paiement confirmé</h2>
+        <p class="text-[16px] text-[#475569]">Votre plan premium est actif. Un reçu vous a été envoyé par e-mail.</p>
+        <div class="flex flex-wrap justify-center gap-3">
+          <a routerLink="/jobs/post" class="inline-flex h-12 items-center justify-center rounded-full bg-ink px-5 text-base font-semibold text-white transition-opacity hover:opacity-90">Publier une offre</a>
+          <a routerLink="/jobs/plan" class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink">Voir mon plan</a>
+        </div>
+      }
+      @case ('FAILED') {
+        <h2 class="text-[24px] font-bold text-[#FB2C36]">Paiement refusé</h2>
+        <p role="alert" class="text-[16px] text-[#475569]">Le paiement n'a pas abouti et vous n'avez pas été débité. Vous pouvez réessayer.</p>
+        <a routerLink="/jobs/plan" class="inline-flex h-12 items-center justify-center rounded-full bg-ink px-5 text-base font-semibold text-white transition-opacity hover:opacity-90">Réessayer</a>
+      }
+      @case ('timeout') {
+        <h2 class="text-[24px] font-bold text-[#141219]">Paiement en cours de confirmation</h2>
+        <p class="text-[16px] text-[#475569]">Bictorys n'a pas encore confirmé le paiement. Votre plan s'activera automatiquement et vous recevrez une notification.</p>
+        <a routerLink="/jobs/plan" class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink">Voir mon plan</a>
+      }
+      @default {
+        <p class="text-[16px] text-[#475569]">Aucun paiement à afficher. Retrouvez votre plan dans l'espace recruteur.</p>
+        <a routerLink="/jobs/plan" class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink">Voir mon plan</a>
+      }
+    }
+  </div>
+</section>

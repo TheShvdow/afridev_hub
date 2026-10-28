@@ -78,4 +78,16 @@ Le parseur ne doit pas être écrit avant de connaître le format réel reçu en
 - **Un webhook ne modifie jamais un paiement seul.** Après contrôle de signature, montant et devise, `PaymentsService` relit le statut auprès de Bictorys (`GET /pay/v1/transactions/{id}/status`) et ne règle que si les deux concordent. Une erreur d'appel renvoie `502` pour que Bictorys renvoie le webhook.
 - **Réconciliation planifiée** : `@Cron` toutes les 10 minutes sur les paiements `PENDING` ayant un `externalRef`, créés entre 5 minutes et 24 heures plus tôt, par lots de 100. Le règlement est conditionnel à `PENDING` : un paiement n'est activé qu'une fois.
 - **Paiement par carte : bloqué.** Bictorys ne renvoie pas de `transactionId` pour une charge carte, et la page de checkout carte a répondu 404 en sandbox. Sans identifiant, ni la confirmation ni la réconciliation ne peuvent suivre ce paiement. À traiter avec le support Bictorys avant d'ouvrir la carte.
-- **Format réel du webhook** : toujours non validé. Il faut un paiement sandbox complet, fait par le mainteneur, pour le confirmer.
+- **Format réel du webhook** : validé le 2026-10-28 (voir la section suivante).
+
+## Validation en sandbox (2026-10-28)
+
+Un paiement Wave Money réel a été fait en sandbox par le mainteneur, du lien de checkout jusqu'à l'activation du plan premium.
+
+- **Checkout hébergé** : l'appel `POST /pay/v1/charges` sans `payment_type` renvoie `202` et `{ type: "CheckoutLinkObject", link, chargeId, opToken }`, sans `transactionId` ni `redirectUrl`. Bictorys affiche sa page de choix du moyen de paiement. `BictorysProvider` normalise les deux formes (`bictorys-charge.ts`).
+- **URL de retour** : Bictorys répond `403` (page HTML) si `successRedirectUrl` ou `ErrorRedirectUrl` contient `localhost`. `WEB_URL` doit être une adresse publique, y compris en local.
+- **Webhook** : objet plat, clés `eventType, id, merchantId, type, customerId, customerObject, pspName, paymentMeans, paymentChannel, amount, merchantFees, customerFees, transactionFeeAmountHT, transactionFeeAmountTax, currency, paymentReference, cashier, settledAmount, settledCurrency, merchantReference, orderType, orderId, orderDetails, status, originIp, timestamp`. Le statut vaut `succeeded` et `paymentReference` est notre `Payment.id`.
+- **Frais** : pour un prix de 25 000, `amount` = 25 507,53, `customerFees` = 507,53, `merchantFees` = 0 et `settledAmount` = 25 507,53. Le prix du catalogue reste 25 000 ; le montant est accepté s'il vaut le prix ou le prix plus `customerFees`, à un centime près (`bictorys-amount.ts`).
+- **Identifiants** : le `chargeId` (notre `externalRef` initial) reste `pending` sur `GET /pay/v1/transactions/{id}/status`, même après paiement. Le statut du paiement se lit avec le `id` du webhook, que `PaymentsService` garde ensuite dans `externalRef` pour la réconciliation.
+- **Reçu** : l'e-mail de reçu part après la capture.
+- **Toujours ouvert** : la carte (pas testée) et le remboursement (`bearerAuth` ou `X-API-Key`, pas testé).

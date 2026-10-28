@@ -67,6 +67,15 @@ export const appRoutes: Routes = [
       import('./features/jobs/jobs.routes').then((m) => m.JOBS_ROUTES),
   },
 
+  // ── Retour de paiement Bictorys ───────────────────────────────────
+  {
+    path: 'payment/result',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/payment/payment-result.component').then((m) => m.PaymentResultComponent),
+    title: 'Paiement — AfriDev Hub',
+  },
+
   // ── Profil utilisateur ────────────────────────────────────────────
   {
     path: 'profile',

@@ -22,6 +22,12 @@ export const JOBS_ROUTES: Routes = [
     title: 'Mes alertes emploi — AfriDev Hub',
   },
   {
+    path: 'plan',
+    canActivate: [authGuard],
+    loadComponent: () => import('./recruiter-plan/recruiter-plan.component').then((m) => m.RecruiterPlanComponent),
+    title: 'Plan recruteur — AfriDev Hub',
+  },
+  {
     path: 'mine',
     canActivate: [authGuard],
     loadComponent: () => import('./my-jobs/my-jobs.component').then((m) => m.MyJobsComponent),
