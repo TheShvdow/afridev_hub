@@ -205,7 +205,7 @@ id = 16
 type = "story"
 title = "Recruteur : tableau de bord des offres, quota et renouvellement"
 description = """
-Écran « Mes offres » (GET /jobs/mine) avec statuts et motifs de refus, quota du plan (GET /jobs/plan), modifier, fermer et renouveler.
+Écran « Mes offres » (GET /jobs/mine) avec statuts et motifs de refus, quota du plan (GET /jobs/plan), modifier, fermer et renouveler. Livré : liste, motifs de refus, quota, renouveler, clôturer et lecture des candidatures reçues (coordonnées, liens, CV) ; la modification d'une offre reste à faire.
 """
 verify = "Un recruteur voit ses offres refusées avec le motif, en renouvelle une et voit son quota du mois."
 covers = ["CAP-5"]

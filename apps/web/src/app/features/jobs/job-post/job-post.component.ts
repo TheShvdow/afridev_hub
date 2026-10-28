@@ -98,7 +98,7 @@ export class JobPostComponent {
         next: () => {
           this.sending.set(false);
           this.toast.success('Offre envoyée : elle sera publiée après validation par la modération.');
-          this.router.navigateByUrl('/jobs');
+          this.router.navigateByUrl('/jobs/mine');
         },
         error: (error) => {
           this.sending.set(false);

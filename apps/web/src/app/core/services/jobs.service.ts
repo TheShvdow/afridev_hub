@@ -47,6 +47,8 @@ export interface JobOffer {
   mode: JobMode;
   stack: string[];
   status: string;
+  /** Motif du refus de la modération, visible du recruteur. */
+  rejectionReason?: string | null;
   salaryMin: number;
   salaryMax: number;
   currency: string;
@@ -55,6 +57,55 @@ export interface JobOffer {
   expiresAt: string;
   createdAt: string;
   recruiter: { id: string; username: string; displayName: string | null; avatarUrl: string | null };
+}
+
+/** Offre de `GET /api/jobs/mine` : tous statuts confondus, avec le nombre de candidatures. */
+export interface MyJobOffer extends JobOffer {
+  _count: { applications: number };
+}
+
+export type JobStatus = 'PENDING_REVIEW' | 'ACTIVE' | 'REJECTED' | 'EXPIRED' | 'CLOSED';
+
+/** `GET /api/jobs/plan` — `monthlyLimit` null : offres illimitées. */
+export interface RecruiterPlan {
+  planType: 'FREE' | 'PREMIUM';
+  isPremium: boolean;
+  premiumUntil: string | null;
+  offersThisMonth: number;
+  monthlyLimit: number | null;
+}
+
+/** Candidature reçue (`GET /api/jobs/:id/applications`) : les champs saisis par le candidat et son profil. */
+export interface ReceivedApplication {
+  id: string;
+  message: string;
+  status: string;
+  createdAt: string;
+  fullName?: string | null;
+  phone?: string | null;
+  country?: string | null;
+  city?: string | null;
+  linkedinUrl?: string | null;
+  githubUrl?: string | null;
+  portfolioUrl?: string | null;
+  experienceYears?: number | null;
+  availableFrom?: string | null;
+  expectedSalary?: number | null;
+  expectedCurrency?: string | null;
+  stack?: string[];
+  /** Lien signé vers le CV, valable 10 minutes. */
+  cvDownloadUrl?: string | null;
+  /** Vrai avec le plan gratuit : le profil du candidat est réduit au pseudo. */
+  profileTruncated?: boolean;
+  user: {
+    id: string;
+    username: string;
+    displayName: string | null;
+    avatarUrl: string | null;
+    email?: string;
+    isVerified?: boolean;
+    reputation?: number;
+  };
 }
 
 export interface ListJobsQuery {
@@ -161,5 +212,30 @@ export class JobsService {
   /** `PATCH /api/jobs/{id}/reject` — motif de 5 à 500 caractères. */
   reject(id: string, reason: string): Observable<JobOffer> {
     return this.http.patch<JobOffer>(`${this.base}/${encodeURIComponent(id)}/reject`, { reason });
+  }
+
+  /** `GET /api/jobs/mine` — mes offres, tous statuts confondus. */
+  listMine(): Observable<MyJobOffer[]> {
+    return this.http.get<MyJobOffer[]>(`${this.base}/mine`);
+  }
+
+  /** `GET /api/jobs/plan` — plan recruteur et quota du mois. */
+  getPlan(): Observable<RecruiterPlan> {
+    return this.http.get<RecruiterPlan>(`${this.base}/plan`);
+  }
+
+  /** `PATCH /api/jobs/{id}/close` */
+  close(id: string): Observable<JobOffer> {
+    return this.http.patch<JobOffer>(`${this.base}/${encodeURIComponent(id)}/close`, {});
+  }
+
+  /** `PATCH /api/jobs/{id}/renew` — prolonge de 60 jours une offre publiée ou expirée. */
+  renew(id: string): Observable<JobOffer> {
+    return this.http.patch<JobOffer>(`${this.base}/${encodeURIComponent(id)}/renew`, {});
+  }
+
+  /** `GET /api/jobs/{id}/applications` — auteur de l'offre uniquement. */
+  listApplications(id: string): Observable<ReceivedApplication[]> {
+    return this.http.get<ReceivedApplication[]>(`${this.base}/${encodeURIComponent(id)}/applications`);
   }
 }

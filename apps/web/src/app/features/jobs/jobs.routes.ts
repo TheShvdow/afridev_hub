@@ -16,6 +16,12 @@ export const JOBS_ROUTES: Routes = [
     title: 'Publier une offre — AfriDev Hub',
   },
   {
+    path: 'mine',
+    canActivate: [authGuard],
+    loadComponent: () => import('./my-jobs/my-jobs.component').then((m) => m.MyJobsComponent),
+    title: 'Mes offres — AfriDev Hub',
+  },
+  {
     path: ':id',
     loadComponent: () =>
       import('./job-detail/job-detail.component').then(
