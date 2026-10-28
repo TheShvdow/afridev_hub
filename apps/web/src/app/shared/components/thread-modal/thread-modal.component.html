@@ -127,7 +127,30 @@
                       }
                     </div>
                     <p class="text-[13px] leading-[20px] text-[#64748B]">{{ answer.user.reputation }} points · {{ timeAgo(answer.createdAt) }}</p>
+@if (editingAnswerId() === answer.id) {
+  <form class="mt-3 flex flex-col gap-3" [formGroup]="editForm" (ngSubmit)="saveAnswerEdit(answer)" novalidate>
+    <textarea
+      formControlName="body"
+      rows="5"
+      aria-label="Modifier votre réponse"
+      class="w-full rounded-2xl border border-[#E2E8F0] px-4 py-3 text-[15px] leading-[24px] text-[#141219] focus:border-[#0F6932] focus:outline-none"
+    ></textarea>
+    @if (editForm.controls.body.touched && editForm.controls.body.invalid) {
+      <p role="alert" class="text-[13px] font-medium text-[#FB2C36]">
+        {{ editForm.controls.body.hasError('required') ? 'La réponse est requise.' : 'La réponse doit contenir au moins 30 caractères.' }}
+      </p>
+    }
+    @if (editError()) {
+      <p role="alert" class="text-[13px] font-medium text-[#FB2C36]">{{ editError() }}</p>
+    }
+    <div class="flex justify-end gap-2">
+      <button type="button" (click)="cancelAnswerEdit()" [disabled]="savingEdit()" class="rounded-full border border-[#E2E8F0] px-3 py-1 text-[13px] font-semibold text-[#475569] hover:bg-[#F8FAFC] disabled:opacity-60">Annuler</button>
+      <button type="submit" [disabled]="savingEdit()" class="rounded-full bg-[#0F6932] px-3 py-1 text-[13px] font-semibold text-white hover:opacity-90 disabled:opacity-60">{{ savingEdit() ? 'Enregistrement…' : 'Enregistrer' }}</button>
+    </div>
+  </form>
+} @else {
                     <p class="mt-2 whitespace-pre-line break-words text-[15px] leading-[24px] text-[#475569]">{{ answer.body }}</p>
+}
 
                     <div class="mt-3 flex flex-wrap items-center gap-2">
                       <app-vote-control
@@ -180,6 +203,15 @@
                             {{ deletingAnswerId() === answer.id ? 'Suppression…' : 'Supprimer' }}
                           </button>
                         } @else {
+@if (canEditAnswer(answer)) {
+<button
+  type="button"
+  (click)="startAnswerEdit(answer)"
+  class="rounded-full border border-[#E2E8F0] px-3 py-1 text-[13px] font-semibold text-[#64748B] transition-colors hover:border-[#0F6932]/40 hover:text-[#0F6932]"
+>
+  Modifier
+</button>
+}
                           <button
                             type="button"
                             (click)="requestAnswerDelete(answer.id)"

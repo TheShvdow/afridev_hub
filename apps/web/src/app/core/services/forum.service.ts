@@ -157,6 +157,11 @@ export class ForumService {
     );
   }
 
+  /** `PATCH /api/forum/answers/{answerId}` — réservé à l'auteur de la réponse. */
+  updateAnswer(answerId: string, dto: CreateAnswerDto): Observable<ForumAnswer> {
+    return this.http.patch<ForumAnswer>(`${this.base}/answers/${encodeURIComponent(answerId)}`, dto);
+  }
+
   /** `PATCH /api/forum/answers/{answerId}/accept` — auteur de la question uniquement. */
   acceptAnswer(answerId: string): Observable<unknown> {
     return this.http.patch(`${this.base}/answers/${encodeURIComponent(answerId)}/accept`, {});
