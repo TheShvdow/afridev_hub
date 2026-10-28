@@ -1,8 +1,9 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, FormControl, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, catchError, of, switchMap } from 'rxjs';
+import type { UserMe } from '@afridev/shared-types';
 import { PageHeroComponent } from '../../../shared/components/page-hero/page-hero.component';
 import { CountriesService } from '../../../core/services/countries.service';
 import { ApplyJobDto, JOB_CURRENCY_CODES, JobsService } from '../../../core/services/jobs.service';
@@ -33,7 +34,7 @@ export function optionalPhoneValidator(control: AbstractControl<string>): Valida
   imports: [ReactiveFormsModule, RouterLink, PageHeroComponent],
   templateUrl: './job-apply.component.html',
 })
-export class JobApplyComponent implements OnInit {
+export class JobApplyComponent {
   private readonly jobs = inject(JobsService);
   private readonly uploads = inject(UploadService);
   private readonly users = inject(UsersService);
@@ -46,7 +47,9 @@ export class JobApplyComponent implements OnInit {
   readonly currencies = JOB_CURRENCY_CODES;
   readonly countries = toSignal(inject(CountriesService).list().pipe(catchError(() => of([]))), { initialValue: [] });
   readonly jobId = this.route.snapshot.paramMap.get('id');
-  readonly email = this.authStore.currentUser()?.email ?? '';
+  /** Adresse du compte, rappelée en haut du formulaire. */
+  readonly email = computed(() => this.authStore.currentUser()?.email ?? '');
+  private prefilledFor: string | null = null;
 
   readonly sending = signal(false);
   readonly uploadingCv = signal(false);
@@ -74,8 +77,13 @@ export class JobApplyComponent implements OnInit {
     return new FormControl<number | null>(null, validators);
   }
 
-  ngOnInit(): void {
-    this.prefill();
+  constructor() {
+    // Le profil du membre n'est pas toujours chargé à l'ouverture (page ouverte directement ou rechargée) :
+    // le préremplissage se fait dès qu'il arrive, une seule fois.
+    effect(() => {
+      const me = this.authStore.currentUser();
+      if (me) untracked(() => this.prefill(me));
+    });
   }
 
   onCvSelected(event: Event): void {
@@ -164,9 +172,9 @@ export class JobApplyComponent implements OnInit {
   }
 
   /** Reprend le profil du membre pour éviter de tout ressaisir ; ce qu'il a déjà tapé n'est jamais écrasé. */
-  private prefill(): void {
-    const me = this.authStore.currentUser();
-    if (!me) return;
+  private prefill(me: UserMe): void {
+    if (this.prefilledFor === me.id) return;
+    this.prefilledFor = me.id;
 
     this.fillIfEmpty('fullName', me.displayName ?? '');
 

@@ -1,7 +1,5 @@
-import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
-import { AuthStore } from '../../core/store/auth.store';
-import { roleGuard } from '../../core/guards/role.guard';
+import { adminHomeGuard, roleGuard } from '../../core/guards/role.guard';
 
 // L'API réserve /admin/* aux ADMIN ; signalements (/moderation/*) et offres à valider (/jobs/review)
 // restent ouverts aux modérateurs.
@@ -16,11 +14,7 @@ export const ADMIN_ROUTES: Routes = [
       ),
     children: [
       // Les administrateurs arrivent sur le tableau de bord, les modérateurs sur les signalements.
-      {
-        path: '',
-        pathMatch: 'full',
-        redirectTo: () => (inject(AuthStore).currentUser()?.role === 'ADMIN' ? 'dashboard' : 'reports'),
-      },
+      { path: '', pathMatch: 'full', canActivate: [adminHomeGuard], children: [] },
       {
         path: 'dashboard',
         ...ADMIN_ONLY,

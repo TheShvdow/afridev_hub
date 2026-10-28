@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
@@ -54,6 +55,32 @@ describe('JobApplyComponent', () => {
       portfolioUrl: 'https://aminata.dev',
       stack: 'Angular, NestJS',
     });
+  });
+
+  it('prefills as soon as the profile arrives when the page was opened directly', () => {
+    const me = signal<{ id: string; username: string; email: string; displayName: string } | null>(null);
+    TestBed.configureTestingModule({
+      imports: [JobApplyComponent],
+      providers: [
+        provideRouter([]),
+        { provide: JobsService, useValue: jobs },
+        { provide: UploadService, useValue: uploads },
+        { provide: UsersService, useValue: users },
+        { provide: ToastService, useValue: toast },
+        { provide: CountriesService, useValue: { list: () => of([]) } },
+        { provide: AuthStore, useValue: { currentUser: me } },
+        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: new Map([['id', 'job-1']]) } } },
+      ],
+    });
+    const fixture = TestBed.createComponent(JobApplyComponent);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.form.controls.fullName.value).toBe('');
+
+    me.set({ id: 'u1', username: 'aminata_dev', email: 'aminata@demo.afridev.hub', displayName: 'Aminata Diallo' });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.form.controls.fullName.value).toBe('Aminata Diallo');
+    expect(fixture.componentInstance.email()).toBe('aminata@demo.afridev.hub');
   });
 
   it('refuses a blank message or name', () => {
