@@ -90,9 +90,11 @@ export class AnswerDto {
   @ApiProperty() isHidden!: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
   @ApiProperty({ type: AuthorSummaryDto }) user!: AuthorSummaryDto;
+  @ApiProperty({ enum: ['UP', 'DOWN'], nullable: true, description: 'Vote du visiteur connecté, null sinon' }) userVote!: 'UP' | 'DOWN' | null;
 }
 
 export class PostDetailDto extends PostDto {
+  @ApiProperty({ enum: ['UP', 'DOWN'], nullable: true, description: 'Vote du visiteur connecté, null sinon' }) userVote!: 'UP' | 'DOWN' | null;
   @ApiProperty({ type: [AnswerDto] }) answers!: AnswerDto[];
 }
 
