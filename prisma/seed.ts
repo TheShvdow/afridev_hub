@@ -95,8 +95,8 @@ async function main() {
 
   // Badges
   console.log('  → Badges');
-  for (const badge of BADGES) {
-    await prisma.badge.upsert({
+  await prisma.$transaction(BADGES.map((badge) =>
+    prisma.badge.upsert({
       where:  { slug: badge.slug },
       update: { name: badge.name, description: badge.description, icon: badge.icon },
       create: {
@@ -104,8 +104,8 @@ async function main() {
         condition:      REPUTATION_THRESHOLDS[badge.slug] ? `reputation >= ${REPUTATION_THRESHOLDS[badge.slug]}` : badge.description,
         requiredPoints: REPUTATION_THRESHOLDS[badge.slug] ?? 0,
       },
-    });
-  }
+    }),
+  ));
   console.log(`     ✓ ${BADGES.length} badges`);
 
   // Pays : la liste de apps/api/src/common/countries.ts fait foi (noms et codes à jour).
@@ -121,24 +121,24 @@ async function main() {
 
   // Project categories
   console.log('  → Project categories');
-  for (const cat of PROJECT_CATEGORIES) {
-    await prisma.projectCategory.upsert({
+  await prisma.$transaction(PROJECT_CATEGORIES.map((cat) =>
+    prisma.projectCategory.upsert({
       where:  { slug: cat.slug },
       update: { name: cat.name },
       create: { ...cat },
-    });
-  }
+    }),
+  ));
   console.log(`     ✓ ${PROJECT_CATEGORIES.length} categories`);
 
   // Forum tags
   console.log('  → Forum tags');
-  for (const tag of FORUM_TAGS) {
-    await prisma.tag.upsert({
+  await prisma.$transaction(FORUM_TAGS.map((tag) =>
+    prisma.tag.upsert({
       where:  { slug: tag.slug },
       update: { name: tag.name },
       create: { ...tag },
-    });
-  }
+    }),
+  ));
   console.log(`     ✓ ${FORUM_TAGS.length} tags`);
 
   console.log('\n✅ Seed terminé avec succès!');

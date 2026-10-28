@@ -1,10 +1,29 @@
 <app-page-hero
-  title="Publier une offre"
-  subtitle="Votre offre sera relue par la modération avant d'être visible, et reste en ligne 60 jours."
+  [title]="editing ? 'Modifier mon offre' : 'Publier une offre'"
+  [subtitle]="editing ? 'Corrigez ou complétez votre offre. Une offre refusée est de nouveau relue par la modération.' : 'Votre offre sera relue par la modération avant d\'être visible, et reste en ligne 60 jours.'"
 />
 
 <section class="bg-white">
   <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-0 lg:py-10">
+    @if (loadingOffer()) {
+      <p class="py-12 text-center text-[16px] text-[#64748B]">Chargement de l'offre…</p>
+    } @else if (offerProblem()) {
+      <div class="flex flex-col items-center gap-4 py-12 text-center">
+        <p role="alert" class="text-[16px] text-[#64748B]">
+          @switch (offerProblem()) {
+            @case ('notFound') { Cette offre n'existe pas. }
+            @case ('forbidden') { Seul l'auteur d'une offre peut la modifier. }
+            @default { L'offre n'a pas pu être chargée. Réessayez dans un instant. }
+          }
+        </p>
+        <a routerLink="/jobs/mine" class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink">Retour à mes offres</a>
+      </div>
+    } @else {
+    @if (editing && offerStatus() === 'REJECTED') {
+      <output class="mx-auto mb-6 block max-w-[800px] rounded-2xl border border-[#FBBF24]/50 bg-[#FEFCE8] px-4 py-3 text-sm font-medium text-[#A16207]">
+        Cette offre a été refusée par la modération. Une fois corrigée, elle repart en validation.
+      </output>
+    }
     <form class="mx-auto flex w-full max-w-[800px] flex-col gap-6" [formGroup]="form" (ngSubmit)="submit()" novalidate>
       @if (errorMessage()) {
         <div
@@ -132,7 +151,7 @@
       </div>
 
       <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <a routerLink="/jobs" class="inline-flex h-14 items-center justify-center rounded-full px-6 text-base font-semibold text-[#64748B] hover:text-ink">
+        <a [routerLink]="editing ? '/jobs/mine' : '/jobs'" class="inline-flex h-14 items-center justify-center rounded-full px-6 text-base font-semibold text-[#64748B] hover:text-ink">
           Annuler
         </a>
         <button
@@ -140,9 +159,10 @@
           [disabled]="sending()"
           class="inline-flex h-14 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
         >
-          {{ sending() ? 'Envoi…' : "Soumettre l'offre" }}
+          {{ sending() ? 'Envoi…' : editing ? 'Enregistrer les modifications' : "Soumettre l'offre" }}
         </button>
       </div>
     </form>
+    }
   </div>
 </section>

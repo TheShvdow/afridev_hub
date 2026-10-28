@@ -1,6 +1,6 @@
 import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { NotificationsService } from '../../core/services/notifications.service';
+import { RealtimeService } from '../../core/services/realtime.service';
 import { AuthStore } from '../../core/store/auth.store';
 import { Icon } from '../../features/home/components/icon/icon';
 
@@ -13,11 +13,14 @@ import { Icon } from '../../features/home/components/icon/icon';
 export class Navbar {
   readonly authStore = inject(AuthStore);
   private readonly router = inject(Router);
-  private readonly notifications = inject(NotificationsService);
+  private readonly realtime = inject(RealtimeService);
 
   readonly menuOpen = signal(false);
   readonly userMenuOpen = signal(false);
-  readonly unreadCount = signal(0);
+  /** Compteur partagé, tenu à jour en direct par la connexion temps réel. */
+  readonly unreadCount = this.realtime.unreadCount;
+  /** Nombre affiché sur la pastille, plafonné ; le même nombre est repris dans le nom accessible du bouton. */
+  readonly badgeCount = computed(() => Math.min(this.unreadCount(), 99));
 
   readonly links = [
     { label: 'Forum', link: '/forum' },
@@ -36,15 +39,7 @@ export class Navbar {
   toggleUserMenu(event: Event): void {
     event.stopPropagation();
     this.userMenuOpen.set(!this.userMenuOpen());
-    if (this.userMenuOpen()) this.refreshUnreadCount();
-  }
-
-  /** Le compteur est lu à l'ouverture du menu : pas de requête tant que le membre n'ouvre rien. */
-  private refreshUnreadCount(): void {
-    this.notifications.unreadCount().subscribe({
-      next: ({ count }) => this.unreadCount.set(count),
-      error: () => undefined,
-    });
+    if (this.userMenuOpen()) this.realtime.refreshUnread();
   }
 
   /** Referme le menu du compte dès qu'un clic a lieu ailleurs sur la page. */

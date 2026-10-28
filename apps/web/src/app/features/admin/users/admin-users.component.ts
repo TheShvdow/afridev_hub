@@ -86,14 +86,14 @@ export class AdminUsersComponent {
       this.banError.set(`Le motif doit contenir au moins ${BAN_REASON_MIN_LENGTH} caractères.`);
       return;
     }
-    this.moderate(user, this.moderation.banUser(user.id, trimmed), `${user.username} est banni.`);
+    this.moderate(user, this.moderation.banUser(user.id, trimmed), `${user.username} est banni.`, true);
   }
 
   unban(user: AdminUser): void {
-    this.moderate(user, this.moderation.unbanUser(user.id), `Le ban de ${user.username} est levé.`);
+    this.moderate(user, this.moderation.unbanUser(user.id), `Le ban de ${user.username} est levé.`, false);
   }
 
-  private moderate(user: AdminUser, request: ReturnType<ModerationService['unbanUser']>, success: string): void {
+  private moderate(user: AdminUser, request: ReturnType<ModerationService['unbanUser']>, success: string, banned: boolean): void {
     if (this.busyId()) return;
 
     this.busyId.set(user.id);
@@ -101,6 +101,7 @@ export class AdminUsersComponent {
       next: () => {
         this.busyId.set(null);
         this.banningId.set(null);
+        this.users.update((list) => list.map((item) => (item.id === user.id ? { ...item, isBanned: banned } : item)));
         this.toast.success(success);
       },
       error: (error) => {

@@ -3,7 +3,7 @@
 <section class="bg-white">
   <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-0 lg:py-10">
     <form class="mx-auto flex w-full max-w-[800px] flex-col gap-6" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <p class="text-[14px] text-[#64748B]">Les champs marqués d'un astérisque sont obligatoires. Un e-mail de confirmation vous sera envoyé à <strong class="text-[#141219]">{{ email || 'votre adresse' }}</strong>.</p>
+      <p class="text-[14px] text-[#64748B]">Les champs marqués d'un astérisque sont obligatoires. Un e-mail de confirmation vous sera envoyé à <strong class="text-[#141219]">{{ email() || 'votre adresse' }}</strong>.</p>
 
       @if (errorMessage()) {
         <p

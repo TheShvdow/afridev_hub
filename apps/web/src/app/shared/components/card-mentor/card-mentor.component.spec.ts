@@ -37,4 +37,25 @@ describe('CardMentorComponent', () => {
     expect(element.textContent).toContain('Awa Diallo');
     expect(element.textContent).toContain('Staff Engineer · Backend');
   });
+
+  it('shows a disabled booking button while mentoring is not available', () => {
+    const button = (fixture.nativeElement as HTMLElement).querySelector('button') as HTMLButtonElement;
+
+    expect(button.disabled).toBe(true);
+    expect(button.getAttribute('title')).toBe('Bientôt disponible');
+  });
+
+  it('enables the button and emits the mentor once booking is available', () => {
+    fixture.componentRef.setInput('bookable', true);
+    fixture.detectChanges();
+    const booked = jest.fn();
+    component.booked.subscribe(booked);
+
+    const button = (fixture.nativeElement as HTMLElement).querySelector('button') as HTMLButtonElement;
+    button.click();
+
+    expect(button.disabled).toBe(false);
+    expect(booked).toHaveBeenCalledWith(mentor);
+  });
 });
+

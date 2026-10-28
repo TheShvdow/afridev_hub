@@ -12,16 +12,36 @@ export const USER_ROLES: { value: UserRole; label: string }[] = [
   { value: 'ADMIN', label: 'Administrateur' },
 ];
 
-/** Utilisateur de `GET /api/admin/users`. Le bannissement n'y figure pas (il vit dans les actions de modération). */
+/** Utilisateur de `GET /api/admin/users` ; `isBanned` est déduit de la dernière action de modération sur le compte. */
 export interface AdminUser {
   id: string;
   username: string;
   email: string;
   role: UserRole;
   isVerified: boolean;
+  isBanned?: boolean;
   reputation: number;
   createdAt: string;
   lastSeenAt: string | null;
+}
+
+export interface ForumStats {
+  questions: number;
+  questionsWithAnswer: number;
+  questionsWithAcceptedAnswer: number;
+  /** Pourcentage arrondi. */
+  acceptedAnswerRate: number;
+}
+
+/** `GET /api/admin/stats` — chiffres du tableau de bord et indicateurs SM-2 à SM-7. */
+export interface AdminStats {
+  users: { total: number; newThisWeek: number };
+  content: { posts: number; projects: number; jobs: number };
+  projects: { visible: number; withGithubStats: number };
+  moderation: { pendingReports: number };
+  revenue: { totalCommission: number; capturedPayments: number };
+  forum: ForumStats & { last30Days: ForumStats };
+  jobs: { published: number; publishedLast60Days: number; pendingReview: number };
 }
 
 /** Entrée de `GET /api/admin/audit-log`. */
@@ -55,5 +75,10 @@ export class AdminService {
   auditLog(page = 1): Observable<Paginated<AuditEntry>> {
     const params = new HttpParams().set('page', page);
     return this.http.get<Paginated<AuditEntry>>(`${this.base}/audit-log`, { params });
+  }
+
+  /** `GET /api/admin/stats` */
+  stats(): Observable<AdminStats> {
+    return this.http.get<AdminStats>(`${this.base}/stats`);
   }
 }

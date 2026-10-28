@@ -1,7 +1,5 @@
 import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
-import { inject } from '@angular/core';
-import { computed } from '@angular/core';
-import { PLATFORM_ID } from '@angular/core';
+import { PLATFORM_ID, computed, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { AuthService } from '../services/auth.service';
 import type { UserMe } from '@afridev/shared-types';

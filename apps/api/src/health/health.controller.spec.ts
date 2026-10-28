@@ -39,47 +39,12 @@ describe('HealthController', () => {
     expect(response).toEqual(result);
   });
 
-  it('throws HttpException 503 when db probe fails', async () => {
-    const result: HealthResult = {
-      status: 'error',
-      db: 'error',
-      redis: 'ok',
-      uptime: 42,
-    };
-    healthService.checkHealth.mockResolvedValue(result);
-
-    const rejection = controller.check();
-    await expect(rejection).rejects.toThrow(HttpException);
-    await expect(rejection).rejects.toMatchObject({
-      status: HttpStatus.SERVICE_UNAVAILABLE,
-      response: result,
-    });
-  });
-
-  it('throws HttpException 503 when redis probe fails', async () => {
-    const result: HealthResult = {
-      status: 'error',
-      db: 'ok',
-      redis: 'error',
-      uptime: 42,
-    };
-    healthService.checkHealth.mockResolvedValue(result);
-
-    const rejection = controller.check();
-    await expect(rejection).rejects.toThrow(HttpException);
-    await expect(rejection).rejects.toMatchObject({
-      status: HttpStatus.SERVICE_UNAVAILABLE,
-      response: result,
-    });
-  });
-
-  it('throws HttpException 503 when both probes fail', async () => {
-    const result: HealthResult = {
-      status: 'error',
-      db: 'error',
-      redis: 'error',
-      uptime: 42,
-    };
+  it.each([
+    ['db probe fails', { db: 'error', redis: 'ok' }],
+    ['redis probe fails', { db: 'ok', redis: 'error' }],
+    ['both probes fail', { db: 'error', redis: 'error' }],
+  ] as const)('throws HttpException 503 when %s', async (_label, probes) => {
+    const result: HealthResult = { status: 'error', ...probes, uptime: 42 };
     healthService.checkHealth.mockResolvedValue(result);
 
     const rejection = controller.check();

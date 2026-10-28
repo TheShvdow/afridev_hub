@@ -11,6 +11,7 @@ interface AdminLink {
 }
 
 const LINKS: AdminLink[] = [
+  { label: 'Tableau de bord', path: 'dashboard', adminOnly: true },
   { label: 'Signalements', path: 'reports', adminOnly: false },
   { label: 'Offres à valider', path: 'jobs', adminOnly: false },
   { label: 'Utilisateurs', path: 'users', adminOnly: true },

@@ -54,6 +54,9 @@
 
               <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-[#E2E8F0] pt-4">
                 <a [routerLink]="['/jobs', offer.id]" class="rounded-full border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#141219] transition-colors hover:border-ink disabled:opacity-60">Voir l'offre</a>
+                @if (canEdit(offer)) {
+                  <a [routerLink]="['/jobs', offer.id, 'edit']" class="rounded-full border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#141219] transition-colors hover:border-ink disabled:opacity-60">Modifier</a>
+                }
                 @if (offer._count.applications > 0) {
                   <button type="button" (click)="toggleApplications(offer)" [attr.aria-expanded]="openApplicationsId() === offer.id" class="rounded-full border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#141219] transition-colors hover:border-ink disabled:opacity-60">
                     {{ openApplicationsId() === offer.id ? 'Masquer les candidatures' : 'Voir les candidatures (' + offer._count.applications + ')' }}

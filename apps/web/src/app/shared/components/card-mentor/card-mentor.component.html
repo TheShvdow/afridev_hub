@@ -115,8 +115,10 @@
 
         <button
           type="button"
+          [disabled]="!bookable()"
+          [attr.title]="bookable() ? null : 'Bientôt disponible'"
           (click)="booked.emit(mentor())"
-          class="btn-outline mt-[47px] w-full py-[14px] flex items-center justify-center text-[#141219] border border-[#141219] rounded-[1000px] text-[16px] font-semibold leading-[26px] transition-colors hover:bg-[#141219] hover:text-white"
+          class="btn-outline mt-[47px] w-full py-[14px] flex items-center justify-center text-[#141219] border border-[#141219] rounded-[1000px] text-[16px] font-semibold leading-[26px] transition-colors enabled:hover:bg-[#141219] enabled:hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           {{ ctaLabel() }}
         </button>

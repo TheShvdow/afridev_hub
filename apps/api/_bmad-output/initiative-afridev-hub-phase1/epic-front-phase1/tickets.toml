@@ -198,7 +198,6 @@ covers = ["CAP-2", "CAP-3"]
 after = [5, "2.6"]
 hitl = false
 risk = "medium"
-unknown = "Quel jeton d'authentification le gateway Socket.io attend-il à la connexion ?"
 
 [[entry]]
 id = 16
@@ -260,19 +259,18 @@ title = "Décision sur les pages Mentorat et Communautés"
 description = """
 Décider avec le product owner si ces pages de phase 2, à données statiques, restent en vitrine ou sont masquées du menu.
 """
-verify = "La décision est consignée dans les Notes de l'épic et le menu la reflète."
+verify = "La décision est consignée dans les Notes de l'épic et le menu la reflète. Décision du 2026-10-28 : garder en vitrine avec bandeau « Aperçu » et actions désactivées ; livré."
 covers = ["CAP-1"]
 after = []
 hitl = true
 risk = "low"
-unknown = "Garde-t-on Mentorat et Communautés en vitrine statique ou les masque-t-on jusqu'à la phase 2 ?"
 
 [[entry]]
 id = 21
 type = "story"
 title = "Refactor sweep — E7"
 description = """
-Nettoyage du front à partir des plans et des constats différés : notes SonarCloud restantes (rôles ARIA, jest.config.ts), doublons de logique de pagination.
+Nettoyage du front à partir des plans et des constats différés : notes SonarCloud restantes (rôles ARIA, jest.config.ts), doublons de logique de pagination. Livré le 2026-10-28 : vulnérabilité (nombre pseudo-aléatoire), bug (promesse non attendue au démarrage), point critique (complexité de l'enveloppe Swagger, avec tests de caractérisation), imports en double, chaînes `String.raw`, `node:crypto`, `async` inutiles, seed dupliqué supprimé, boucles du seed en transactions, section Formations retirée de l'accueil. Reste volontairement : 12 « await dans une boucle » de l'API (traitements séquentiels voulus : relances d'e-mails, réconciliation des paiements, nouvelles tentatives Bictorys).
 """
 verify = "Le Quality Gate reste au vert et les tests web passent."
 covers = ["CAP-1"]
@@ -285,7 +283,7 @@ id = 22
 type = "story"
 title = "Parcours de bout en bout du front"
 description = """
-Suite de bout en bout contre l'API réelle : inscription, profil et badge, question et réponse, vote, offre et candidature, signalement et modération.
+Suite de bout en bout contre l'API réelle : inscription, profil et badge, question et réponse, vote, offre et candidature, signalement et modération. Livré : apps/web-e2e (Playwright), 47 scénarios, comptes e2e_* créés puis supprimés ; branchement à la CI restant à faire.
 """
 verify = "La suite passe contre une base de test peuplée par le seed de démonstration."
 covers = ["CAP-1"]
@@ -316,6 +314,19 @@ Le candidat reçoit un e-mail récapitulatif (offre, entreprise, date, CV joint,
 verify = "Après une candidature, un e-mail de confirmation arrive à l'adresse du candidat avec les détails de l'offre."
 covers = ["CAP-5"]
 after = [3, "5.9"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 25
+type = "story"
+title = "Modification d'une offre d'emploi"
+description = """
+Route /jobs/:id/edit : le formulaire de publication prérempli envoie PATCH /jobs/:id ; bouton « Modifier » dans « Mes offres » ; une offre refusée corrigée repart en validation.
+"""
+verify = "Un recruteur modifie le salaire d'une offre en ligne et la voit mise à jour ; une offre refusée corrigée passe en attente de validation."
+covers = ["CAP-5"]
+after = [16, "5.6"]
 hitl = false
 risk = "low"
 

@@ -1,6 +1,9 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { Subject } from 'rxjs';
 import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
+import { RealtimeService } from '../../core/services/realtime.service';
 import { NotificationsComponent } from './notifications.component';
 import { AppNotification, NotificationsService } from '../../core/services/notifications.service';
 
@@ -26,17 +29,23 @@ const page = (data: AppNotification[], unreadCount: number, pageNumber = 1, tota
 describe('NotificationsComponent', () => {
   const api = { list: jest.fn(), markAsRead: jest.fn(), markAllAsRead: jest.fn(), unreadCount: jest.fn() };
 
+  const live$ = new Subject<AppNotification>();
+  const realtime = { unreadCount: signal(0), notification$: live$ };
+
   function create() {
     TestBed.configureTestingModule({
       imports: [NotificationsComponent],
-      providers: [provideRouter([]), { provide: NotificationsService, useValue: api }],
+      providers: [provideRouter([]), { provide: NotificationsService, useValue: api }, { provide: RealtimeService, useValue: realtime }],
     });
     const fixture = TestBed.createComponent(NotificationsComponent);
     fixture.detectChanges();
     return fixture;
   }
 
-  beforeEach(() => jest.resetAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    realtime.unreadCount.set(0);
+  });
 
   it('lists the notifications with the unread count', () => {
     api.list.mockReturnValue(of(page([notification('p1'), notification('p2', { isRead: true })], 1)));
@@ -45,7 +54,7 @@ describe('NotificationsComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('1 non lue');
     expect(text).toContain('Kwame A.');
-    expect(fixture.componentInstance.items().length).toBe(2);
+    expect(fixture.componentInstance.items()).toHaveLength(2);
   });
 
   it('marks a notification as read and opens its target', () => {
@@ -84,6 +93,43 @@ describe('NotificationsComponent', () => {
     fixture.componentInstance.retry();
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.items().length).toBe(1);
+    expect(fixture.componentInstance.items()).toHaveLength(1);
+  });
+
+  it('puts a notification received live at the top of the list and counts it as unread', () => {
+    api.list.mockReturnValue(of(page([notification('p1')], 1)));
+    const fixture = create();
+
+    live$.next(notification('live-1', { title: 'Nouvelle réponse reçue en direct' }));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.items().map((item) => item.id)).toEqual(['live-1', 'p1']);
+    expect(fixture.componentInstance.unreadCount()).toBe(2);
+    expect(fixture.nativeElement.textContent).toContain('Nouvelle réponse reçue en direct');
+  });
+
+  it('does not duplicate a notification already in the list', () => {
+    api.list.mockReturnValue(of(page([notification('p1')], 1)));
+    const fixture = create();
+
+    live$.next(notification('p1'));
+
+    expect(fixture.componentInstance.items()).toHaveLength(1);
+  });
+
+  it('keeps the shared unread counter in sync when reading', () => {
+    api.list.mockReturnValue(of(page([notification('p1')], 3)));
+    api.markAsRead.mockReturnValue(of(undefined));
+    api.markAllAsRead.mockReturnValue(of(undefined));
+    const fixture = create();
+    jest.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+
+    expect(realtime.unreadCount()).toBe(3);
+
+    fixture.componentInstance.open(fixture.componentInstance.items()[0]);
+    expect(realtime.unreadCount()).toBe(2);
+
+    fixture.componentInstance.markAllAsRead();
+    expect(realtime.unreadCount()).toBe(0);
   });
 });

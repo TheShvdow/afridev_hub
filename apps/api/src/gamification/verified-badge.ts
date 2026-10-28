@@ -17,11 +17,11 @@ export interface VerifiedCandidate {
 
 export function isVerifiedProfile(user: VerifiedCandidate): boolean {
   const hasExternalLink = [user.githubUsername, user.linkedinUsername, user.twitterUsername, user.websiteUrl]
-    .some((value) => Boolean(value && value.trim()));
+    .some((value) => Boolean(value?.trim()));
 
   return (
     user.isVerified &&
-    Boolean(user.country && user.country.trim()) &&
+    Boolean(user.country?.trim()) &&
     user.stack.length > 0 &&
     (user.bio?.trim().length ?? 0) >= MIN_BIO_LENGTH &&
     hasExternalLink

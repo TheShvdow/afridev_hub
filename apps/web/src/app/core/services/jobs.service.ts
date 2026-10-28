@@ -108,6 +108,30 @@ export interface ReceivedApplication {
   };
 }
 
+/** Alerte emploi (`GET /api/jobs/alerts`) : un critère absent accepte toutes les valeurs. */
+export interface JobAlert {
+  id: string;
+  country: string | null;
+  mode: JobMode | null;
+  stack: string[];
+  salaryMin: number | null;
+  currency: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface CreateJobAlertDto {
+  country?: string;
+  mode?: JobMode;
+  stack?: string[];
+  salaryMin?: number;
+  currency?: string;
+}
+
+/** 5 alertes au plus par membre, 5 technologies au plus par alerte (`CreateJobAlertDto`). */
+export const MAX_ALERTS = 5;
+export const MAX_ALERT_STACK = 5;
+
 export interface ListJobsQuery {
   page?: number;
   limit?: number;
@@ -193,6 +217,11 @@ export class JobsService {
     return this.http.post<JobOffer>(this.base, dto);
   }
 
+  /** `PATCH /api/jobs/{id}` — auteur uniquement ; une offre refusée repart en validation. */
+  update(id: string, dto: Partial<CreateJobDto>): Observable<JobOffer> {
+    return this.http.patch<JobOffer>(`${this.base}/${encodeURIComponent(id)}`, dto);
+  }
+
   /** `POST /api/jobs/{id}/apply` */
   apply(id: string, dto: ApplyJobDto): Observable<JobApplication> {
     return this.http.post<JobApplication>(`${this.base}/${encodeURIComponent(id)}/apply`, dto);
@@ -237,5 +266,20 @@ export class JobsService {
   /** `GET /api/jobs/{id}/applications` — auteur de l'offre uniquement. */
   listApplications(id: string): Observable<ReceivedApplication[]> {
     return this.http.get<ReceivedApplication[]>(`${this.base}/${encodeURIComponent(id)}/applications`);
+  }
+
+  /** `GET /api/jobs/alerts` — mes alertes. */
+  listAlerts(): Observable<JobAlert[]> {
+    return this.http.get<JobAlert[]>(`${this.base}/alerts`);
+  }
+
+  /** `POST /api/jobs/alerts` — 5 alertes au plus. */
+  createAlert(dto: CreateJobAlertDto): Observable<JobAlert> {
+    return this.http.post<JobAlert>(`${this.base}/alerts`, dto);
+  }
+
+  /** `DELETE /api/jobs/alerts/{id}` (204) */
+  deleteAlert(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/alerts/${encodeURIComponent(id)}`);
   }
 }

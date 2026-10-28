@@ -71,6 +71,11 @@ export class MyJobsComponent {
     return STATUS_STYLES[offer.status as JobStatus] ?? 'bg-[#F1F5F9] text-[#64748B]';
   }
 
+  /** Une offre clôturée ne se modifie plus. */
+  canEdit(offer: MyJobOffer): boolean {
+    return offer.status !== 'CLOSED';
+  }
+
   canRenew(offer: MyJobOffer): boolean {
     return offer.status === 'ACTIVE' || offer.status === 'EXPIRED';
   }

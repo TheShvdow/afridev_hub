@@ -2,6 +2,7 @@ import { Component, computed, signal } from '@angular/core';
 import { CardMentorComponent, Mentor } from '../../../shared/components/card-mentor/card-mentor.component';
 import { MentorFiltersComponent } from '../../../shared/components/mentor-filters/mentor-filters.component';
 import { PageHeroComponent } from '../../../shared/components/page-hero/page-hero.component';
+import { PreviewBannerComponent } from '../../../shared/components/preview-banner/preview-banner.component';
 import {
   ALL_SLOTS,
   ALL_SPECIALTIES,
@@ -14,7 +15,7 @@ import {
 @Component({
   selector: 'app-mentor-list',
   standalone: true,
-  imports: [CardMentorComponent, MentorFiltersComponent, PageHeroComponent],
+  imports: [PreviewBannerComponent, CardMentorComponent, MentorFiltersComponent, PageHeroComponent],
   templateUrl: './mentor-list.component.html',
 })
 export class MentorListComponent {
