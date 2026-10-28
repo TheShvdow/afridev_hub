@@ -76,6 +76,30 @@ describe('cacheInterceptor', () => {
     expect(seen).toEqual([{ data: ['old'] }, { data: ['new'] }]);
   });
 
+  it('never shows a stale page 2 twice: it waits for the network instead', () => {
+    const page2 = `${LIST}?page=2`;
+    http.get(page2).subscribe();
+    backend.expectOne(page2).flush({ data: ['p2'] });
+
+    now += FRESH_MS + 1;
+    const seen: unknown[] = [];
+    http.get(page2).subscribe((body) => seen.push(body));
+    expect(seen).toEqual([]);
+    backend.expectOne(page2).flush({ data: ['p2 new'] });
+    expect(seen).toEqual([{ data: ['p2 new'] }]);
+  });
+
+  it('still serves a fresh page 2 from the cache', () => {
+    const page2 = `${LIST}?page=2`;
+    http.get(page2).subscribe();
+    backend.expectOne(page2).flush({ data: ['p2'] });
+
+    const seen: unknown[] = [];
+    http.get(page2).subscribe((body) => seen.push(body));
+    backend.expectNone(page2);
+    expect(seen).toEqual([{ data: ['p2'] }]);
+  });
+
   it('does not emit twice when the fresh version is identical', () => {
     get();
     backend.expectOne(LIST).flush({ data: ['same'] });
@@ -150,8 +174,25 @@ describe('cacheInterceptor', () => {
     expect(seen).toEqual([{ data: ['for u2'] }]);
   });
 
-  it('skips the cache while a token has no loaded profile yet', () => {
+  const jwtFor = (sub: string) => `h.${btoa(JSON.stringify({ sub })).replace(/=+$/, '')}.s`;
+
+  it('caches under the token owner while the profile is still loading after a reload', () => {
     user = null;
+    token = jwtFor('u7');
+    get();
+    backend.expectOne(LIST).flush({ data: ['mine'] });
+    get();
+    backend.expectNone(LIST);
+
+    // Le même jeton, profil chargé : c'est la même entrée.
+    user = { id: 'u7' };
+    get();
+    backend.expectNone(LIST);
+  });
+
+  it('skips the cache when the token cannot be read', () => {
+    user = null;
+    token = 'not-a-jwt';
     get();
     backend.expectOne(LIST).flush({ data: [1] });
     get();

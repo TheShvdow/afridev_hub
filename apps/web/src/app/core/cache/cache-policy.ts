@@ -5,15 +5,13 @@ export const FRESH_MS = 30_000;
 /** Au-delà de FRESH_MS et jusqu'ici : réponse servie tout de suite, puis relue en arrière-plan. */
 export const STALE_MS = 10 * 60_000;
 
-const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-
 // Lectures publiques ou propres au membre connecté (la clé du cache contient son identifiant).
 // Liste blanche : tout ce qui est volatil ou privé (plan, offres du recruteur, candidatures,
 // notifications, statut d'un paiement, administration, modération) n'y figure pas.
 const CACHEABLE_PATHS: RegExp[] = [
-  new RegExp(String.raw`^/forum/posts(/${UUID})?$`),
+  /^\/forum\/posts(\/(?!similar$)[^/]+)?$/,
   /^\/projects(\/[^/]+)?$/,
-  new RegExp(String.raw`^/jobs(/${UUID})?$`),
+  /^\/jobs(\/(?!plan$|mine$|alerts$|review$)[^/]+)?$/,
   /^\/users\/(?!me$)[^/]+(\/activity|\/badges)?$/,
   /^\/countries$/,
 ];

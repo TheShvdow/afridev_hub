@@ -12,10 +12,12 @@ describe('cache policy', () => {
   it.each([
     '/forum/posts',
     `/forum/posts/${ID}`,
+    '/forum/posts/demo-post-4',
     '/projects',
     '/projects/mon-projet',
     '/jobs',
     `/jobs/${ID}`,
+    '/jobs/demo-job-2',
     '/users/aminata_dev',
     '/users/aminata_dev/badges',
     '/countries',

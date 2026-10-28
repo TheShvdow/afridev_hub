@@ -11,6 +11,20 @@ import { apiPath, freshnessOf, isCacheableRead, writeInvalidatesCache } from '..
 // n'envoient qu'un seul appel.
 const inFlight = new Map<string, Observable<HttpEvent<unknown>>>();
 
+/** Identifiant du membre porté par un jeton JWT (`sub`), ou null si le jeton est illisible. */
+function subjectOf(token: string): string | null {
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const sub = (JSON.parse(atob(payload)) as { sub?: unknown }).sub;
+    return typeof sub === 'string' && sub ? sub : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Numéro de page demandé (1 sans paramètre `page`). */
+const pageOf = (urlWithParams: string): number => Number(new URL(urlWithParams, 'http://local').searchParams.get('page') ?? 1) || 1;
+
 const copy = <T>(value: T): T => (value === undefined ? value : (JSON.parse(JSON.stringify(value)) as T));
 
 /**
@@ -36,14 +50,20 @@ export const cacheInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (!isCacheableRead(req.method, path)) return next(req);
 
-  // Un jeton sans profil chargé : on ignore le cache, le profil décide des données propres au membre.
+  // Les entrées sont rangées par membre. Le profil n'est chargé qu'après le premier appel d'une
+  // page rechargée : en attendant, l'identifiant se lit dans le jeton (`sub`), qui ne sert ici
+  // qu'à séparer les comptes, jamais à décider d'un droit. Jeton illisible : pas de cache.
   const auth = inject(AuthStore);
-  const me = auth.currentUser();
-  if (auth.accessToken() && !me) return next(req);
+  const token = auth.accessToken();
+  const owner = auth.currentUser()?.id ?? (token ? subjectOf(token) : 'anon');
+  if (!owner) return next(req);
 
-  const key = `${me?.id ?? 'anon'}|${req.urlWithParams}`;
+  const key = `${owner}|${req.urlWithParams}`;
   const hit = cache.get(key);
-  const state = hit ? freshnessOf(hit.storedAt, Date.now()) : 'expired';
+  let state = hit ? freshnessOf(hit.storedAt, Date.now()) : 'expired';
+  // Les pages suivantes d'une liste s'ajoutent à l'écran : deux réponses de suite les ajouteraient
+  // deux fois. Une entrée périmée de la page 2 ou plus repart donc sur le réseau, sans double affichage.
+  if (state === 'stale' && pageOf(req.urlWithParams) > 1) state = 'expired';
 
   const network$ = (): Observable<HttpResponse<unknown>> => {
     let shared = inFlight.get(key);
