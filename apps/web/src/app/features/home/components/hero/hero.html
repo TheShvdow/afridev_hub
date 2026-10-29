@@ -10,7 +10,28 @@
   />
     <div class="flex flex-col gap-[50px] items-center justify-center">
         <h1 class="relative z-10 max-w-[980px] text-[48px] font-bold leading-tight sm:text-[64px] lg:text-[72px]">
-          La plateforme d'échange africaine, par les devs
+          La plateforme d'échange africaine,
+          <!-- Un bouton : un clic (ou Entrée, Espace) fait alterner les deux expressions. Elles occupent la même case,
+               la plus large fixe la taille et la mise en page ne bouge pas. -->
+          <button
+            type="button"
+            (click)="toggle()"
+            title="Cliquer pour changer"
+            class="inline-grid cursor-pointer rounded-md text-center align-top sm:text-left font-bold text-[#26a15b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#26a15b]"
+          >
+            <span
+              class="col-start-1 row-start-1 transition-all duration-700 ease-out motion-reduce:transition-none"
+              [class]="swapped() ? 'opacity-0 -translate-y-3' : 'opacity-100 translate-y-0'"
+              [attr.aria-hidden]="swapped()"
+              >par les devs</span
+            >
+            <span
+              class="col-start-1 row-start-1 transition-all duration-700 ease-out motion-reduce:transition-none"
+              [class]="swapped() ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'"
+              [attr.aria-hidden]="!swapped()"
+              >et pour les devs</span
+            >
+          </button>
         </h1>
         <p class="max-w-[946px] text-[18px] font-medium leading-[26px]">
           Partage tes projets, pose tes questions, trouve un mentor, décroche un job. Une communauté tech pensée pour notre contexte.
