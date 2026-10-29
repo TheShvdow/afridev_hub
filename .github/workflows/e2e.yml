@@ -1,0 +1,113 @@
+name: E2E
+
+# Parcours utilisateurs rejoués dans Chromium contre le front et l'API réels (voir apps/web-e2e/README.md).
+on:
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  DATABASE_URL: postgresql://afridev:afridev_test@localhost:5432/afridev_e2e
+
+jobs:
+  e2e:
+    name: Parcours de bout en bout
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: afridev
+          POSTGRES_PASSWORD: afridev_test
+          POSTGRES_DB: afridev_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Prépare la base (client Prisma, migrations, données de référence)
+        run: |
+          npm run prisma:generate
+          npm run prisma:migrate:prod
+          npm run prisma:seed
+
+      - name: Installe Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Lance l'API
+        run: |
+          nohup npx nx serve api > api.log 2>&1 &
+        env:
+          NODE_ENV: development
+          PORT: 3000
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: ci_e2e_secret_ci_e2e_secret_ci_e2e_0123456789
+          JWT_REFRESH_SECRET: ci_e2e_refresh_ci_e2e_refresh_ci_e2e_0123456789
+          WEB_URL: http://localhost:4200
+          JWT_ACCESS_EXPIRES: 2h
+          THROTTLE_LIMIT: '2000'
+
+      - name: Lance le front
+        run: |
+          nohup npm run start:web > web.log 2>&1 &
+
+      - name: Attend l'API et le front
+        run: |
+          for i in $(seq 1 90); do
+            curl -fs http://localhost:3000/api/health > /dev/null && api=ok || api=''
+            curl -fs http://localhost:4200 > /dev/null && web=ok || web=''
+            [ "$api" = ok ] && [ "$web" = ok ] && exit 0
+            sleep 2
+          done
+          echo '--- api.log ---'; tail -n 40 api.log
+          echo '--- web.log ---'; tail -n 40 web.log
+          exit 1
+
+      - name: Suite e2e
+        run: npm run e2e
+        env:
+          CI: 'true'
+
+      - name: Rapport Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/web-e2e/playwright-report
+            apps/web-e2e/test-results
+            api.log
+            web.log
+          retention-days: 7
