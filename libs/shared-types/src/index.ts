@@ -372,6 +372,9 @@ export type ErrorCode =
   // Utilisateurs
   | 'USERS_USER_NOT_FOUND'
   | 'USERS_FILE_MISSING'
+  // Administration
+  | 'ADMIN_OWN_ROLE_CHANGE_FORBIDDEN'
+  | 'ADMIN_LAST_ADMIN'
   // Forum
   | 'FORUM_QUESTION_NOT_FOUND'
   | 'FORUM_ANSWER_NOT_FOUND'
