@@ -382,3 +382,16 @@ after = [3]
 hitl = false
 risk = "low"
 
+[[entry]]
+id = 30
+type = "story"
+title = "Tableau de bord en barre latérale et profil admin masqué"
+description = """
+Le tableau de bord devient une coquille avec barre latérale (tiroir sur téléphone) et un retour au site ; les pages du compte, de modération et d'administration s'y affichent avec un en-tête compact. Pages Sécurité et Préférences de notifications rendues utiles (elles étaient vides). Un compte administrateur n'a pas de profil public : l'API répond 404 et le front n'affiche aucun lien.
+"""
+verify = "Les quatre rôles voient leur barre latérale, chaque entrée s'ouvre dans le tableau de bord et « Retour au site » ramène à l'accueil avec la barre du site ; le profil d'un administrateur est introuvable et aucun lien n'y mène."
+covers = ["CAP-2", "CAP-3", "CAP-5", "CAP-6"]
+after = [29]
+hitl = false
+risk = "low"
+
