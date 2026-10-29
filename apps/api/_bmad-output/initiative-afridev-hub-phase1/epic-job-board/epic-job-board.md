@@ -4,7 +4,7 @@ title: Job Board
 parent: ../initiative-afridev-hub-phase1.md
 covers: ["CAP-5"]
 created: 2026-10-13
-status: in-progress
+status: done
 ---
 
 # Job Board

@@ -4,7 +4,7 @@ title: Interfaces web Phase 1
 parent: ../initiative-afridev-hub-phase1.md
 covers: ["CAP-1", "CAP-2", "CAP-3", "CAP-4", "CAP-5", "CAP-6"]
 created: 2026-10-27
-status: in-progress
+status: done
 ---
 
 # Interfaces web Phase 1

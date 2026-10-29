@@ -98,8 +98,8 @@ npm run docker:reset        # repart de zéro (supprime les volumes)
 
 ## Problèmes connus
 
-- Front : des erreurs de compilation sans rapport avec l'API subsistent (composants non générés, `@angular/platform-server`).
-- Front : `AuthService.refreshToken()` envoie un corps vide, alors que l'API exige `refreshToken` (voir l'écart E5 du contrat de données).
+- Aucun connu : le build de production du front et de l'API passe.
+- Écarts restants : paiement réel en production (clés Bictorys live), Storybook vide, filtres des projets absents de l'URL.
 
 ## Paiements (Bictorys)
 

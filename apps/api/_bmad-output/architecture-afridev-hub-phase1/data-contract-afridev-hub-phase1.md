@@ -35,6 +35,7 @@ Les enums des niveaux 2 à 4 sont **identiques** : les DTO importent les enums d
 | `ExperienceLevel` | JUNIOR, MID, SENIOR | `OnboardingDto.level`, `UpdateUserDto.level` | `ExperienceLevel` |
 | `JobType` | FULL_TIME, PART_TIME, CONTRACT, FREELANCE, INTERNSHIP | `CreateJobDto.type`, filtre `GET /jobs?type=` | `JobType` |
 | `JobMode` | REMOTE, ONSITE, HYBRID | `CreateJobDto.mode`, filtre `GET /jobs?mode=` | `JobMode` |
+| `CountryCode` | codes de `GET /api/countries` | `CreateJobDto.country`, filtre `GET /jobs?country=`, `OnboardingDto.country` | `common/countries` |
 | `JobStatus` | ACTIVE, EXPIRED, CLOSED | — | `JobStatus` |
 | `ApplicationStatus` | PENDING, REVIEWED, ACCEPTED, REJECTED | — | `ApplicationStatus` |
 | `PlanType` | FREE, PREMIUM | — | `PlanType` |
@@ -92,7 +93,7 @@ Les contraintes de longueur viennent du glossaire quand il en définit une ; sin
 | `CreateJobDto` | title | `JobOffer.title` | 5–120 | — |
 | | description | `JobOffer.description` (Text) | 100–20 000 | — |
 | | company | `JobOffer.company` | ≤ 100 | — |
-| | country | `JobOffer.country` | **requis**, ISO 3166-1 alpha-2 (ex. `SN`) | Glossaire « Offre » (pays) |
+| | country | `JobOffer.country` | **requis**, code de la liste fermée `GET /api/countries` (ISO 3166-1 alpha-2, ex. `SN`) ; le texte libre est refusé | Glossaire « Offre » (pays) ; filtre `GET /jobs?country=` |
 | | type | `JobOffer.type` (`JobType`, défaut `FULL_TIME` pour les lignes existantes) | **requis** | Décision 2026-10-14 (type de contrat conservé) |
 | | mode | `JobOffer.mode` (`JobMode`) | **requis** | Glossaire « Offre » (remote/onsite/hybride) |
 | | salaryMin / salaryMax | `JobOffer.salaryMin/Max` (Int) | **requis**, entiers > 0, min ≤ max | Glossaire « Offre » (salaire obligatoire) |
@@ -197,7 +198,7 @@ Les relations gardent le nom Prisma (`user`, `postTags`, `projectTags`, `recruit
 | E2 | Règle « voter avec réputation ≥ 10 » non appliquée. | `votes.service.ts` | **Résolu** : contrôle `VOTES_REPUTATION_TOO_LOW`. |
 | E3 | Enveloppe AD-7 non implémentée. | intercepteur, filtre | **Résolu** : `ResponseInterceptor`, `AllExceptionsFilter`, codes typés. |
 | E4 | `GET /projects?category=` non appliqué. | `projects.service.ts` | **Résolu** : filtre `category.slug`. |
-| E5 | Le front envoie `POST /auth/refresh` avec `{}`. | `apps/web/.../auth.service.ts` | **Ouvert** — front hors périmètre pour l'instant (décision utilisateur). L'API exige `refreshToken`. |
+| E5 | Le front envoyait `POST /auth/refresh` avec `{}`. | `apps/web/.../auth.service.ts` | **Résolu** : `refreshToken(refreshToken)` envoie `{ refreshToken }`. |
 | E6 | `update`, `close`, `delete` présents dans les services, non exposés. | `jobs`, `projects` | **Résolu** : `PATCH /jobs/:id`, `PATCH /jobs/:id/close`, `PATCH /projects/:id`, `DELETE /projects/:id` (auteur, ou modérateur et admin pour la suppression). |
 | E7 | `upsertTags` dupliqué entre forum et projets. | `forum.service.ts`, `projects.service.ts` | **Résolu** : helper commun `resolveTagIds` ; copie morte supprimée. |
 | E8 | `ModerationAction.entityType` était une chaîne libre. | schéma, `moderation.service.ts` | **Résolu** : enum `ModerationTargetType` (POST, ANSWER, PROJECT, USER), migration `20261014140000`. Table vide au moment du passage. |
