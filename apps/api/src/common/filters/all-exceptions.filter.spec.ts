@@ -1,9 +1,10 @@
 import { BadRequestException, ForbiddenException, UnauthorizedException, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { AllExceptionsFilter } from './all-exceptions.filter';
 import { DomainException } from '../errors/domain.exception';
+import * as monitoring from '../monitoring';
 
 function hostWith(response: { status: jest.Mock; json: jest.Mock }) {
-  return { switchToHttp: () => ({ getResponse: () => response }) } as never;
+  return { switchToHttp: () => ({ getResponse: () => response, getRequest: () => ({ method: 'GET', route: { path: '/forum/posts' } }) }) } as never;
 }
 
 function run(exception: unknown) {
@@ -55,5 +56,17 @@ describe('AllExceptionsFilter (AD-7)', () => {
   it('keeps a generic status without a dedicated code as COMMON_BAD_REQUEST', () => {
     const { body } = run(new HttpException('Teapot', 418));
     expect(body.error.code).toBe('COMMON_BAD_REQUEST');
+  });
+
+  it('signale les erreurs 5xx à la surveillance, pas les erreurs client', () => {
+    const capture = jest.spyOn(monitoring, 'captureServerError').mockImplementation(() => undefined);
+    const boom = new Error('panne');
+    run(boom);
+    expect(capture).toHaveBeenCalledWith(boom, { method: 'GET', path: '/forum/posts', status: 500 });
+
+    capture.mockClear();
+    run(new NotFoundException());
+    expect(capture).not.toHaveBeenCalled();
+    capture.mockRestore();
   });
 });
