@@ -2,16 +2,61 @@ import { Prisma } from '@prisma/client';
 import { ModerationService } from './moderation.service';
 
 // $transaction reçoit les requêtes déjà construites : on les exécute en séquence pour les vérifier.
-function makePrisma() {
+function makePrisma(roles: Record<string, string> = { mod: 'MODERATOR', target: 'MEMBER' }) {
   const moderationCreate = jest.fn().mockResolvedValue({ id: 'm1' });
   const auditCreate = jest.fn().mockResolvedValue({ id: 'a1' });
   const prisma = {
+    user: {
+      findUnique: jest.fn(({ where }: { where: { id: string } }) =>
+        Promise.resolve(roles[where.id] ? { role: roles[where.id] } : null),
+      ),
+    },
     moderationAction: { create: moderationCreate },
     auditLog:         { create: auditCreate },
     $transaction:     jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };
   return { prisma, moderationCreate, auditCreate };
 }
+
+describe('ModerationService — qui peut bannir qui', () => {
+  const ban = (roles: Record<string, string>, target = 'target', actor = 'mod') => {
+    const { prisma, moderationCreate } = makePrisma(roles);
+    const result = new ModerationService(prisma as never).banUser(target, actor, 'Spam répété');
+    return { result, moderationCreate };
+  };
+
+  it('un modérateur peut bannir un membre', async () => {
+    const { result, moderationCreate } = ban({ mod: 'MODERATOR', target: 'MEMBER' });
+    await expect(result).resolves.toBeDefined();
+    expect(moderationCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it('un administrateur peut bannir un modérateur', async () => {
+    await expect(ban({ mod: 'ADMIN', target: 'MODERATOR' }).result).resolves.toBeDefined();
+  });
+
+  it.each([
+    ['un autre modérateur', { mod: 'MODERATOR', target: 'MODERATOR' }],
+    ['un administrateur', { mod: 'MODERATOR', target: 'ADMIN' }],
+    ['un autre administrateur', { mod: 'ADMIN', target: 'ADMIN' }],
+  ])('un modérateur ou administrateur ne peut pas bannir %s', async (_label, roles) => {
+    const { result, moderationCreate } = ban(roles);
+    await expect(result).rejects.toMatchObject({ code: 'MODERATION_BAN_FORBIDDEN' });
+    expect(moderationCreate).not.toHaveBeenCalled();
+  });
+
+  it('on ne peut pas se bannir soi-même', async () => {
+    const { result, moderationCreate } = ban({ mod: 'ADMIN' }, 'mod', 'mod');
+    await expect(result).rejects.toMatchObject({ code: 'MODERATION_CANNOT_BAN_SELF' });
+    expect(moderationCreate).not.toHaveBeenCalled();
+  });
+
+  it('un compte inexistant répond 404 et ne laisse aucune trace', async () => {
+    const { result, moderationCreate } = ban({ mod: 'MODERATOR' }, 'fantome');
+    await expect(result).rejects.toMatchObject({ code: 'USERS_USER_NOT_FOUND' });
+    expect(moderationCreate).not.toHaveBeenCalled();
+  });
+});
 
 describe('ModerationService — cibles des actions', () => {
   it('records a ban against the USER target type', async () => {

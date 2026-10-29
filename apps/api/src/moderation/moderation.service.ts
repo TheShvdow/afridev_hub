@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { DomainException } from '../common/errors/domain.exception';
-import { JobStatus, Prisma, ReportEntityType, ReportStatus, ModerationActionType, ModerationTargetType } from '@prisma/client';
+import { JobStatus, Prisma, ReportEntityType, ReportStatus, ModerationActionType, ModerationTargetType, UserRole } from '@prisma/client';
 import { CreateReportDto } from './dto/create-report.dto';
 import { ReportResolution } from './dto/resolve-report.dto';
 
@@ -18,6 +18,9 @@ export interface ReportTarget {
 
 // Un signalement est ouvert tant qu'aucune décision n'a été prise.
 const OPEN_STATUSES: ReportStatus[] = [ReportStatus.PENDING, ReportStatus.REVIEWED];
+
+// Rang des rôles : sert à décider qui peut en bannir un autre.
+const ROLE_RANK: Record<UserRole, number> = { MEMBER: 0, MODERATOR: 1, ADMIN: 2 };
 
 @Injectable()
 export class ModerationService {
@@ -205,6 +208,7 @@ export class ModerationService {
   // User has NO isBanned/bannedAt/bannedUntil/banReason fields — ban via ModerationAction.
   // L'action de modération et sa trace d'audit sont écrites ensemble ou pas du tout.
   async banUser(userId: string, moderatorId: string, reason: string) {
+    await this.assertCanBan(userId, moderatorId);
     const [action] = await this.prisma.$transaction([
       this.prisma.moderationAction.create({
         data: {
@@ -253,6 +257,24 @@ export class ModerationService {
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────
+
+  // On ne bannit ni soi-même ni un compte inexistant, et seulement un compte de rang strictement inférieur au sien :
+  // un modérateur ne bannit que des membres, un administrateur des membres et des modérateurs.
+  private async assertCanBan(targetId: string, actorId: string) {
+    if (targetId === actorId) {
+      throw new DomainException('MODERATION_CANNOT_BAN_SELF', 'Vous ne pouvez pas vous bannir vous-même.', 403);
+    }
+
+    const [actor, target] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: actorId }, select: { role: true } }),
+      this.prisma.user.findUnique({ where: { id: targetId }, select: { role: true } }),
+    ]);
+    if (!target) throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
+
+    if (ROLE_RANK[target.role] >= ROLE_RANK[actor?.role ?? 'MEMBER']) {
+      throw new DomainException('MODERATION_BAN_FORBIDDEN', 'Votre rôle ne permet pas de bannir ce compte.', 403);
+    }
+  }
 
   private async findOpenReport(reportId: string) {
     const report = await this.prisma.report.findUnique({ where: { id: reportId } });
