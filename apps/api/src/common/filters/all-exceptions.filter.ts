@@ -8,6 +8,7 @@ import {
 import type { Response } from 'express';
 import type { ApiErrorEnvelope, ErrorCode } from '@afridev/shared-types';
 import { DomainException } from '../errors/domain.exception';
+import { captureServerError } from '../monitoring';
 
 // Code générique par statut HTTP pour les exceptions framework (guards, pipes, 404 de route…).
 const GENERIC_CODE: Partial<Record<number, ErrorCode>> = {
@@ -37,8 +38,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost) {
-    const response = host.switchToHttp().getResponse<Response>();
+    const http = host.switchToHttp();
+    const response = http.getResponse<Response>();
     const { status, body } = this.toEnvelope(exception);
+    if (status >= 500) {
+      const request = http.getRequest<{ method?: string; route?: { path?: string }; path?: string }>();
+      captureServerError(exception, { method: request?.method, path: request?.route?.path ?? request?.path, status });
+    }
     response.status(status).json(body);
   }
 
