@@ -16,6 +16,7 @@ import { ForumService, ForumViewer } from './forum.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreateAnswerDto } from './dto/create-answer.dto';
 import { ListPostsDto } from './dto/list-posts.dto';
+import { ListAnswersDto } from './dto/list-answers.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -52,12 +53,24 @@ export class ForumController {
   @Get('posts/:id')
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Détail d\'une question' })
-  @ApiData({ type: PostDetailDto, description: 'Question avec ses réponses' })
+  @ApiData({ type: PostDetailDto, description: 'Question avec la première page de ses réponses (10)' })
   getPost(
     @Param('id') id: string,
     @CurrentUser() viewer: ForumViewer | null,
   ) {
     return this.forumService.getPost(id, viewer);
+  }
+
+  @Get('posts/:id/answers')
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({ summary: 'Réponses d\'une question, par page (acceptée, mieux notées, plus anciennes)' })
+  @ApiData({ type: AnswerDto, paginated: true, description: 'Page de réponses' })
+  listAnswers(
+    @Param('id') id: string,
+    @Query() query: ListAnswersDto,
+    @CurrentUser() viewer: ForumViewer | null,
+  ) {
+    return this.forumService.listAnswers(id, query, viewer);
   }
 
   @Post('posts')

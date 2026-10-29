@@ -328,3 +328,103 @@ describe('PostDetailComponent', () => {
     expect(component.post()?.isResolved).toBe(true);
   });
 });
+
+describe('PostDetailComponent — réponses paginées', () => {
+  const answer = (n: number) => ({
+    ...DETAIL.answers[0],
+    id: `a${n}`,
+    body: `Réponse numéro ${n}`,
+    isAccepted: false,
+    user: { ...DETAIL.answers[0].user, id: `u${n}` },
+  });
+  const page = (from: number, count: number) => Array.from({ length: count }, (_, i) => answer(from + i));
+  const META = (pageNumber: number) => ({ total: 23, page: pageNumber, limit: 10, totalPages: 3 });
+
+  const paginatedStub = {
+    ...forumStub,
+    getPost: jest.fn(() => of({ ...DETAIL, _count: { answers: 23 }, answers: page(1, 10), answersMeta: META(1) })),
+    listAnswers: jest.fn(),
+  };
+
+  let component: PostDetailComponent;
+  let fixture: ComponentFixture<PostDetailComponent>;
+
+  const button = () =>
+    Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>).find((item) =>
+      item.textContent?.includes('Afficher plus de réponses'),
+    );
+
+  beforeEach(async () => {
+    paginatedStub.listAnswers.mockReset();
+    await TestBed.configureTestingModule({
+      imports: [PostDetailComponent],
+      providers: [
+        provideRouter([]),
+        { provide: ForumService, useValue: paginatedStub },
+        { provide: AuthStore, useValue: authStub },
+        { provide: VotesService, useValue: votesStub },
+        { provide: ModerationService, useValue: { report: jest.fn(() => of({})) } },
+        { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: DETAIL.id })) } },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(PostDetailComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('affiche le total des réponses et propose de charger les 13 restantes', () => {
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('23 réponses');
+    expect(button()?.textContent).toContain('(13)');
+    expect(fixture.nativeElement.querySelectorAll('article').length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('charge la page suivante et l\'ajoute à la suite, sans doublon', () => {
+    paginatedStub.listAnswers.mockReturnValue(of({ data: [answer(10), ...page(11, 10)], meta: META(2) }));
+
+    button()?.click();
+    fixture.detectChanges();
+
+    expect(paginatedStub.listAnswers).toHaveBeenCalledWith(DETAIL.id, 2, 10);
+    expect(component.post()?.answers.map((item) => item.id)).toEqual(Array.from({ length: 20 }, (_, i) => `a${i + 1}`));
+    expect(button()?.textContent).toContain('(3)');
+  });
+
+  it('retire le bouton quand tout est chargé', () => {
+    paginatedStub.listAnswers
+      .mockReturnValueOnce(of({ data: page(11, 10), meta: META(2) }))
+      .mockReturnValueOnce(of({ data: page(21, 3), meta: META(3) }));
+
+    button()?.click();
+    fixture.detectChanges();
+    button()?.click();
+    fixture.detectChanges();
+
+    expect(component.post()?.answers.length).toBe(23);
+    expect(button()).toBeUndefined();
+  });
+
+  it('affiche l\'erreur et garde le bouton quand le chargement échoue', () => {
+    paginatedStub.listAnswers.mockReturnValue(throwError(() => ({ status: 500, error: { error: { message: 'Panne' } } })));
+
+    button()?.click();
+    fixture.detectChanges();
+
+    expect(component.moreAnswersError()).toBeTruthy();
+    expect(button()).toBeDefined();
+    expect(component.loadingMoreAnswers()).toBe(false);
+  });
+
+  it('une réponse publiée augmente le total sans toucher à la pagination', () => {
+    component.answerForm.setValue({ body: 'Voici une réponse suffisamment longue pour être valide.' });
+    (paginatedStub as unknown as { createAnswer: jest.Mock }).createAnswer = jest.fn(() => of({ ...answer(99), body: 'Voici une réponse suffisamment longue pour être valide.' }));
+
+    component.submitAnswer();
+
+    expect(component.answerTotal()).toBe(24);
+    expect(component.post()?.answersMeta?.total).toBe(24);
+    expect(component.remainingAnswers()).toBe(13);
+  });
+});
