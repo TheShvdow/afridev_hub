@@ -32,7 +32,9 @@ export async function createUsers(): Promise<void> {
       role: user.role,
       reputation: user.reputation,
       isVerified: true,
-      country: 'SN',
+      country: user.blank ? null : 'SN',
+      level: null,
+      stack: [],
       isRecruiter: !!user.recruiter,
       companyName: user.recruiter ? 'E2E Corp' : null,
     };

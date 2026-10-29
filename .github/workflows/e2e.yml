@@ -57,11 +57,12 @@ jobs:
       - name: Install dependencies
         run: npm ci --prefer-offline
 
-      - name: Prépare la base (client Prisma, migrations, données de référence)
+      - name: Prépare la base (client Prisma, migrations, données de référence et de démonstration)
         run: |
           npm run prisma:generate
           npm run prisma:migrate:prod
           npm run prisma:seed
+          npm run prisma:seed:demo
 
       - name: Installe Chromium
         run: npx playwright install --with-deps chromium

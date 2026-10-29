@@ -35,15 +35,17 @@ export const E2E_PASSWORD = resolvePassword();
 export const E2E_PREFIX = 'e2e_';
 
 /** Clés des comptes disponibles dans les tests. */
-export type UserKey = 'author' | 'helper' | 'candidate' | 'recruiter' | 'mod' | 'admin';
+export type UserKey = 'author' | 'helper' | 'candidate' | 'recruiter' | 'mod' | 'admin' | 'newbie';
 
-export const USERS: Record<UserKey, { username: string; role: 'MEMBER' | 'MODERATOR' | 'ADMIN'; reputation: number; recruiter?: boolean }> = {
+export const USERS: Record<UserKey, { username: string; role: 'MEMBER' | 'MODERATOR' | 'ADMIN'; reputation: number; recruiter?: boolean; blank?: boolean }> = {
   author: { username: 'e2e_author', role: 'MEMBER', reputation: 50 },
   helper: { username: 'e2e_helper', role: 'MEMBER', reputation: 50 },
   candidate: { username: 'e2e_candidate', role: 'MEMBER', reputation: 20 },
   recruiter: { username: 'e2e_recruiter', role: 'MEMBER', reputation: 20, recruiter: true },
   mod: { username: 'e2e_mod', role: 'MODERATOR', reputation: 100 },
   admin: { username: 'e2e_admin', role: 'ADMIN', reputation: 100 },
+  /** Profil vide (ni pays, ni niveau, ni technologies) : sert au parcours de bienvenue. */
+  newbie: { username: 'e2e_newbie', role: 'MEMBER', reputation: 0, blank: true },
 };
 
 export const emailOf = (key: UserKey): string => `${USERS[key].username}@e2e.test`;
