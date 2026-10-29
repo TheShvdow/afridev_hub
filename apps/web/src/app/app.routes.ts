@@ -9,6 +9,13 @@ export function profileMatcher(segments: UrlSegment[]): UrlMatchResult | null {
   return { consumed: segments, posParams: { username: new UrlSegment(segment.path.slice(1), {}) } };
 }
 
+const LEGAL_TITLES = {
+  'mentions-legales': 'Mentions légales',
+  'conditions-generales': "Conditions d'utilisation",
+  confidentialite: 'Confidentialité',
+  cookies: 'Cookies',
+} as const;
+
 export const appRoutes: Routes = [
   // ── Landing / vitrine ────────────────────────────────────────────
   {
@@ -37,6 +44,14 @@ export const appRoutes: Routes = [
       ),
     title: 'Mentorat — AfriDev Hub',
   },
+
+  // ── Pages légales ────────────────────────────────────────────────
+  ...(['mentions-legales', 'conditions-generales', 'confidentialite', 'cookies'] as const).map((doc) => ({
+    path: doc,
+    data: { doc },
+    loadComponent: () => import('./features/legal/legal-page.component').then((m) => m.LegalPageComponent),
+    title: `${LEGAL_TITLES[doc]} — AfriDev Hub`,
+  })),
 
   // ── Auth ─────────────────────────────────────────────────────────
   // L'implémentation vit dans `features/authentification` (design connexion,

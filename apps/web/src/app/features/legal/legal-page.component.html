@@ -1,0 +1,31 @@
+<article class="mx-auto w-full max-w-[820px] px-6 py-12 sm:py-16">
+  <h1 class="text-[32px] font-bold leading-[40px] text-[#0F1011] sm:text-[40px] sm:leading-[48px]">{{ doc.title }}</h1>
+  <p class="mt-2 text-sm text-[#475569]">Dernière mise à jour : {{ updated }}</p>
+  <p class="mt-6 text-[17px] leading-[28px] text-[#334155]">{{ doc.intro }}</p>
+
+  @for (section of doc.sections; track section.heading) {
+    <section class="mt-10">
+      <h2 class="text-[22px] font-bold leading-[30px] text-[#0F1011]">{{ section.heading }}</h2>
+      @for (text of section.paragraphs ?? []; track $index) {
+        <p class="mt-3 text-[16px] leading-[27px] text-[#334155]">{{ text }}</p>
+      }
+      @if (section.items?.length) {
+        <ul class="mt-3 list-disc space-y-2 pl-6 text-[16px] leading-[26px] text-[#334155]">
+          @for (item of section.items; track $index) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      }
+    </section>
+  }
+
+  <nav aria-label="Autres pages légales" class="mt-14 border-t border-[#E2E8F0] pt-6">
+    <ul class="flex flex-wrap gap-x-6 gap-y-2 text-[15px]">
+      @for (link of links; track link.slug) {
+        @if (link.slug !== doc.slug) {
+          <li><a [routerLink]="'/' + link.slug" class="text-[#0F6932] underline">{{ link.label }}</a></li>
+        }
+      }
+    </ul>
+  </nav>
+</article>
