@@ -4,7 +4,7 @@ title: Vitrine Projets
 parent: ../initiative-afridev-hub-phase1.md
 covers: ["CAP-4"]
 created: 2026-10-13
-status: in-progress
+status: done
 ---
 
 # Vitrine Projets
