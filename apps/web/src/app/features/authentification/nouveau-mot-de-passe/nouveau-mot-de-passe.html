@@ -1,0 +1,139 @@
+<app-auth-layout>
+  <form
+    auth-form
+    class="mx-auto flex w-full max-w-[420px] flex-col gap-8"
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    novalidate
+  >
+    <app-auth-close />
+
+    @if (status() === 'success') {
+      <div class="flex flex-col gap-2.5">
+        <h1 class="font-display text-2xl font-bold leading-8 text-ink">Mot de passe modifié</h1>
+        <p class="text-sm font-medium leading-[22px] tracking-[0.07px] text-slate-500">
+          Par sécurité, tous tes appareils ont été déconnectés. Connecte-toi avec ton nouveau mot de passe.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3 rounded-2xl bg-primary-50 px-4 py-3">
+        <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+          <app-icon name="check" class="size-5"></app-icon>
+        </span>
+        <p class="text-sm font-medium leading-5 text-ink">Ton nouveau mot de passe est enregistré.</p>
+      </div>
+
+      <button type="button" class="auth-btn" (click)="goLogin()">
+        Se connecter
+        <app-icon name="arrow-up-right" class="size-6"></app-icon>
+      </button>
+    } @else {
+      <div class="flex flex-col gap-2.5">
+        <h1 class="font-display text-2xl font-bold leading-8 text-ink">Nouveau mot de passe</h1>
+
+        @if (email()) {
+          <p class="text-sm font-medium leading-[22px] tracking-[0.07px] text-slate-500">Nous avons envoyé un code à 6 caractères à</p>
+          <p class="text-sm font-medium leading-[22px] tracking-[0.07px] text-ink">{{ email() }}.</p>
+        } @else {
+          <p class="text-sm font-medium leading-[22px] tracking-[0.07px] text-slate-500">
+            Aucune adresse e-mail n’a été fournie. Recommence depuis « Mot de passe oublié ».
+          </p>
+        }
+      </div>
+
+      @if (!email()) {
+        <a routerLink="/auth/forgot-password" class="auth-btn">
+          Demander un code
+          <app-icon name="arrow-up-right" class="size-6"></app-icon>
+        </a>
+      }
+
+      @if (errorMessage()) {
+        <p
+          role="alert"
+          class="rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium leading-5 text-[#FB2C36]"
+        >
+          {{ errorMessage() }}
+        </p>
+      }
+
+      @if (infoMessage()) {
+        <p
+          role="status"
+          class="rounded-2xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm font-medium leading-5 text-primary-700"
+        >
+          {{ infoMessage() }}
+        </p>
+      }
+
+      <div class="flex flex-col gap-2">
+        <app-otp-inputs (code)="onCode($event)" />
+        <p class="text-xs font-medium leading-4 text-slate-500">
+          Le code est composé de lettres et de chiffres, sans les caractères 0, O, 1 et I.
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <app-auth-password-field
+          label="Nouveau mot de passe"
+          placeholder="Choisis un mot de passe"
+          name="password"
+          autocomplete="new-password"
+          [invalid]="form.controls.password.invalid && form.controls.password.touched"
+          formControlName="password"
+        />
+        <app-password-strength [password]="form.controls.password.value" />
+
+        <app-auth-password-field
+          label="Confirmer le mot de passe"
+          placeholder="Saisis-le une seconde fois"
+          name="confirm"
+          autocomplete="new-password"
+          [invalid]="(form.controls.confirm.touched && form.controls.confirm.invalid) || (form.hasError('mismatch') && form.controls.confirm.touched)"
+          formControlName="confirm"
+        />
+
+        @if (form.hasError('mismatch') && form.controls.confirm.touched) {
+          <p class="text-xs font-medium leading-4 text-[#FB2C36]">Les deux mots de passe ne sont pas identiques.</p>
+        }
+      </div>
+
+      <button type="submit" class="auth-btn" [disabled]="loading()">
+        @if (loading()) {
+          Enregistrement…
+        } @else {
+          Enregistrer le mot de passe
+          <app-icon name="arrow-up-right" class="size-6"></app-icon>
+        }
+      </button>
+
+      <div class="flex flex-col gap-2.5">
+        <button
+          type="button"
+          class="text-center text-base font-medium leading-[26px] tracking-[0.08px] text-ink transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="resending() || !email()"
+          (click)="resend()"
+        >
+          {{ resending() ? 'Envoi en cours…' : 'Renvoyer le code' }}
+        </button>
+
+        <div class="flex flex-wrap items-center justify-center gap-2.5">
+          <a
+            routerLink="/auth/login"
+            class="text-sm font-normal leading-5 text-slate-500 underline-offset-4 transition-colors hover:text-ink hover:underline"
+          >
+            Retour à la connexion
+          </a>
+        </div>
+      </div>
+    }
+  </form>
+
+  <app-auth-side
+    auth-panel
+    eyebrow="Compte"
+    title="Retrouver ton accès"
+    description="Un code envoyé par e-mail suffit : tes projets, tes réponses et ta réputation t’attendent."
+    [steps]="steps"
+  />
+</app-auth-layout>

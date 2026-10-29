@@ -45,9 +45,6 @@ export class Connexion implements OnInit {
   readonly loading      = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
-  /** La réinitialisation de mot de passe n'est pas encore exposée par l'API. */
-  readonly passwordResetUnavailable = signal(false);
-
   readonly features: AuthFeature[] = [
     { icon: 'folder', title: 'Projets :', description: 'trouve une équipe et lance ton projet' },
     { icon: 'users', title: 'Mentorat :', description: 'progresse avec l’aide de mentors' },
@@ -63,6 +60,12 @@ export class Connexion implements OnInit {
     password: ['', [Validators.required, Validators.minLength(8)]],
     remember: [true],
   });
+
+  /** L'adresse déjà saisie est reprise sur la page « Mot de passe oublié ». */
+  forgotQuery(): { email: string } | null {
+    const email = this.form.controls.email.value.trim();
+    return email ? { email } : null;
+  }
 
   ngOnInit(): void {
     // Retour de la page de vérification : l'email est prérempli.

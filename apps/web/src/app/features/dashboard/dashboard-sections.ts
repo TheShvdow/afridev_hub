@@ -99,7 +99,7 @@ export function buildSections(me: UserMe, ctx: DashboardContext): DashboardSecti
       subtitle: 'Vos informations, votre sécurité et vos préférences.',
       items: [
         { id: 'account', title: 'Informations du compte', description: 'Nom, biographie, avatar, liens.', link: `${DASHBOARD_HOME}/profil/account`, icon: 'user' },
-        { id: 'security', title: 'Sécurité', description: 'Adresse vérifiée et déconnexion de tous les appareils.', link: `${DASHBOARD_HOME}/profil/security`, icon: 'lock' },
+        { id: 'security', title: 'Sécurité', description: 'Mot de passe, adresse vérifiée, déconnexion de tous les appareils.', link: `${DASHBOARD_HOME}/profil/security`, icon: 'lock' },
         { id: 'notification-prefs', title: 'Préférences de notifications', description: 'Choisir les e-mails que vous recevez.', link: `${DASHBOARD_HOME}/profil/notifications`, icon: 'mail' },
       ],
     },
