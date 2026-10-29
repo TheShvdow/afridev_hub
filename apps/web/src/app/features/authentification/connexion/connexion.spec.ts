@@ -86,11 +86,25 @@ describe('Connexion', () => {
         role: 'MEMBER',
         isVerified: false,
         reputation: 0,
+        country: 'SN',
         createdAt: '2026-10-20T16:53:59.632Z',
       },
     });
 
     expect(navigate).toHaveBeenCalledWith('/');
+  });
+
+  it('propose l\'écran de bienvenue quand le profil est encore vide', () => {
+    const navigate = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    fillForm();
+    component.submit();
+    controller.expectOne(`${API}/auth/login`).flush({ data: { accessToken: 'at-1', refreshToken: 'rt-1' } });
+    controller.expectOne((req) => req.url.endsWith('/auth/me')).flush({
+      data: { id: 'user-1', role: 'MEMBER', country: null, level: null, stack: [] },
+    });
+
+    expect(navigate).toHaveBeenCalledWith(['/bienvenue'], { queryParams: { returnUrl: '/' } });
   });
 
   it('conserve la session dans l\'onglet quand « rester connecté » est décoché', () => {

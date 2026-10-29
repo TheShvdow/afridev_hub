@@ -379,6 +379,9 @@ export class AuthService {
         isRecruiter: true,
         companyName: true,
         preferredCurrency: true,
+        country:     true,
+        level:       true,
+        stack:       true,
         createdAt:   true,
       },
     });

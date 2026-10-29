@@ -83,6 +83,14 @@ export const appRoutes: Routes = [
     title: 'Paiement — AfriDev Hub',
   },
 
+  // ── Première connexion : profil en trois étapes ───────────────────
+  {
+    path: 'bienvenue',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/onboarding/onboarding.component').then((m) => m.OnboardingComponent),
+  },
+
   // ── Tableau de bord : toutes les fonctions du compte, selon son rôle ──
   {
     path: 'tableau-de-bord',
