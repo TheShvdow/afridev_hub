@@ -86,7 +86,7 @@ jobs:
       - name: Attend l'API et le front
         run: |
           for i in $(seq 1 90); do
-            curl -fs http://localhost:3000/api/health > /dev/null && api=ok || api=''
+            curl -fs http://localhost:3000/health > /dev/null && api=ok || api=''
             curl -fs http://localhost:4200 > /dev/null && web=ok || web=''
             [ "$api" = ok ] && [ "$web" = ok ] && exit 0
             sleep 2
