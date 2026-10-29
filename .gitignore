@@ -69,3 +69,5 @@ request.http
 apps/api/_bmad/render/
 .agents/
 skills-lock.json
+# ── Comptes de test locaux (jamais committés) ──────────────────────────────
+comptes-test.txt
