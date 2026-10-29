@@ -47,7 +47,7 @@ const LIST_SELECT = {
 } satisfies Prisma.JobOfferSelect;
 
 // Profil candidat : tronqué pour le plan gratuit, complet pour le premium (FR-34).
-const APPLICANT_SUMMARY = { id: true, username: true, displayName: true, avatarUrl: true } as const;
+const APPLICANT_SUMMARY = { id: true, username: true, displayName: true, avatarUrl: true, role: true } as const;
 const APPLICANT_FULL = {
   ...APPLICANT_SUMMARY,
   email:           true,

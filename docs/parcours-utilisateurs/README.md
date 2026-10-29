@@ -358,7 +358,7 @@ end
 
 ## 7. Signaler un contenu et le modérer
 
-Un membre signale une question, une réponse, un projet ou une offre une seule fois, et jamais son propre contenu. À 3 signalements le contenu est masqué automatiquement (seuil réglable). Un contenu masqué est remplacé par un texte neutre pour les visiteurs.
+Un membre signale une question, une réponse, un projet ou une offre une seule fois, et jamais son propre contenu. À 3 signalements le contenu est masqué automatiquement (seuil réglable). Un contenu masqué est remplacé par un texte neutre pour les visiteurs. Une offre signalée trois fois repasse en validation : elle disparaît du public jusqu'à la décision d'un modérateur. Chaque signalement indique où se trouve son contenu, avec un lien pour l'ouvrir.
 
 ```plantuml
 @startuml
@@ -370,12 +370,12 @@ participant Front
 participant API
 database Base
 
-Membre -> Front : « Signaler » + motif
+Membre -> Front : « Signaler » + motif\n(question, réponse, projet ou offre d'emploi)
 Front -> API : POST /moderation/reports
 alt premier signalement, contenu d'un autre membre
   API -> Base : enregistre le signalement
   opt le seuil de 3 signalements est atteint
-    API -> Base : masque le contenu
+    API -> Base : masque le contenu\n(une offre repasse en « à valider »)
   end
   API --> Front : 201
   Front -> Membre : bouton verrouillé « Signalé »
@@ -388,7 +388,8 @@ end
 == Traitement par la modération ==
 Modérateur -> Front : onglet « Signalements »
 Front -> API : GET /moderation/reports
-API --> Front : signalements en attente
+API --> Front : signalements en attente, chacun avec sa cible\n(question, question parente d'une réponse, slug du projet, offre)
+Front -> Modérateur : « Voir la question / le projet / l'offre »
 alt le signalement est fondé
   Modérateur -> Front : « Masquer le contenu »
   Front -> API : PATCH /moderation/reports/{id}/resolve
@@ -769,11 +770,11 @@ API --> Front : profil mis à jour
 
 ## 15. Tableau de bord par rôle
 
-Après la connexion, l'arrivée se fait sur l'accueil, ou sur la page protégée qui avait été demandée. Le tableau de bord (`/tableau-de-bord`) range toutes les fonctions du compte selon son rôle : un membre voit son activité et son compte, un recruteur son espace (offres, publication, plan premium), un modérateur les signalements et les offres à valider avec leur nombre, un administrateur en plus les indicateurs, les utilisateurs et le journal d'audit. Les chiffres lus en plus (notifications, plan, éléments à modérer) n'empêchent pas l'affichage s'ils manquent.
+Après la connexion, l'arrivée se fait sur l'accueil, ou sur la page protégée qui avait été demandée. Le tableau de bord (`/tableau-de-bord`) est un espace à part, avec une barre latérale (un tiroir sur téléphone) et un bouton « Retour au site » : la barre de navigation et le pied de page du site y sont masqués. La barre range toutes les fonctions du compte selon son rôle : un membre voit son activité et son compte, un recruteur son espace (offres, publication, plan premium), un modérateur les signalements et les offres à valider avec leur nombre, un administrateur en plus les indicateurs, les utilisateurs et le journal d'audit. Les pages du compte, de la modération et de l'administration s'ouvrent dans le tableau de bord ; celles du site (forum, offres, publication, profil public) s'ouvrent sur le site. Un compte administrateur n'a pas de profil public. Les chiffres lus en plus (notifications, plan, éléments à modérer) n'empêchent pas l'affichage s'ils manquent.
 
 ```plantuml
 @startuml
-title Tableau de bord : arrivée après connexion et fonctions rangées par rôle
+title Tableau de bord : barre latérale par rôle, pages intégrées et retour au site
 autonumber
 actor Membre
 participant Front
@@ -796,7 +797,7 @@ Front -> Front : le garde de route vérifie la connexion\n(sinon : connexion, pu
 Front -> API : GET /auth/me
 API -> Base : lit le compte
 API --> Front : rôle, profil recruteur, réputation
-Front -> Membre : salutation, rôles du compte, cartes de toutes les fonctions
+Front -> Membre : barre latérale (tiroir sur téléphone), salutation, rôles du compte, cartes de toutes les fonctions\nLes barres de navigation et de pied de page du site sont masquées
 
 par chiffres lus en plus (un échec n'empêche pas l'affichage)
   Front -> API : GET /notifications/unread-count
@@ -822,12 +823,23 @@ note over Front
   Administrateur : en plus, indicateurs, utilisateurs, journal d'audit.
 end note
 
-== Ouvrir une carte ==
-Membre -> Front : clique sur une carte
+== Ouvrir une entrée de la barre latérale ==
+Membre -> Front : clique sur une entrée ou une carte
 alt page d'administration réservée aux administrateurs
   Front -> Front : le garde de rôle attend le profil, puis autorise ou renvoie
-else autre page
-  Front -> Membre : ouvre la page
+else page du compte, de modération ou d'administration
+  Front -> Membre : s'ouvre dans le tableau de bord (en-tête compact)
+else page du site (forum, offres, publication, profil public)
+  Front -> Membre : s'ouvre sur le site, avec sa barre de navigation
 end
+
+== Retour au site ==
+Membre -> Front : « Retour au site »
+Front -> Membre : accueil, avec la barre de navigation et le pied de page
+
+note over Membre, Front
+  Un compte administrateur n'a pas de profil public :
+  ni carte « Mon profil public », ni lien sur son nom.
+end note
 @enduml
 ```

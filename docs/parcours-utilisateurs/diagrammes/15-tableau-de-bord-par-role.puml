@@ -1,5 +1,5 @@
 @startuml
-title Tableau de bord : arrivée après connexion et fonctions rangées par rôle
+title Tableau de bord : barre latérale par rôle, pages intégrées et retour au site
 autonumber
 actor Membre
 participant Front
@@ -22,7 +22,7 @@ Front -> Front : le garde de route vérifie la connexion\n(sinon : connexion, pu
 Front -> API : GET /auth/me
 API -> Base : lit le compte
 API --> Front : rôle, profil recruteur, réputation
-Front -> Membre : salutation, rôles du compte, cartes de toutes les fonctions
+Front -> Membre : barre latérale (tiroir sur téléphone), salutation, rôles du compte, cartes de toutes les fonctions\nLes barres de navigation et de pied de page du site sont masquées
 
 par chiffres lus en plus (un échec n'empêche pas l'affichage)
   Front -> API : GET /notifications/unread-count
@@ -48,11 +48,22 @@ note over Front
   Administrateur : en plus, indicateurs, utilisateurs, journal d'audit.
 end note
 
-== Ouvrir une carte ==
-Membre -> Front : clique sur une carte
+== Ouvrir une entrée de la barre latérale ==
+Membre -> Front : clique sur une entrée ou une carte
 alt page d'administration réservée aux administrateurs
   Front -> Front : le garde de rôle attend le profil, puis autorise ou renvoie
-else autre page
-  Front -> Membre : ouvre la page
+else page du compte, de modération ou d'administration
+  Front -> Membre : s'ouvre dans le tableau de bord (en-tête compact)
+else page du site (forum, offres, publication, profil public)
+  Front -> Membre : s'ouvre sur le site, avec sa barre de navigation
 end
+
+== Retour au site ==
+Membre -> Front : « Retour au site »
+Front -> Membre : accueil, avec la barre de navigation et le pied de page
+
+note over Membre, Front
+  Un compte administrateur n'a pas de profil public :
+  ni carte « Mon profil public », ni lien sur son nom.
+end note
 @enduml

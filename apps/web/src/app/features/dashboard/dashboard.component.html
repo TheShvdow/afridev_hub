@@ -47,6 +47,9 @@
                       @if (item.badge) {
                         <span class="rounded-full bg-[#FBBF24] px-2 py-0.5 text-[12px] font-semibold text-[#141219]">{{ item.badge }}</span>
                       }
+                      @if (item.site) {
+                        <span class="rounded-full border border-[#E2E8F0] px-2 py-0.5 text-[11px] font-medium text-[#64748B]">sur le site</span>
+                      }
                     </span>
                     <span class="mt-0.5 block text-[14px] leading-[22px] text-[#64748B]">{{ item.description }}</span>
                   </span>

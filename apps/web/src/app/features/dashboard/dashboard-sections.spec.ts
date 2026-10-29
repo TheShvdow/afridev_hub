@@ -21,22 +21,28 @@ const links = (me: UserMe, ctx = nothing) => buildSections(me, ctx).flatMap((sec
 describe('dashboard sections', () => {
   it('gives a simple member the activity, account and recruiting sections only', () => {
     expect(ids(member)).toEqual(['activity', 'account', 'recruiter']);
-    expect(links(member)).not.toContain('/admin/reports');
-    expect(links(member)).not.toContain('/admin/users');
+    expect(links(member)).not.toContain('/tableau-de-bord/moderation/signalements');
+    expect(links(member)).not.toContain('/tableau-de-bord/administration/utilisateurs');
   });
 
   it('opens every feature that used to need its address typed by hand', () => {
-    const all = links({ ...admin, isRecruiter: true });
-    for (const link of ['/forum/ask', '/jobs/alerts', '/jobs/plan', '/jobs/post', '/jobs/mine', '/profile/security', '/profile/notifications', '/u/aminata_dev', '/admin/reports', '/admin/jobs', '/admin/dashboard', '/admin/users', '/admin/audit']) {
+    const all = [...links({ ...admin, isRecruiter: true }), '/@aminata_dev'];
+    for (const link of ['/forum/ask', '/tableau-de-bord/alertes', '/tableau-de-bord/plan', '/jobs/post', '/tableau-de-bord/offres', '/tableau-de-bord/profil/security', '/tableau-de-bord/profil/notifications', '/@aminata_dev', '/tableau-de-bord/moderation/signalements', '/tableau-de-bord/moderation/offres', '/tableau-de-bord/administration/indicateurs', '/tableau-de-bord/administration/utilisateurs', '/tableau-de-bord/administration/audit']) {
       expect(all).toContain(link);
     }
-    expect(links(recruiter)).toEqual(expect.arrayContaining(['/jobs/mine', '/jobs/post', '/jobs/plan']));
+    expect(links(recruiter)).toEqual(expect.arrayContaining(['/tableau-de-bord/offres', '/jobs/post', '/tableau-de-bord/plan']));
+  });
+
+  it('gives an administrator no public profile card, and everyone else one', () => {
+    expect(links(admin)).not.toContain('/@aminata_dev');
+    expect(links(member)).toContain('/@aminata_dev');
+    expect(links(moderator)).toContain('/@aminata_dev');
   });
 
   it('offers a non-recruiter to become one instead of the recruiter tools', () => {
     const recruiting = buildSections(member, nothing).find((section) => section.id === 'recruiter')!;
     expect(recruiting.items.map((item) => item.id)).toEqual(['become-recruiter']);
-    expect(links(member)).not.toContain('/jobs/mine');
+    expect(links(member)).not.toContain('/tableau-de-bord/offres');
   });
 
   it('gives a recruiter the recruiter tools, with the company name', () => {
@@ -47,7 +53,7 @@ describe('dashboard sections', () => {
 
   it('adds moderation for a moderator, and administration for an administrator only', () => {
     expect(ids(moderator)).toEqual(['activity', 'account', 'recruiter', 'moderation']);
-    expect(links(moderator)).not.toContain('/admin/users');
+    expect(links(moderator)).not.toContain('/tableau-de-bord/administration/utilisateurs');
     expect(ids(admin)).toEqual(['activity', 'account', 'recruiter', 'moderation', 'admin']);
   });
 

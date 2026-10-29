@@ -113,6 +113,7 @@ describe('PublicProfileComponent', () => {
     const meta = TestBed.inject(Meta);
 
     expect(title.getTitle()).toBe(USER.ogMeta!.ogTitle);
+    expect(meta.getTag('property="og:type"')?.content).toBe('profile');
     expect(meta.getTag('property="og:title"')?.content).toBe(USER.ogMeta!.ogTitle);
     expect(meta.getTag('property="og:image"')?.content).toBe(USER.ogMeta!.ogImage);
     expect(meta.getTag('property="og:url"')?.content).toBe(USER.ogMeta!.ogUrl);

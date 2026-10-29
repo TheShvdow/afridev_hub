@@ -219,10 +219,19 @@ export class PaymentDto {
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
 }
 
+/** Où se trouve le contenu signalé : de quoi bâtir un lien. */
+export class ReportTargetDto {
+  @ApiProperty() title!: string;
+  @ApiPropertyOptional({ description: 'Question concernée (ou question parente d\'une réponse)' }) postId?: string;
+  @ApiPropertyOptional({ description: 'Identifiant lisible du projet' }) slug?: string;
+  @ApiPropertyOptional({ description: 'Offre d\'emploi concernée' }) jobId?: string;
+}
+
 export class ReportDto {
   @ApiProperty() id!: string;
   @ApiProperty({ enum: ReportEntityType }) entityType!: ReportEntityType;
   @ApiProperty() entityId!: string;
+  @ApiPropertyOptional({ type: ReportTargetDto, nullable: true, description: 'Absent si le contenu a été supprimé' }) target?: ReportTargetDto | null;
   @ApiProperty() reason!: string;
   @ApiProperty({ enum: ReportStatus }) status!: ReportStatus;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;

@@ -1,7 +1,10 @@
 import type { UserMe } from '@afridev/shared-types';
 import type { RecruiterPlan } from '../../core/services/jobs.service';
+import { profilePath } from '../../shared/utils/profile-link';
 
 export type DashboardIcon = 'user' | 'users' | 'mail' | 'lock' | 'shield' | 'folder' | 'code' | 'briefcase' | 'check' | 'star' | 'clock' | 'calendar';
+
+export const DASHBOARD_HOME = '/tableau-de-bord';
 
 export interface DashboardItem {
   id: string;
@@ -11,6 +14,8 @@ export interface DashboardItem {
   icon: DashboardIcon;
   /** Pastille : un nombre à traiter ou un état (« Premium »). */
   badge?: string | null;
+  /** Vrai pour une page du site (forum, offres, formulaire) : elle s'ouvre hors du tableau de bord. */
+  site?: boolean;
 }
 
 export interface DashboardSection {
@@ -79,12 +84,13 @@ export function buildSections(me: UserMe, ctx: DashboardContext): DashboardSecti
       title: 'Mon activité',
       subtitle: 'Poser une question, suivre ce qui vous concerne.',
       items: [
-        { id: 'ask', title: 'Poser une question', description: 'Demandez de l\'aide à la communauté.', link: '/forum/ask', icon: 'code' },
-        { id: 'forum', title: 'Parcourir le forum', description: 'Questions, réponses et votes.', link: '/forum', icon: 'users' },
-        { id: 'notifications', title: 'Notifications', description: 'Réponses, votes, candidatures, paiements.', link: '/notifications', icon: 'mail', badge: ctx.unread > 0 ? String(Math.min(ctx.unread, 99)) : null },
-        { id: 'alerts', title: 'Mes alertes emploi', description: 'Soyez prévenu des offres qui vous correspondent.', link: '/jobs/alerts', icon: 'clock' },
-        { id: 'jobs', title: 'Offres d\'emploi', description: 'Parcourez et postulez avec votre CV.', link: '/jobs', icon: 'briefcase' },
-        { id: 'public-profile', title: 'Mon profil public', description: 'Ce que les autres membres voient de vous.', link: `/u/${me.username}`, icon: 'user' },
+        { id: 'ask', title: 'Poser une question', description: 'Demandez de l\'aide à la communauté.', link: '/forum/ask', icon: 'code', site: true },
+        { id: 'forum', title: 'Parcourir le forum', description: 'Questions, réponses et votes.', link: '/forum', icon: 'users', site: true },
+        { id: 'notifications', title: 'Notifications', description: 'Réponses, votes, candidatures, paiements.', link: `${DASHBOARD_HOME}/notifications`, icon: 'mail', badge: ctx.unread > 0 ? String(Math.min(ctx.unread, 99)) : null },
+        { id: 'alerts', title: 'Mes alertes emploi', description: 'Soyez prévenu des offres qui vous correspondent.', link: `${DASHBOARD_HOME}/alertes`, icon: 'clock' },
+        { id: 'jobs', title: 'Offres d\'emploi', description: 'Parcourez et postulez avec votre CV.', link: '/jobs', icon: 'briefcase', site: true },
+        // Un compte administrateur n'a pas de profil public.
+        ...(profilePath(me) ? [{ id: 'public-profile', title: 'Mon profil public', description: 'Ce que les autres membres voient de vous.', link: profilePath(me) as string, icon: 'user' as const, site: true }] : []),
       ],
     },
     {
@@ -92,9 +98,9 @@ export function buildSections(me: UserMe, ctx: DashboardContext): DashboardSecti
       title: 'Mon compte',
       subtitle: 'Vos informations, votre sécurité et vos préférences.',
       items: [
-        { id: 'account', title: 'Informations du compte', description: 'Nom, biographie, avatar, liens.', link: '/profile/account', icon: 'user' },
-        { id: 'security', title: 'Sécurité', description: 'Mot de passe et sessions.', link: '/profile/security', icon: 'lock' },
-        { id: 'notification-prefs', title: 'Préférences de notifications', description: 'Choisir les e-mails que vous recevez.', link: '/profile/notifications', icon: 'mail' },
+        { id: 'account', title: 'Informations du compte', description: 'Nom, biographie, avatar, liens.', link: `${DASHBOARD_HOME}/profil/account`, icon: 'user' },
+        { id: 'security', title: 'Sécurité', description: 'Adresse vérifiée et déconnexion de tous les appareils.', link: `${DASHBOARD_HOME}/profil/security`, icon: 'lock' },
+        { id: 'notification-prefs', title: 'Préférences de notifications', description: 'Choisir les e-mails que vous recevez.', link: `${DASHBOARD_HOME}/profil/notifications`, icon: 'mail' },
       ],
     },
   ];
@@ -106,9 +112,9 @@ export function buildSections(me: UserMe, ctx: DashboardContext): DashboardSecti
           title: 'Espace recruteur',
           subtitle: me.companyName ? `Offres et candidatures de ${me.companyName}.` : 'Vos offres et leurs candidatures.',
           items: [
-            { id: 'my-offers', title: 'Mes offres', description: 'Statut, candidatures reçues, modification, clôture.', link: '/jobs/mine', icon: 'briefcase' },
-            { id: 'post-offer', title: 'Publier une offre', description: 'Elle est publiée après validation par la modération.', link: '/jobs/post', icon: 'folder' },
-            { id: 'plan', title: 'Plan premium', description: 'Offres illimitées et profil complet des candidats.', link: '/jobs/plan', icon: 'star', badge: planBadge(ctx.plan) },
+            { id: 'my-offers', title: 'Mes offres', description: 'Statut, candidatures reçues, modification, clôture.', link: `${DASHBOARD_HOME}/offres`, icon: 'briefcase' },
+            { id: 'post-offer', title: 'Publier une offre', description: 'Elle est publiée après validation par la modération.', link: '/jobs/post', icon: 'folder', site: true },
+            { id: 'plan', title: 'Plan premium', description: 'Offres illimitées et profil complet des candidats.', link: `${DASHBOARD_HOME}/plan`, icon: 'star', badge: planBadge(ctx.plan) },
           ],
         }
       : {
@@ -116,7 +122,7 @@ export function buildSections(me: UserMe, ctx: DashboardContext): DashboardSecti
           title: 'Recruter',
           subtitle: 'Vous cherchez des talents ? Activez votre profil recruteur.',
           items: [
-            { id: 'become-recruiter', title: 'Devenir recruteur', description: 'Indiquez votre entreprise et publiez votre première offre.', link: '/jobs/post', icon: 'briefcase' },
+            { id: 'become-recruiter', title: 'Devenir recruteur', description: 'Indiquez votre entreprise et publiez votre première offre.', link: '/jobs/post', icon: 'briefcase', site: true },
           ],
         },
   );
@@ -127,8 +133,8 @@ export function buildSections(me: UserMe, ctx: DashboardContext): DashboardSecti
       title: 'Modération',
       subtitle: 'Garder la communauté saine.',
       items: [
-        { id: 'reports', title: 'Signalements', description: 'Examiner et traiter les contenus signalés.', link: '/admin/reports', icon: 'shield', badge: count(ctx.pendingReports, 'en attente') },
-        { id: 'review', title: 'Offres à valider', description: 'Publier ou refuser les offres en attente.', link: '/admin/jobs', icon: 'check', badge: count(ctx.pendingOffers, 'en attente') },
+        { id: 'reports', title: 'Signalements', description: 'Examiner et traiter les contenus signalés.', link: `${DASHBOARD_HOME}/moderation/signalements`, icon: 'shield', badge: count(ctx.pendingReports, 'en attente') },
+        { id: 'review', title: 'Offres à valider', description: 'Publier ou refuser les offres en attente.', link: `${DASHBOARD_HOME}/moderation/offres`, icon: 'check', badge: count(ctx.pendingOffers, 'en attente') },
       ],
     });
   }
@@ -139,9 +145,9 @@ export function buildSections(me: UserMe, ctx: DashboardContext): DashboardSecti
       title: 'Administration',
       subtitle: 'Suivre la plateforme et ses comptes.',
       items: [
-        { id: 'indicators', title: 'Indicateurs', description: 'Les indicateurs de succès de la plateforme.', link: '/admin/dashboard', icon: 'calendar' },
-        { id: 'users', title: 'Utilisateurs', description: 'Rôles, bannissements, rétablissements.', link: '/admin/users', icon: 'users' },
-        { id: 'audit', title: 'Journal d\'audit', description: 'Les actions sensibles, une par une.', link: '/admin/audit', icon: 'clock' },
+        { id: 'indicators', title: 'Indicateurs', description: 'Les indicateurs de succès de la plateforme.', link: `${DASHBOARD_HOME}/administration/indicateurs`, icon: 'calendar' },
+        { id: 'users', title: 'Utilisateurs', description: 'Rôles, bannissements, rétablissements.', link: `${DASHBOARD_HOME}/administration/utilisateurs`, icon: 'users' },
+        { id: 'audit', title: 'Journal d\'audit', description: 'Les actions sensibles, une par une.', link: `${DASHBOARD_HOME}/administration/audit`, icon: 'clock' },
       ],
     });
   }

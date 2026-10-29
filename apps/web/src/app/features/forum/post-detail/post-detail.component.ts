@@ -17,6 +17,7 @@ import { extractApiErrorMessage } from '../../../core/utils/api-error';
 import { ReportButtonComponent } from '../../../shared/components/report-button/report-button.component';
 import { VoteControlComponent } from '../../../shared/components/vote-control/vote-control.component';
 import { AnswerThreadBase } from '../../../shared/forum/answer-thread.base';
+import { hasPublicProfile, profilePath } from '../../../shared/utils/profile-link';
 
 @Component({
   selector: 'app-post-detail',
@@ -26,6 +27,8 @@ import { AnswerThreadBase } from '../../../shared/forum/answer-thread.base';
   styleUrl: './post-detail.component.css',
 })
 export class PostDetailComponent extends AnswerThreadBase implements OnInit {
+  readonly profilePath = profilePath;
+  readonly hasPublicProfile = hasPublicProfile;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
