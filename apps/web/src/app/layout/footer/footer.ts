@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthStore } from '../../core/store/auth.store';
+import { LEGAL_LINKS } from '../../features/legal/legal-content';
 
 @Component({
   selector: 'app-footer',
@@ -10,4 +11,6 @@ import { AuthStore } from '../../core/store/auth.store';
 })
 export class Footer {
   readonly authStore = inject(AuthStore);
+  readonly legalLinks = LEGAL_LINKS;
+  readonly year = new Date().getFullYear();
 }
