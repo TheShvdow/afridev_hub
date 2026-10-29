@@ -13,6 +13,10 @@ Parcours utilisateurs rejoués dans un vrai navigateur (Chromium, via Playwright
 | `06-notifications` | notification en temps réel, ouverture, « tout marquer comme lu » |
 | `07-administration` | tableau de bord, bannissement, journal d'audit |
 
+## Dans la CI
+
+Le workflow `.github/workflows/e2e.yml` rejoue toute la suite sur chaque pull request (PostgreSQL et Redis en services, base migrée et peuplée, API et front lancés, Chromium installé). Le rapport et les journaux sont joints à l'exécution en cas d'échec.
+
 ## Prérequis
 
 1. **Une base peuplée** : `npm run prisma:migrate:prod` puis `npm run prisma:seed` (pays, tags, catégories, badges). Jamais la base de production : la suite écrit en base.
