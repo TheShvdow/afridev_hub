@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Paginated } from './forum.service';
 
-export type ReportEntityType = 'POST' | 'ANSWER' | 'PROJECT';
+export type ReportEntityType = 'POST' | 'ANSWER' | 'PROJECT' | 'JOB';
 export type ReportReason = 'SPAM' | 'OFFENSIVE' | 'OFF_TOPIC' | 'DUPLICATE' | 'OTHER';
 
 export const REPORT_REASONS: { value: ReportReason; label: string }[] = [
@@ -50,6 +50,19 @@ export interface AdminReport {
   status: ReportStatus;
   createdAt: string;
   user: { id: string; username: string; avatarUrl: string | null };
+  /** Où se trouve le contenu signalé ; null si le contenu a été supprimé. */
+  target?: ReportTarget | null;
+}
+
+/** De quoi bâtir le lien vers un contenu signalé. */
+export interface ReportTarget {
+  title: string;
+  /** Question concernée, ou question parente d'une réponse. */
+  postId?: string;
+  /** Identifiant lisible d'un projet. */
+  slug?: string;
+  /** Offre d'emploi concernée. */
+  jobId?: string;
 }
 
 @Injectable({ providedIn: 'root' })

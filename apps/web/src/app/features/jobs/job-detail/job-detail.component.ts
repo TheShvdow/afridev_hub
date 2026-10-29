@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PageHeroComponent } from '../../../shared/components/page-hero/page-hero.component';
+import { ReportButtonComponent } from '../../../shared/components/report-button/report-button.component';
 import { CountriesService } from '../../../core/services/countries.service';
 import { JobOffer, JobsService } from '../../../core/services/jobs.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
@@ -10,7 +11,7 @@ import { toJob } from '../../../core/utils/job-view';
 @Component({
   selector: 'app-job-detail',
   standalone: true,
-  imports: [RouterLink, PageHeroComponent],
+  imports: [RouterLink, PageHeroComponent, ReportButtonComponent],
   templateUrl: './job-detail.component.html',
 })
 export class JobDetailComponent {

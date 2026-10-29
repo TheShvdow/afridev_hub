@@ -31,15 +31,20 @@
     @for (report of reports(); track report.id) {
       <li class="rounded-2xl border border-[#E2E8F0] p-5">
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span class="rounded-full bg-[#F8FAFC] px-3 py-1 text-[13px] font-semibold text-[#141219]">{{ report.entityType }}</span>
+          <span class="rounded-full bg-[#F8FAFC] px-3 py-1 text-[13px] font-semibold text-[#141219]">{{ entityLabel(report.entityType) }}</span>
           <span class="text-[16px] font-semibold text-[#141219]">{{ reasonLabel(reasonOf(report).code) }}</span>
           <span class="text-[13px] text-[#94A3B8]">par {{ report.user.username }} · {{ timeAgo(report.createdAt) }}</span>
         </div>
         @if (reasonOf(report).details; as details) {
           <p class="mt-2 text-[15px] leading-[24px] text-[#475569]">{{ details }}</p>
         }
+        @if (report.target; as target) {
+          <p class="mt-2 text-[14px] text-[#475569]">« {{ target.title }} »</p>
+        } @else {
+          <p class="mt-2 text-[14px] italic text-[#94A3B8]">Ce contenu a été supprimé.</p>
+        }
         @if (contentLink(report); as link) {
-          <a [routerLink]="link" class="mt-2 inline-block text-[14px] font-semibold text-[#0F6932] hover:underline">Voir la question</a>
+          <a [routerLink]="link.commands" class="mt-1 inline-block text-[14px] font-semibold text-[#0F6932] hover:underline">{{ link.label }}</a>
         }
 
         @if (isOpen(report)) {

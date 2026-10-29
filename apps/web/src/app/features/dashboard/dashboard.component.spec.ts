@@ -47,8 +47,8 @@ describe('DashboardComponent', () => {
   it('greets the member and lists activity and account links, without any admin tool', () => {
     const { el, hrefs, jobs, moderation } = setup(base);
     expect(el.textContent).toContain('Bonjour Aminata Diallo');
-    expect(hrefs()).toEqual(expect.arrayContaining(['/forum/ask', '/jobs/alerts', '/profile/security', '/u/aminata_dev']));
-    expect(hrefs()).not.toContain('/admin/users');
+    expect(hrefs()).toEqual(expect.arrayContaining(['/forum/ask', '/tableau-de-bord/alertes', '/tableau-de-bord/profil/security', '/@aminata_dev']));
+    expect(hrefs()).not.toContain('/tableau-de-bord/administration/utilisateurs');
     expect(jobs.getPlan).not.toHaveBeenCalled();
     expect(moderation.listReports).not.toHaveBeenCalled();
   });
@@ -56,7 +56,7 @@ describe('DashboardComponent', () => {
   it('shows the recruiter tools with the plan read from the API', () => {
     const { el, hrefs, jobs } = setup({ ...base, isRecruiter: true, companyName: 'Gozem' });
     expect(jobs.getPlan).toHaveBeenCalledTimes(1);
-    expect(hrefs()).toEqual(expect.arrayContaining(['/jobs/mine', '/jobs/post', '/jobs/plan']));
+    expect(hrefs()).toEqual(expect.arrayContaining(['/tableau-de-bord/offres', '/jobs/post', '/tableau-de-bord/plan']));
     expect(el.textContent).toContain('1/3 ce mois-ci');
   });
 
@@ -64,13 +64,13 @@ describe('DashboardComponent', () => {
     const { el, hrefs } = setup({ ...base, role: 'MODERATOR' });
     expect(el.textContent).toContain('5 en attente');
     expect(el.textContent).toContain('2 en attente');
-    expect(hrefs()).toEqual(expect.arrayContaining(['/admin/reports', '/admin/jobs']));
-    expect(hrefs()).not.toContain('/admin/users');
+    expect(hrefs()).toEqual(expect.arrayContaining(['/tableau-de-bord/moderation/signalements', '/tableau-de-bord/moderation/offres']));
+    expect(hrefs()).not.toContain('/tableau-de-bord/administration/utilisateurs');
   });
 
   it('shows the administration to an administrator', () => {
     const { hrefs } = setup({ ...base, role: 'ADMIN' });
-    expect(hrefs()).toEqual(expect.arrayContaining(['/admin/dashboard', '/admin/users', '/admin/audit']));
+    expect(hrefs()).toEqual(expect.arrayContaining(['/tableau-de-bord/administration/indicateurs', '/tableau-de-bord/administration/utilisateurs', '/tableau-de-bord/administration/audit']));
   });
 
   it('still shows everything when the figures cannot be read', () => {
@@ -78,7 +78,7 @@ describe('DashboardComponent', () => {
       { ...base, role: 'ADMIN', isRecruiter: true },
       { plan: throwError(() => new Error('down')), reports: throwError(() => new Error('down')), review: throwError(() => new Error('down')) },
     );
-    expect(hrefs()).toEqual(expect.arrayContaining(['/jobs/plan', '/admin/reports', '/admin/users']));
+    expect(hrefs()).toEqual(expect.arrayContaining(['/tableau-de-bord/plan', '/tableau-de-bord/moderation/signalements', '/tableau-de-bord/administration/utilisateurs']));
     expect(el.textContent).not.toMatch(/\d+ en attente/);
     expect(el.textContent).toContain('À modérer0');
   });

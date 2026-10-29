@@ -1,4 +1,5 @@
-import { Component, input } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
+import { EMBEDDED_IN_DASHBOARD } from './embedded.token';
 
 @Component({
   selector: 'app-page-hero',
@@ -9,4 +10,5 @@ import { Component, input } from '@angular/core';
 export class PageHeroComponent {
   readonly title = input.required<string>();
   readonly subtitle = input('');
+  readonly embedded = inject(EMBEDDED_IN_DASHBOARD);
 }

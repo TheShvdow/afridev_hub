@@ -1,6 +1,13 @@
-import { Routes } from '@angular/router';
+import { Routes, UrlMatchResult, UrlSegment } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
+
+/** `/@pseudo` : un seul segment qui commence par « @ ». Le pseudo (sans le « @ ») devient le paramètre `username`. */
+export function profileMatcher(segments: UrlSegment[]): UrlMatchResult | null {
+  const [segment] = segments;
+  if (segments.length !== 1 || !segment.path.startsWith('@') || segment.path.length < 2) return null;
+  return { consumed: segments, posParams: { username: new UrlSegment(segment.path.slice(1), {}) } };
+}
 
 export const appRoutes: Routes = [
   // ── Landing / vitrine ────────────────────────────────────────────
@@ -80,9 +87,8 @@ export const appRoutes: Routes = [
   {
     path: 'tableau-de-bord',
     canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
-    title: 'Tableau de bord — AfriDev Hub',
+    loadChildren: () =>
+      import('./features/dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES),
   },
 
   // ── Profil utilisateur ────────────────────────────────────────────
@@ -113,12 +119,18 @@ export const appRoutes: Routes = [
   },
 
   // ── Utilisateur public ────────────────────────────────────────────
+  // L'adresse partagée est /@pseudo (c'est celle des métadonnées Open Graph de l'API) ; l'ancienne
+  // adresse /u/pseudo y renvoie.
   {
-    path: 'u/:username',
+    matcher: profileMatcher,
     loadComponent: () =>
       import('./features/profile/public-profile/public-profile.component').then(
         (m) => m.PublicProfileComponent
       ),
+  },
+  {
+    path: 'u/:username',
+    redirectTo: ({ params }) => `/@${params['username']}`,
   },
 
   // ── 404 ──────────────────────────────────────────────────────────

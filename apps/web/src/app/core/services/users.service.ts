@@ -32,6 +32,8 @@ export interface UpdateProfileDto {
   githubUsername?: string | null;
   linkedinUsername?: string | null;
   twitterUsername?: string | null;
+  /** E-mails d'activité (réponses, votes, candidatures…) ; les e-mails de confirmation (reçu, accusé) partent toujours. */
+  emailNotifications?: boolean;
 }
 
 /** Sous-ensemble de la réponse de `PATCH /api/users/me` (MyProfileDto). */

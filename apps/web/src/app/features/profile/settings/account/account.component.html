@@ -11,9 +11,9 @@
         </p>
       </div>
 
-      @if (authStore.currentUser(); as me) {
+      @if (profilePath(authStore.currentUser()); as profileUrl) {
         <a
-          [routerLink]="['/u', me.username]"
+          [routerLink]="profileUrl"
           class="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full border border-[#0F1011] px-5 text-[15px] font-semibold text-[#0F1011] transition-colors hover:bg-[#0F1011] hover:text-white"
         >
           Voir mon profil public

@@ -77,8 +77,21 @@ export class ReportsComponent {
     return labels[code] ?? code;
   }
 
-  contentLink(report: AdminReport): string[] | null {
-    return report.entityType === 'POST' ? ['/forum', report.entityId] : null;
+  /** Lien vers le contenu signalé : la question (la question parente pour une réponse), le projet ou l'offre. */
+  contentLink(report: AdminReport): { commands: string[]; label: string } | null {
+    const target = report.target;
+    if (!target) return null;
+    if (target.postId) {
+      return { commands: ['/forum', target.postId], label: report.entityType === 'ANSWER' ? 'Voir la réponse dans sa question' : 'Voir la question' };
+    }
+    if (target.slug) return { commands: ['/projects', target.slug], label: 'Voir le projet' };
+    if (target.jobId) return { commands: ['/jobs', target.jobId], label: 'Voir l\'offre' };
+    return null;
+  }
+
+  entityLabel(type: AdminReport['entityType']): string {
+    const labels: Record<AdminReport['entityType'], string> = { POST: 'Question', ANSWER: 'Réponse', PROJECT: 'Projet', JOB: 'Offre' };
+    return labels[type] ?? type;
   }
 
   timeAgo(iso: string): string {

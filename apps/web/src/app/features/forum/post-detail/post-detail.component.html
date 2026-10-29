@@ -60,7 +60,8 @@
 
         <div class="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
           <a
-            [routerLink]="['/u', question.user.username]"
+            [routerLink]="profilePath(question.user)"
+            [class.pointer-events-none]="!hasPublicProfile(question.user)"
             class="group flex items-center gap-3"
           >
             @if (question.user.avatarUrl) {
@@ -165,7 +166,8 @@
               >
                 <div class="flex flex-wrap items-center gap-3">
                   <a
-                    [routerLink]="['/u', answer.user.username]"
+                    [routerLink]="profilePath(answer.user)"
+                    [class.pointer-events-none]="!hasPublicProfile(answer.user)"
                     class="group flex min-w-0 flex-1 items-center gap-3"
                   >
                     @if (answer.user.avatarUrl) {
