@@ -8,6 +8,9 @@ import { ToastService } from '../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../core/utils/api-error';
 import { initialsFrom, relativeTime } from '../utils/forum-thread.mapper';
 
+/** Taille de la première page de réponses (la même que côté API). */
+export const ANSWERS_PAGE_SIZE = 10;
+
 /** Règle du glossaire : une réponse fait au moins 30 caractères (comme `CreateAnswerDto`). */
 export const ANSWER_MIN_LENGTH = 30;
 
@@ -39,6 +42,8 @@ export abstract class AnswerThreadBase {
   readonly editingAnswerId = signal<string | null>(null);
   readonly savingEdit = signal(false);
   readonly editError = signal<string | null>(null);
+  readonly loadingMoreAnswers = signal(false);
+  readonly moreAnswersError = signal<string | null>(null);
   /** Identifiant du contenu dont un vote ou une acceptation est en cours. */
   readonly pendingActionId = signal<string | null>(null);
 
@@ -49,6 +54,50 @@ export abstract class AnswerThreadBase {
   readonly editForm = inject(FormBuilder).nonNullable.group({
     body: ['', [Validators.required, trimmedMinLength(ANSWER_MIN_LENGTH), Validators.maxLength(50000)]],
   });
+
+  /** Nombre total de réponses de la question, pas seulement celles déjà chargées. */
+  answerTotal(): number {
+    const question = this.post();
+    return question ? Math.max(question.answersMeta?.total ?? 0, question.answers.length) : 0;
+  }
+
+  /** Réponses pas encore chargées : la page de détail n'en reçoit que 10 d'un coup. */
+  remainingAnswers(): number {
+    const question = this.post();
+    return question ? Math.max(0, this.answerTotal() - question.answers.length) : 0;
+  }
+
+  loadMoreAnswers(): void {
+    const question = this.post();
+    if (!question || this.loadingMoreAnswers() || this.remainingAnswers() === 0) return;
+
+    // La page suivante se déduit de ce qui est déjà chargé ; les doublons (réponse ajoutée ou supprimée
+    // entre-temps) sont écartés à l'arrivée.
+    const limit = question.answersMeta?.limit ?? ANSWERS_PAGE_SIZE;
+    const page = Math.floor(question.answers.length / limit) + 1;
+
+    this.loadingMoreAnswers.set(true);
+    this.moreAnswersError.set(null);
+
+    this.forum.listAnswers(question.id, page, limit).subscribe({
+      next: ({ data, meta }) => {
+        this.loadingMoreAnswers.set(false);
+        const existing = this.post();
+        if (!existing) return;
+
+        const known = new Set(existing.answers.map((answer) => answer.id));
+        this.post.set({
+          ...existing,
+          answers: [...existing.answers, ...data.filter((answer) => !known.has(answer.id))],
+          answersMeta: meta,
+        });
+      },
+      error: (error: HttpErrorResponse) => {
+        this.loadingMoreAnswers.set(false);
+        this.moreAnswersError.set(extractApiErrorMessage(error));
+      },
+    });
+  }
 
   submitAnswer(): void {
     if (this.answering()) return;
@@ -73,6 +122,7 @@ export abstract class AnswerThreadBase {
           this.post.set({
             ...existing,
             answers: [...existing.answers, answer as ForumAnswer],
+            answersMeta: existing.answersMeta && { ...existing.answersMeta, total: existing.answersMeta.total + 1 },
             _count: { answers: (existing._count?.answers ?? existing.answers.length) + 1 },
           });
         }
@@ -288,6 +338,7 @@ export abstract class AnswerThreadBase {
           this.post.set({
             ...existing,
             answers: existing.answers.filter((answer) => answer.id !== answerId),
+            answersMeta: existing.answersMeta && { ...existing.answersMeta, total: Math.max(0, existing.answersMeta.total - 1) },
             _count: {
               answers: Math.max(0, (existing._count?.answers ?? existing.answers.length) - 1),
             },

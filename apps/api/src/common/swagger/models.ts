@@ -95,7 +95,8 @@ export class AnswerDto {
 
 export class PostDetailDto extends PostDto {
   @ApiProperty({ enum: ['UP', 'DOWN'], nullable: true, description: 'Vote du visiteur connecté, null sinon' }) userVote!: 'UP' | 'DOWN' | null;
-  @ApiProperty({ type: [AnswerDto] }) answers!: AnswerDto[];
+  @ApiProperty({ type: [AnswerDto], description: 'Première page de réponses ; la suite via GET /forum/posts/{id}/answers' }) answers!: AnswerDto[];
+  @ApiProperty({ example: { total: 23, page: 1, limit: 10, totalPages: 3 } }) answersMeta!: { total: number; page: number; limit: number; totalPages: number };
 }
 
 export class SimilarPostDto {

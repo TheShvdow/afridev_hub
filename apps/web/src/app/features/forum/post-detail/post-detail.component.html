@@ -136,7 +136,7 @@
             <span class="text-[13px] leading-[20px] text-[#64748B]">vues</span>
           </div>
           <div class="flex flex-col items-center justify-center rounded-2xl bg-[#F8FAFC] px-3 py-3">
-            <span class="text-[22px] font-semibold leading-[30px] text-[#141219]">{{ question.answers.length }}</span>
+            <span class="text-[22px] font-semibold leading-[30px] text-[#141219]">{{ answerTotal() }}</span>
             <span class="text-[13px] leading-[20px] text-[#64748B]">réponses</span>
           </div>
         </div>
@@ -149,7 +149,7 @@
 
       <section class="mt-12 border-t border-[#E2E8F0] pt-8">
         <h2 class="text-[22px] font-bold text-[#141219] sm:text-[26px]">
-          {{ question.answers.length }} réponse{{ question.answers.length > 1 ? 's' : '' }}
+          {{ answerTotal() }} réponse{{ answerTotal() > 1 ? 's' : '' }}
         </h2>
 
         @if (question.answers.length === 0) {
@@ -291,6 +291,22 @@
               </article>
             }
           </div>
+
+          @if (remainingAnswers() > 0) {
+            <div class="mt-4 flex flex-col items-center gap-2">
+              @if (moreAnswersError()) {
+                <p role="alert" class="text-[13px] font-medium text-[#FB2C36]">{{ moreAnswersError() }}</p>
+              }
+              <button
+                type="button"
+                (click)="loadMoreAnswers()"
+                [disabled]="loadingMoreAnswers()"
+                class="rounded-full border border-[#E2E8F0] bg-white px-5 py-2 text-[14px] font-semibold text-[#334155] transition-colors hover:bg-[#F8FAFC] disabled:opacity-60"
+              >
+                {{ loadingMoreAnswers() ? 'Chargement…' : 'Afficher plus de réponses (' + remainingAnswers() + ')' }}
+              </button>
+            </div>
+          }
         }
 
         <div class="mt-10">

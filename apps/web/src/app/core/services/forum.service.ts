@@ -89,7 +89,7 @@ export interface ForumAnswer {
   user: ForumAuthorSummary;
 }
 
-/** Réponse de `GET /api/forum/posts/{id}` : la question avec ses réponses. */
+/** Réponse de `GET /api/forum/posts/{id}` : la question avec la première page de ses réponses (10), `answersMeta` donnant le total. */
 export interface ForumPostDetail extends ForumPost {
   userId: string;
   userVote?: VoteValue | null;
@@ -97,6 +97,7 @@ export interface ForumPostDetail extends ForumPost {
   isHidden: boolean;
   updatedAt: string;
   answers: ForumAnswer[];
+  answersMeta?: PaginationMeta;
 }
 
 /**
@@ -123,6 +124,14 @@ export class ForumService {
   /** `GET /api/forum/posts/{id}` — question et ses réponses. */
   getPost(id: string): Observable<ForumPostDetail> {
     return this.http.get<ForumPostDetail>(`${this.base}/posts/${encodeURIComponent(id)}`);
+  }
+
+  /** `GET /api/forum/posts/{id}/answers` — une page de réponses (acceptée d'abord, puis les mieux notées). */
+  listAnswers(postId: string, page: number, limit?: number): Observable<Paginated<ForumAnswer>> {
+    let params = new HttpParams().set('page', page);
+    if (limit !== undefined) params = params.set('limit', limit);
+
+    return this.http.get<Paginated<ForumAnswer>>(`${this.base}/posts/${encodeURIComponent(postId)}/answers`, { params });
   }
 
   /** `GET /api/forum/posts/similar` — 3 questions au titre proche au plus. */
