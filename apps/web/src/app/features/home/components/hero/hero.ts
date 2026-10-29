@@ -1,5 +1,6 @@
 import { Component, DestroyRef, OnInit, PLATFORM_ID, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 /** Délai avant que « par les devs » laisse la place à « et pour les devs ». */
 export const SWAP_DELAY_MS = 2200;
@@ -7,7 +8,7 @@ export const SWAP_DELAY_MS = 2200;
 @Component({
   selector: 'app-hero',
   standalone: true,
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './hero.html',
 })
 export class Hero implements OnInit {

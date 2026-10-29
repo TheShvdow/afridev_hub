@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { Hero, SWAP_DELAY_MS } from './hero';
 
 describe('Hero — titre qui change', () => {
@@ -16,7 +17,7 @@ describe('Hero — titre qui change', () => {
 
   beforeEach(async () => {
     jest.useFakeTimers();
-    await TestBed.configureTestingModule({ imports: [Hero] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [Hero], providers: [provideRouter([])] }).compileComponents();
     fixture = TestBed.createComponent(Hero);
     fixture.detectChanges();
   });
@@ -107,5 +108,21 @@ describe('Hero — titre qui change', () => {
 
     jest.advanceTimersByTime(SWAP_DELAY_MS * 2);
     expect(component.swapped()).toBe(false);
+  });
+
+  it('mène les deux boutons vers le forum et les projets, sans lien mort', () => {
+    const liens = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('section a')) as HTMLAnchorElement[];
+    const cible = (texte: string) => liens.find((lien) => lien.textContent?.includes(texte))?.getAttribute('href');
+
+    expect(cible('Explorer la plateforme')).toBe('/forum');
+    expect(cible('Voir les projets')).toBe('/projets');
+    expect(liens.every((lien) => lien.getAttribute('href') !== '#')).toBe(true);
+  });
+
+  it('adapte la taille du titre à la largeur de l\'écran sur mobile pour garder l\'expression sur une ligne', () => {
+    const h1 = (fixture.nativeElement as HTMLElement).querySelector('h1')!;
+
+    expect(h1.className).toContain('text-[min(48px,calc((100vw-40px)/8))]');
+    expect(bouton().className).toContain('whitespace-nowrap');
   });
 });
