@@ -71,6 +71,12 @@ async function post<T>(key: UserKey, route: string, data: unknown): Promise<T> {
   return body.data;
 }
 
+/** Question dont le corps est fourni (pour vérifier son rendu). */
+export async function createQuestionWithBody(key: UserKey, title: string, body: string): Promise<string> {
+  const post_ = await post<{ id: string }>(key, '/forum/posts', { title, body, tags: ['e2e'] });
+  return post_.id;
+}
+
 export async function createQuestion(key: UserKey, title: string): Promise<string> {
   const post_ = await post<{ id: string }>(key, '/forum/posts', {
     title,

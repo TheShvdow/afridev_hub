@@ -12,6 +12,7 @@ Parcours utilisateurs rejoués dans un vrai navigateur (Chromium, via Playwright
 | `05-moderation` | signalement, traitement par la modération, contenu masqué, droits d'accès |
 | `06-notifications` | notification en temps réel, ouverture, « tout marquer comme lu » |
 | `07-administration` | tableau de bord, bannissement, journal d'audit |
+| `08-nouveautes` | pages légales, recherche du forum, rendu Markdown, écrans de bienvenue, mot de passe oublié |
 
 ## Dans la CI
 
@@ -19,7 +20,7 @@ Le workflow `.github/workflows/e2e.yml` rejoue toute la suite sur chaque pull re
 
 ## Prérequis
 
-1. **Une base peuplée** : `npm run prisma:migrate:prod` puis `npm run prisma:seed` (pays, tags, catégories, badges). Jamais la base de production : la suite écrit en base.
+1. **Une base peuplée** : `npm run prisma:migrate:prod`, `npm run prisma:seed` (pays, tags, catégories, badges) puis `npm run prisma:seed:demo` (questions et offres publiques que certains scénarios lisent). Jamais la base de production : la suite écrit en base. Attention : le CLI Prisma lit le `.env` et préfère son `DATABASE_URL` à celui de l'environnement ; pour migrer une base locale, lancez-le depuis un dossier sans `.env`.
 2. **L'API lancée** sur `http://localhost:3000` avec cette base, avec :
    - `JWT_ACCESS_EXPIRES=2h` : les jetons de test doivent durer toute la série ;
    - `THROTTLE_LIMIT=2000` : la limite globale de 60 requêtes par minute et par adresse serait vite atteinte ;
@@ -44,7 +45,7 @@ Les jetons et le mot de passe de l'exécution sont gardés dans `apps/web-e2e/.a
 
 ## Ce que la suite crée, et comment elle nettoie
 
-- Six comptes `e2e_*` (`author`, `helper`, `candidate`, `recruiter`, `mod`, `admin`), au mot de passe tiré au hasard à chaque exécution (`E2E_PASSWORD` pour le fixer), vérifiés et avec assez de réputation pour voter. Les comptes de démonstration ne sont jamais utilisés ni modifiés.
+- Sept comptes `e2e_*` (`author`, `helper`, `candidate`, `recruiter`, `mod`, `admin`, `newbie` au profil vide), au mot de passe tiré au hasard à chaque exécution (`E2E_PASSWORD` pour le fixer), vérifiés et avec assez de réputation pour voter. Les comptes de démonstration ne sont jamais utilisés ni modifiés.
 - Des questions, réponses, offres, candidatures, alertes… dont les titres commencent par `[E2E]`.
 - **À la fin, tout est supprimé** (comptes et contenus, par suppression en cascade). `E2E_KEEP=1` conserve l'état pour inspecter après un échec ; le lancement suivant repart d'un état propre.
 
