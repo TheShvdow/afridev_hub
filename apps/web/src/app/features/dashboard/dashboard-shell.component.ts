@@ -1,5 +1,5 @@
 import { NgClass } from '@angular/common';
-import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Component, HostListener, computed, effect, inject, signal, untracked } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs';
@@ -66,6 +66,12 @@ export class DashboardShellComponent {
       const me = this.me();
       if (me) untracked(() => this.figures.load(me));
     });
+  }
+
+  /** La touche Échap ferme le tiroir, comme le fond sombre ou le bouton de fermeture. */
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeMenu();
   }
 
   closeMenu(): void {

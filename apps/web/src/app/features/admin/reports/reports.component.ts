@@ -13,7 +13,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
 import { relativeTime } from '../../../shared/utils/forum-thread.mapper';
 
-const OPEN_STATUSES: ReportStatus[] = ['PENDING', 'REVIEWED'];
+const OPEN_STATUSES = new Set<ReportStatus>(['PENDING', 'REVIEWED']);
 
 @Component({
   selector: 'app-reports',
@@ -57,7 +57,7 @@ export class ReportsComponent {
   }
 
   isOpen(report: AdminReport): boolean {
-    return OPEN_STATUSES.includes(report.status);
+    return OPEN_STATUSES.has(report.status);
   }
 
   /** Motif lisible : la partie avant « : », la précision éventuelle après. */

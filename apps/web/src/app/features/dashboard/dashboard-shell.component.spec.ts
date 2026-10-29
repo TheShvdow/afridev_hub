@@ -99,6 +99,25 @@ describe('DashboardShellComponent', () => {
     expect(aside.classList).toContain('-translate-x-full');
   });
 
+  it('closes the drawer with the dark backdrop and with the Escape key', () => {
+    const { fixture, el } = setup(base);
+    const aside = el.querySelector('aside') as HTMLElement;
+    const open = () => {
+      (el.querySelector('header button') as HTMLButtonElement).click();
+      fixture.detectChanges();
+    };
+
+    open();
+    (el.querySelector('button.fixed.inset-0') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(aside.classList).toContain('-translate-x-full');
+
+    open();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(aside.classList).toContain('-translate-x-full');
+  });
+
   it('closes the drawer once a link is followed', () => {
     const { fixture, el } = setup(base);
     (el.querySelector('header button') as HTMLButtonElement).click();
