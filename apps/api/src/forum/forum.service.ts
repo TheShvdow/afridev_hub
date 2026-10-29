@@ -32,7 +32,7 @@ const LIST_SELECT = {
   lastActivityAt: true,
   createdAt:      true,
   user: {
-    select: { id: true, username: true, displayName: true, avatarUrl: true, reputation: true },
+    select: { id: true, username: true, displayName: true, avatarUrl: true, reputation: true, role: true },
   },
   postTags: {
     select: { tag: { select: { name: true, slug: true } } },
@@ -145,7 +145,7 @@ export class ForumService {
         answers: {
           include: {
             user: {
-              select: { id: true, username: true, displayName: true, avatarUrl: true, reputation: true },
+              select: { id: true, username: true, displayName: true, avatarUrl: true, reputation: true, role: true },
             },
           },
           orderBy: [{ isAccepted: 'desc' }, { voteScore: 'desc' }, { createdAt: 'asc' }],
@@ -283,7 +283,7 @@ export class ForumService {
         data: { body: dto.body, postId, userId },
         include: {
           user: {
-            select: { id: true, username: true, displayName: true, avatarUrl: true, reputation: true },
+            select: { id: true, username: true, displayName: true, avatarUrl: true, reputation: true, role: true },
           },
         },
       }),

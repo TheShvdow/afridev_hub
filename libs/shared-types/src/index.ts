@@ -13,7 +13,7 @@
 export type UserRole = 'MEMBER' | 'MODERATOR' | 'ADMIN';
 export type VoteEntityType = 'POST' | 'ANSWER';
 export type VoteValue = 'UP' | 'DOWN';
-export type ReportEntityType = 'POST' | 'ANSWER' | 'PROJECT';
+export type ReportEntityType = 'POST' | 'ANSWER' | 'PROJECT' | 'JOB';
 export type ModerationTargetType = 'POST' | 'ANSWER' | 'PROJECT' | 'USER';
 export type ReportStatus = 'PENDING' | 'REVIEWED' | 'RESOLVED' | 'DISMISSED';
 export type ModerationActionType = 'HIDDEN' | 'RESTORED' | 'DISMISSED' | 'WARNING' | 'BAN';

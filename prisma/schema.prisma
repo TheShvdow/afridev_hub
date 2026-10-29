@@ -44,6 +44,7 @@ enum ReportEntityType {
   POST
   ANSWER
   PROJECT
+  JOB // offre d'emploi : à 3 signalements elle repasse en validation (PENDING_REVIEW)
 }
 
 enum ReportStatus {
@@ -408,6 +409,7 @@ enum ModerationTargetType {
   POST
   ANSWER
   PROJECT
+  JOB
   USER
 }
 

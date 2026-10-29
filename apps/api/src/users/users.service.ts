@@ -49,7 +49,8 @@ export class UsersService {
       },
     });
 
-    if (!user) throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
+    // Un compte administrateur n'a pas de profil public : il est introuvable, comme un compte qui n'existe pas.
+    if (!user || user.role === 'ADMIN') throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
     return { ...user, ogMeta: this.buildOgMeta(user) };
   }
 
@@ -170,8 +171,8 @@ export class UsersService {
   }
 
   async getActivity(username: string) {
-    const user = await this.prisma.user.findUnique({ where: { username } });
-    if (!user) throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
+    const user = await this.prisma.user.findUnique({ where: { username }, select: { id: true, role: true } });
+    if (!user || user.role === 'ADMIN') throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
 
     const [recentPosts, recentAnswers, recentProjects] = await Promise.all([
       this.prisma.post.findMany({
@@ -201,8 +202,8 @@ export class UsersService {
   }
 
   async getBadges(username: string) {
-    const user = await this.prisma.user.findUnique({ where: { username } });
-    if (!user) throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
+    const user = await this.prisma.user.findUnique({ where: { username }, select: { id: true, role: true } });
+    if (!user || user.role === 'ADMIN') throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
 
     return this.prisma.userBadge.findMany({
       where:   { userId: user.id },

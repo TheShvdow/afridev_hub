@@ -2,11 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { DomainException } from '../common/errors/domain.exception';
-import { Prisma, ReportEntityType, ReportStatus, ModerationActionType, ModerationTargetType } from '@prisma/client';
+import { JobStatus, Prisma, ReportEntityType, ReportStatus, ModerationActionType, ModerationTargetType } from '@prisma/client';
 import { CreateReportDto } from './dto/create-report.dto';
 import { ReportResolution } from './dto/resolve-report.dto';
 
 const DEFAULT_AUTO_HIDE_THRESHOLD = 3;
+
+/** Où mène un signalement : la question (ou la question parente d'une réponse), le projet ou l'offre. */
+export interface ReportTarget {
+  title: string;
+  postId?: string;
+  slug?: string;
+  jobId?: string;
+}
 
 // Un signalement est ouvert tant qu'aucune décision n'a été prise.
 const OPEN_STATUSES: ReportStatus[] = [ReportStatus.PENDING, ReportStatus.REVIEWED];
@@ -92,7 +100,33 @@ export class ModerationService {
       this.prisma.report.count({ where: { status } }),
     ]);
 
-    return { data: reports, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+    const targets = await this.describeTargets(reports);
+    const data = reports.map((report) => ({ ...report, target: targets.get(`${report.entityType}:${report.entityId}`) ?? null }));
+
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  }
+
+  // Où se trouve le contenu signalé : de quoi bâtir un lien (question parente, slug du projet, offre).
+  // Une requête par type, jamais une par signalement.
+  private async describeTargets(reports: { entityType: ReportEntityType; entityId: string }[]) {
+    const ids = (type: ReportEntityType) => [...new Set(reports.filter((r) => r.entityType === type).map((r) => r.entityId))];
+    const [posts, answers, projects, jobs] = await Promise.all([
+      this.findManyIn(ids(ReportEntityType.POST), (id) => this.prisma.post.findMany({ where: { id: { in: id } }, select: { id: true, title: true } })),
+      this.findManyIn(ids(ReportEntityType.ANSWER), (id) => this.prisma.answer.findMany({ where: { id: { in: id } }, select: { id: true, postId: true, post: { select: { title: true } } } })),
+      this.findManyIn(ids(ReportEntityType.PROJECT), (id) => this.prisma.project.findMany({ where: { id: { in: id } }, select: { id: true, slug: true, name: true } })),
+      this.findManyIn(ids(ReportEntityType.JOB), (id) => this.prisma.jobOffer.findMany({ where: { id: { in: id } }, select: { id: true, title: true } })),
+    ]);
+
+    const map = new Map<string, ReportTarget>();
+    for (const post of posts) map.set(`POST:${post.id}`, { title: post.title, postId: post.id });
+    for (const answer of answers) map.set(`ANSWER:${answer.id}`, { title: answer.post.title, postId: answer.postId });
+    for (const project of projects) map.set(`PROJECT:${project.id}`, { title: project.name, slug: project.slug });
+    for (const job of jobs) map.set(`JOB:${job.id}`, { title: job.title, jobId: job.id });
+    return map;
+  }
+
+  private async findManyIn<T>(ids: string[], find: (ids: string[]) => Promise<T[]>): Promise<T[]> {
+    return ids.length ? find(ids) : [];
   }
 
   // FR-21 : la décision s'applique au contenu et clôt tous ses signalements ouverts.
@@ -235,6 +269,11 @@ export class ModerationService {
       case ReportEntityType.POST:    return this.prisma.post.findUnique(args);
       case ReportEntityType.ANSWER:  return this.prisma.answer.findUnique(args);
       case ReportEntityType.PROJECT: return this.prisma.project.findUnique(args);
+      // Une offre n'a pas de champ « masqué » : elle l'est dès qu'elle n'est plus en ligne.
+      case ReportEntityType.JOB:
+        return this.prisma.jobOffer
+          .findUnique({ where: { id: entityId }, select: { status: true } })
+          .then((job) => (job ? { isHidden: job.status !== JobStatus.ACTIVE } : null));
     }
   }
 
@@ -248,6 +287,12 @@ export class ModerationService {
       case ReportEntityType.POST:    return this.prisma.post.updateMany(args);
       case ReportEntityType.ANSWER:  return this.prisma.answer.updateMany(args);
       case ReportEntityType.PROJECT: return this.prisma.project.updateMany(args);
+      // Masquer une offre la renvoie en validation (invisible du public, décision d'un modérateur) ;
+      // la rétablir ne touche qu'une offre mise de côté ainsi, jamais une offre refusée ou close.
+      case ReportEntityType.JOB:
+        return hidden
+          ? this.prisma.jobOffer.updateMany({ where: { id: entityId, status: JobStatus.ACTIVE }, data: { status: JobStatus.PENDING_REVIEW } })
+          : this.prisma.jobOffer.updateMany({ where: { id: entityId, status: JobStatus.PENDING_REVIEW }, data: { status: JobStatus.ACTIVE } });
     }
   }
 

@@ -27,3 +27,12 @@ describe('GamificationService — addPoints (story E2-5)', () => {
     });
   });
 });
+
+describe('GamificationService — classement', () => {
+  it('leaves administrators out: they have no public profile', async () => {
+    const prisma = { user: { findMany: jest.fn().mockResolvedValue([]) } };
+    const service = new GamificationService(prisma as never, { emit: jest.fn() } as never);
+    await service.getLeaderboard();
+    expect(prisma.user.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { role: { not: 'ADMIN' } } }));
+  });
+});
