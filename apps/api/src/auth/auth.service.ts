@@ -25,6 +25,9 @@ const BCRYPT_ROUNDS = 12;
 const REFRESH_TTL_S  = 7 * 24 * 60 * 60;         // 7 jours en secondes
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;  // code de vérification : 24 h
 const MAX_VERIFICATION_ATTEMPTS = 5;
+const RESET_TTL_MS = 30 * 60 * 1000;               // code de réinitialisation : 30 minutes
+// Les codes de réinitialisation partagent la table des codes de vérification, sous un identifiant distinct.
+const resetIdentifier = (userId: string) => `password-reset:${userId}`;
 // Lettres et chiffres sans les caractères qui se confondent à la lecture (0/O, 1/I).
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODE_LENGTH = 6;
@@ -160,7 +163,7 @@ export class AuthService {
   private async sendVerificationEmail(user: User): Promise<void> {
     // Un seul code valide à la fois : on remplace les précédents.
     await this.prisma.verificationToken.deleteMany({ where: { identifier: user.id } });
-    const code = await this.createUniqueCode(user.id);
+    const code = await this.createUniqueCode(user.id, VERIFICATION_TTL_MS);
 
     if (process.env['NODE_ENV'] !== 'production') {
       // Sandbox : le code est visible dans les logs pour tester le parcours sans boîte mail.
@@ -180,12 +183,12 @@ export class AuthService {
   }
 
   // Code unique parmi les codes en cours : la contrainte d'unicité tranche, on retire en cas de collision.
-  private async createUniqueCode(userId: string): Promise<string> {
+  private async createUniqueCode(identifier: string, ttlMs: number): Promise<string> {
     for (let attempt = 0; ; attempt++) {
       const code = generateVerificationCode();
       try {
         await this.prisma.verificationToken.create({
-          data: { identifier: userId, token: hashCode(code), expires: new Date(Date.now() + VERIFICATION_TTL_MS) },
+          data: { identifier, token: hashCode(code), expires: new Date(Date.now() + ttlMs) },
         });
         return code;
       } catch (error) {
@@ -199,6 +202,100 @@ export class AuthService {
     const left = Buffer.from(a, 'hex');
     const right = Buffer.from(b, 'hex');
     return left.length === right.length && timingSafeEqual(left, right);
+  }
+
+  // ── Mot de passe oublié, réinitialisé, changé ───────────────────────
+
+  // Même réponse que l'adresse ait un compte ou non : on ne révèle pas qui est inscrit. Pas de code
+  // pour un compte non vérifié (il doit d'abord confirmer son adresse) ni pour un compte suspendu.
+  async requestPasswordReset(email: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (user?.isVerified && !(await isUserBanned(this.prisma, user.id))) {
+      await this.sendPasswordResetEmail(user);
+    }
+    return { message: 'Si un compte utilise cette adresse, un code de réinitialisation vient d\'y être envoyé.' };
+  }
+
+  // Sans connexion : l'adresse et le code identifient le compte. Une adresse inconnue reçoit la même
+  // réponse qu'un code faux. Au 5e essai erroné le code est supprimé. Le changement ferme toutes les
+  // sessions ouvertes : quelqu'un qui connaissait l'ancien mot de passe en est chassé.
+  async resetPassword(email: string, code: string, newPassword: string): Promise<{ message: string }> {
+    const invalid = () => new DomainException('AUTH_RESET_CODE_INVALID', 'Code invalide ou expiré : demandez-en un nouveau.', 400);
+
+    const user = await this.prisma.user.findUnique({ where: { email }, select: { id: true } });
+    if (!user) throw invalid();
+
+    const identifier = resetIdentifier(user.id);
+    const record = await this.prisma.verificationToken.findFirst({ where: { identifier } });
+    if (!record || record.expires.getTime() < Date.now()) throw invalid();
+
+    if (!this.sameHash(record.token, hashCode(code))) {
+      const attempts = record.attempts + 1;
+      if (attempts >= MAX_VERIFICATION_ATTEMPTS) {
+        await this.prisma.verificationToken.deleteMany({ where: { identifier } });
+        throw new DomainException('AUTH_RESET_TOO_MANY_ATTEMPTS', 'Trop d\'essais : ce code n\'est plus valable, demandez-en un nouveau.', 429);
+      }
+      await this.prisma.verificationToken.update({ where: { token: record.token }, data: { attempts } });
+      throw invalid();
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: user.id }, data: { passwordHash } }),
+      this.prisma.verificationToken.deleteMany({ where: { identifier } }),
+    ]);
+    await this.redis.revokeAllRefreshTokens(user.id);
+
+    return { message: 'Mot de passe modifié. Vous pouvez vous connecter.' };
+  }
+
+  // Connecté : l'ancien mot de passe est exigé. Les autres appareils sont déconnectés, celui-ci reste
+  // connecté grâce à la nouvelle paire de jetons.
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new DomainException('AUTH_USER_NOT_FOUND', 'Utilisateur introuvable.', 401);
+
+    if (!user.passwordHash) {
+      throw new DomainException(
+        'AUTH_NO_PASSWORD',
+        'Ce compte se connecte avec GitHub ou Google et n\'a pas de mot de passe. Utilisez « Mot de passe oublié » pour en définir un.',
+        400,
+      );
+    }
+    if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
+      // 400 et non 401 : un 401 déclencherait le renouvellement silencieux du jeton côté front.
+      throw new DomainException('AUTH_CURRENT_PASSWORD_INVALID', 'Le mot de passe actuel est incorrect.', 400);
+    }
+    if (await bcrypt.compare(newPassword, user.passwordHash)) {
+      throw new DomainException('AUTH_PASSWORD_UNCHANGED', 'Le nouveau mot de passe doit être différent de l\'actuel.', 400);
+    }
+
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(newPassword, BCRYPT_ROUNDS) } });
+    await this.redis.revokeAllRefreshTokens(userId);
+    return this.generateTokenPair(user);
+  }
+
+  private async sendPasswordResetEmail(user: User): Promise<void> {
+    const identifier = resetIdentifier(user.id);
+    // Un seul code valide à la fois : on remplace le précédent.
+    await this.prisma.verificationToken.deleteMany({ where: { identifier } });
+    const code = await this.createUniqueCode(identifier, RESET_TTL_MS);
+
+    if (process.env['NODE_ENV'] !== 'production') {
+      // Sandbox : le code est visible dans les logs pour tester le parcours sans boîte mail.
+      this.logger.log(`Code de réinitialisation (sandbox) pour ${user.email} : ${code}`);
+    }
+
+    await this.mail.send(
+      user.email,
+      `${code} est votre code de réinitialisation AfriDev Hub`,
+      `<h1 style="margin:0 0 16px;font-size:22px">Réinitialisez votre mot de passe</h1>
+       <p>Bonjour ${escapeHtml(user.username)},</p>
+       <p>Vous avez demandé à changer votre mot de passe. Saisissez ce code dans l'application :</p>
+       ${emailCode(code)}
+       <p>Ce code expire dans 30 minutes.</p>
+       ${emailNote('Vous n\'avez rien demandé ? Ignorez cet email : votre mot de passe reste inchangé.')}`,
+    );
   }
 
   // ── Connexion ────────────────────────────────────────────────────────

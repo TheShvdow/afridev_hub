@@ -20,6 +20,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ResendVerificationDto, VerifyEmailDto } from './dto/verify-email.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RefreshAuthGuard } from './guards/refresh-auth.guard';
@@ -140,6 +141,49 @@ export class AuthController {
   @ApiData({ type: MessageDto, description: 'Email vérifié : l\'utilisateur peut se connecter' })
   verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto.email, dto.code);
+  }
+
+  // ── Mot de passe ─────────────────────────────────────────────────────
+
+  @Post('forgot-password')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Demander un code pour réinitialiser son mot de passe',
+    description: 'Sans token. La réponse est la même que l\'adresse ait un compte ou non.',
+  })
+  @ApiData({ type: MessageDto, description: 'Code envoyé si un compte vérifié utilise cette adresse' })
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.requestPasswordReset(dto.email);
+  }
+
+  @Post('reset-password')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Choisir un nouveau mot de passe avec le code reçu',
+    description: 'Sans token. Ferme toutes les sessions ouvertes du compte.',
+  })
+  @ApiResponse({ status: 400, description: 'AUTH_RESET_CODE_INVALID : code invalide ou expiré' })
+  @ApiResponse({ status: 429, description: '5 essais erronés : le code est invalidé, en demander un nouveau' })
+  @ApiData({ type: MessageDto, description: 'Mot de passe modifié : l\'utilisateur peut se connecter' })
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.email, dto.code, dto.newPassword);
+  }
+
+  @Post('change-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Changer son mot de passe (connecté)',
+    description: 'Exige le mot de passe actuel. Déconnecte les autres appareils et renvoie de nouveaux jetons pour celui-ci.',
+  })
+  @ApiResponse({ status: 400, description: 'AUTH_CURRENT_PASSWORD_INVALID, AUTH_PASSWORD_UNCHANGED ou AUTH_NO_PASSWORD (compte GitHub/Google)' })
+  @ApiData({ type: AuthTokensDto, description: 'Nouveaux jetons de cet appareil' })
+  changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(user.id, dto.currentPassword, dto.newPassword);
   }
 
   @Post('resend-verification')
