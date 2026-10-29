@@ -53,6 +53,25 @@ describe('Connexion', () => {
     component.form.setValue({ email, password, remember: true });
   }
 
+  describe('mot de passe oublié', () => {
+    const forgotLink = () => fixture.nativeElement.querySelector('a[href^="/auth/forgot-password"]') as HTMLAnchorElement | null;
+
+    it('propose un lien vers la réinitialisation, plus un message « pas disponible »', () => {
+      expect(forgotLink()).toBeTruthy();
+      expect(fixture.nativeElement.textContent).not.toContain('pas encore disponible');
+    });
+
+    it('reprend l\'adresse déjà saisie', () => {
+      expect(component.forgotQuery()).toBeNull();
+
+      component.form.controls.email.setValue('  idrissa@example.com ');
+      fixture.detectChanges();
+
+      expect(component.forgotQuery()).toEqual({ email: 'idrissa@example.com' });
+      expect(forgotLink()?.getAttribute('href')).toContain('email=idrissa@example.com');
+    });
+  });
+
   it('connecte l\'utilisateur et stocke les tokens', () => {
     const navigate = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
 

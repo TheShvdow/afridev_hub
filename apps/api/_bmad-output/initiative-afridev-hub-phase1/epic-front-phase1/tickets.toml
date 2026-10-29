@@ -395,3 +395,16 @@ after = [29]
 hitl = false
 risk = "low"
 
+[[entry]]
+id = 31
+type = "story"
+title = "Mot de passe oublié, réinitialisé et changé"
+description = """
+« Mot de passe oublié » : code à 6 caractères envoyé par e-mail (30 minutes, 5 essais), nouveau mot de passe, sessions fermées ; changement du mot de passe depuis la page Sécurité (mot de passe actuel exigé, autres appareils déconnectés). Sans fuite sur l'existence d'un compte. Règle du mot de passe partagée avec l'inscription.
+"""
+verify = "Un membre qui a oublié son mot de passe reçoit un code, en choisit un nouveau et se connecte avec ; l'ancien ne marche plus et ses autres appareils sont déconnectés ; un membre connecté change son mot de passe depuis Sécurité."
+covers = ["CAP-2"]
+after = [30]
+hitl = false
+risk = "medium"
+

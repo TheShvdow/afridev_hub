@@ -10,7 +10,7 @@ Ce document décrit chaque parcours de l'application sous forme de diagramme de 
 
 ## Fichiers
 
-- Ce document réunit les 15 parcours avec leurs explications.
+- Ce document réunit les 16 parcours avec leurs explications.
 - Chaque diagramme existe aussi seul dans [diagrammes/](diagrammes/), un fichier `.puml` par parcours, pour le rendre en image ou l'intégrer ailleurs.
 - Les images rendues sont dans [images/jpeg/](images/jpeg/), en JPEG de 2 000 pixels de large. Elles portent le même nom que le fichier `.puml`. Le SVG et le PNG ne sont pas conservés (trop lourds) : ils se régénèrent depuis les `.puml`.
 
@@ -31,6 +31,7 @@ Ce document décrit chaque parcours de l'application sous forme de diagramme de 
 | 13. Administration | [13-administration.puml](diagrammes/13-administration.puml) |
 | 14. Profil et avatar | [14-profil-et-avatar.puml](diagrammes/14-profil-et-avatar.puml) |
 | 15. Tableau de bord par rôle | [15-tableau-de-bord-par-role.puml](diagrammes/15-tableau-de-bord-par-role.puml) |
+| 16. Mot de passe oublié et changé | [16-mot-de-passe-oublie-et-change.puml](diagrammes/16-mot-de-passe-oublie-et-change.puml) |
 
 ## Les acteurs et les systèmes
 
@@ -61,6 +62,7 @@ Ce document décrit chaque parcours de l'application sous forme de diagramme de 
 13. [Administration](#13-administration)
 14. [Profil et avatar](#14-profil-et-avatar)
 15. [Tableau de bord par rôle](#15-tableau-de-bord-par-rôle)
+16. [Mot de passe oublié et changé](#16-mot-de-passe-oublié-et-changé)
 
 Le mentorat et les communautés sont des vitrines (bandeau « Aperçu », actions désactivées) : ils n'ont pas de parcours.
 
@@ -841,5 +843,76 @@ note over Membre, Front
   Un compte administrateur n'a pas de profil public :
   ni carte « Mon profil public », ni lien sur son nom.
 end note
+@enduml
+```
+
+---
+
+## 16. Mot de passe oublié et changé
+
+Un membre qui a oublié son mot de passe demande un code à 6 caractères, valable 30 minutes, envoyé à l'adresse de son compte ; il choisit alors un nouveau mot de passe. La réponse est la même que l'adresse ait un compte ou non, et rien n'est envoyé à un compte non vérifié ou suspendu. Réinitialiser le mot de passe ferme toutes les sessions du compte. Un membre connecté change son mot de passe depuis « Sécurité » : il doit donner l'ancien, ses autres appareils sont déconnectés et celui-ci reste connecté. Un compte GitHub ou Google, qui n'a pas de mot de passe, peut en définir un par « Mot de passe oublié ».
+
+```plantuml
+@startuml
+title Mot de passe oublié, réinitialisé et changé
+autonumber
+actor Membre
+participant Front
+participant API
+database Base
+participant "E-mail" as Mail
+
+== Mot de passe oublié ==
+Membre -> Front : « Mot de passe oublié ? » (adresse déjà saisie reprise)
+Front -> API : POST /auth/forgot-password (3 par minute)
+API -> Base : retrouve le compte
+alt compte vérifié et non suspendu
+  API -> Base : remplace l'ancien code, stocke l'empreinte du nouveau\n(30 minutes, identifiant « password-reset »)
+  API --> Mail : code à 6 caractères
+else adresse inconnue, compte non vérifié ou suspendu
+  note right of API : rien n'est envoyé
+end
+API --> Front : même réponse dans tous les cas
+Front -> Membre : étape « Nouveau mot de passe »
+
+== Nouveau mot de passe ==
+Membre -> Front : code, nouveau mot de passe, confirmation
+Front -> Front : contrôle la règle (8 à 72 caractères,\nmajuscule, minuscule, chiffre) et la confirmation
+Front -> API : POST /auth/reset-password
+alt code correct et valable
+  API -> Base : enregistre le mot de passe (haché), supprime le code
+  API -> API : révoque tous les jetons de renouvellement du compte
+  API --> Front : « Mot de passe modifié »
+  Front -> Membre : « Tous tes appareils ont été déconnectés » → connexion
+else code faux
+  API -> Base : compte l'essai
+  API --> Front : 400 « Code invalide ou expiré »
+  note right of API
+    Au 5e essai le code est supprimé :
+    429, il faut en demander un nouveau.
+  end note
+else code expiré, déjà utilisé ou adresse inconnue
+  API --> Front : 400 « Code invalide ou expiré » (même réponse)
+end
+
+opt le code n'est pas arrivé
+  Membre -> Front : « Renvoyer le code »
+  Front -> API : POST /auth/forgot-password
+end
+
+== Changer son mot de passe (connecté) ==
+Membre -> Front : Tableau de bord > Sécurité
+Front -> API : POST /auth/change-password (mot de passe actuel, nouveau)
+alt mot de passe actuel correct et nouveau différent
+  API -> Base : enregistre le nouveau mot de passe
+  API -> API : révoque les jetons de tous les appareils
+  API --> Front : nouvelle paire de jetons pour cet appareil
+  Front -> Membre : « Mot de passe changé, vos autres appareils sont déconnectés »
+else mot de passe actuel incorrect, ou identique au nouveau
+  API --> Front : 400 (jamais 401, qui déclencherait un renouvellement de session)
+else compte GitHub ou Google sans mot de passe
+  API --> Front : 400 AUTH_NO_PASSWORD
+  Front -> Membre : lien « Définir un mot de passe » (mot de passe oublié)
+end
 @enduml
 ```

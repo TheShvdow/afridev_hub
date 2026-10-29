@@ -64,20 +64,14 @@
           <span class="whitespace-nowrap text-base font-medium leading-[26px] tracking-[0.08px] text-slate-500">Rester connecté</span>
         </label>
 
-        <button
-          type="button"
+        <a
+          routerLink="/auth/forgot-password"
+          [queryParams]="forgotQuery()"
           class="whitespace-nowrap text-base font-medium leading-[26px] tracking-[0.08px] text-slate-500 transition-colors hover:text-ink"
-          (click)="passwordResetUnavailable.set(true)"
         >
           Mot de passe oublié ?
-        </button>
+        </a>
       </div>
-
-      @if (passwordResetUnavailable()) {
-        <p class="text-xs font-medium leading-4 text-slate-500">
-          La réinitialisation par e-mail n’est pas encore disponible. Écris-nous si tu es bloqué.
-        </p>
-      }
     </div>
 
     <button type="submit" class="auth-btn" [disabled]="loading()">
