@@ -39,8 +39,11 @@ const POSTS: ForumPost[] = [
   }),
 ];
 
+const listPostsCalls: ListPostsQuery[] = [];
+
 const forumStub = {
   listPosts(query: ListPostsQuery = {}) {
+    listPostsCalls.push(query);
     const data = query.tag
       ? POSTS.filter((post) => post.postTags.some((link) => link.tag.name === query.tag))
       : POSTS;
@@ -69,6 +72,7 @@ describe('PostListComponent', () => {
   let fixture: ComponentFixture<PostListComponent>;
 
   beforeEach(async () => {
+    listPostsCalls.length = 0;
     await TestBed.configureTestingModule({
       imports: [PostListComponent],
       providers: [
@@ -116,5 +120,49 @@ describe('PostListComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('app-thread-modal')).toBeTruthy();
+  });
+
+  describe('recherche', () => {
+    it('envoie le texte saisi à l\'API après la pause de frappe', () => {
+      jest.useFakeTimers();
+      try {
+        component.onSearchInput('mobile money');
+        jest.advanceTimersByTime(200);
+        expect(listPostsCalls.some((call) => call.search)).toBe(false);
+
+        jest.advanceTimersByTime(200);
+        expect(listPostsCalls.at(-1)?.search).toBe('mobile money');
+        expect(component.appliedSearch()).toBe('mobile money');
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('ignore une saisie d\'un seul caractère', () => {
+      jest.useFakeTimers();
+      try {
+        component.onSearchInput('m');
+        jest.advanceTimersByTime(500);
+        expect(component.appliedSearch()).toBe('');
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('applique la recherche tout de suite sur Entrée', () => {
+      component.onSearchInput('paiement');
+      component.submitSearch();
+      expect(listPostsCalls.at(-1)?.search).toBe('paiement');
+    });
+
+    it('efface la recherche et recharge la liste complète', () => {
+      component.onSearchInput('paiement');
+      component.submitSearch();
+      component.clearSearch();
+
+      expect(component.search()).toBe('');
+      expect(component.appliedSearch()).toBe('');
+      expect(listPostsCalls.at(-1)?.search).toBeUndefined();
+    });
   });
 });

@@ -141,9 +141,10 @@
           </div>
         </div>
 
-        <div class="mt-8 whitespace-pre-line break-words text-[16px] leading-[28px] text-[#334155] sm:text-[17px]">
-          {{ question.body }}
-        </div>
+        <div
+          class="markdown mt-8 break-words text-[16px] leading-[28px] text-[#334155] sm:text-[17px]"
+          [innerHTML]="question.body | markdown"
+        ></div>
       </article>
 
       <section class="mt-12 border-t border-[#E2E8F0] pt-8">
@@ -232,9 +233,10 @@
 @if (editingAnswerId() === answer.id) {
   <app-answer-edit-form [form]="editForm" [saving]="savingEdit()" [error]="editError()" (saved)="saveAnswerEdit(answer)" (cancelled)="cancelAnswerEdit()" />
 } @else {
-                <p class="mt-4 whitespace-pre-line break-words text-[16px] leading-[26px] text-[#475569]">
-                  {{ answer.body }}
-                </p>
+                <div
+                  class="markdown mt-4 break-words text-[16px] leading-[26px] text-[#475569]"
+                  [innerHTML]="answer.body | markdown"
+                ></div>
 }
 
                 @if (answerDeleteError() && confirmingAnswerId() === answer.id) {
