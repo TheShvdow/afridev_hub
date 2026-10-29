@@ -28,6 +28,11 @@
             "output": "assets"
           },
           {
+            "glob": "robots.txt",
+            "input": "apps/web/src",
+            "output": "."
+          },
+          {
             "glob": "manifest.webmanifest",
             "input": "apps/web/src",
             "output": "."
