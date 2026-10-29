@@ -36,4 +36,35 @@ describe('Footer', () => {
     expect(hrefs).toContain('/');
     expect(hrefs).not.toContain('#');
   });
+
+  it('propose les sections du site et les pages légales', () => {
+    const { hrefs } = setup(false);
+    for (const to of ['/forum', '/projets', '/jobs', '/mentorat', '/communautes', '/forum/ask', '/projects/new', '/jobs/post', '/jobs/alerts']) {
+      expect(hrefs).toContain(to);
+    }
+    for (const to of ['/conditions-generales', '/confidentialite', '/cookies', '/mentions-legales']) {
+      expect(hrefs).toContain(to);
+    }
+  });
+
+  it('offre à un visiteur la connexion, l\'inscription et la réinitialisation du mot de passe', () => {
+    const { hrefs } = setup(false);
+    expect(hrefs).toEqual(expect.arrayContaining(['/auth/login', '/auth/register', '/auth/forgot-password']));
+    expect(hrefs).not.toContain('/profile');
+  });
+
+  it('offre à un membre connecté son espace plutôt que la connexion', () => {
+    const { hrefs } = setup(true);
+    expect(hrefs).toEqual(expect.arrayContaining(['/tableau-de-bord', '/profile', '/notifications', '/jobs/mine']));
+    expect(hrefs).not.toContain('/auth/login');
+    expect(hrefs).not.toContain('/auth/forgot-password');
+  });
+
+  it('n\'utilise aucun lien mort', () => {
+    for (const authenticated of [false, true]) {
+      const { hrefs } = setup(authenticated);
+      expect(hrefs.every((href) => !!href && href !== '#')).toBe(true);
+      TestBed.resetTestingModule();
+    }
+  });
 });
