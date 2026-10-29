@@ -11,11 +11,12 @@ import { Thread } from '../card-thread/card-thread.component';
 import { ForumPostDetail } from '../../../core/services/forum.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
 import { AnswerThreadBase } from '../../forum/answer-thread.base';
+import { MarkdownPipe } from '../../markdown/markdown.pipe';
 
 @Component({
   selector: 'app-thread-modal',
   standalone: true,
-  imports: [CommentItem, ReactiveFormsModule, RouterLink, ReportButtonComponent, VoteControlComponent, AnswerEditFormComponent],
+  imports: [CommentItem, ReactiveFormsModule, RouterLink, ReportButtonComponent, VoteControlComponent, AnswerEditFormComponent, MarkdownPipe],
   templateUrl: './thread-modal.component.html',
 })
 export class ThreadModalComponent extends AnswerThreadBase {

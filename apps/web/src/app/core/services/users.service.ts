@@ -95,6 +95,11 @@ export class UsersService {
     return this.http.patch<MyProfile>(`${this.base}/me`, dto);
   }
 
+  /** `PATCH /api/users/me/onboarding` — ne remplit que les champs encore vides. */
+  completeOnboarding(dto: { location?: string; country?: string; level?: ExperienceLevel; stack?: string[] }): Observable<unknown> {
+    return this.http.patch(`${this.base}/me/onboarding`, dto);
+  }
+
   /** `POST /api/users/me/recruiter` — active le profil recruteur (nom de l'entreprise). */
   enableRecruiter(companyName: string): Observable<unknown> {
     return this.http.post(`${this.base}/me/recruiter`, { companyName });

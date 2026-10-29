@@ -104,6 +104,10 @@ export interface UserMe {
   isRecruiter: boolean;
   companyName: string | null;
   preferredCurrency: string | null;
+  /** Absents tant que le profil n'est pas complété (onboarding). */
+  country?:    string | null;
+  level?:      'JUNIOR' | 'MID' | 'SENIOR' | null;
+  stack?:      string[];
   createdAt:   string;
 }
 

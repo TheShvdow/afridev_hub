@@ -16,13 +16,14 @@ import { ForumPostDetail } from '../../../core/services/forum.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
 import { ReportButtonComponent } from '../../../shared/components/report-button/report-button.component';
 import { VoteControlComponent } from '../../../shared/components/vote-control/vote-control.component';
+import { MarkdownPipe } from '../../../shared/markdown/markdown.pipe';
 import { AnswerThreadBase } from '../../../shared/forum/answer-thread.base';
 import { hasPublicProfile, profilePath } from '../../../shared/utils/profile-link';
 
 @Component({
   selector: 'app-post-detail',
   standalone: true,
-  imports: [RouterLink, ReactiveFormsModule, ReportButtonComponent, VoteControlComponent, AnswerEditFormComponent],
+  imports: [RouterLink, ReactiveFormsModule, ReportButtonComponent, VoteControlComponent, AnswerEditFormComponent, MarkdownPipe],
   templateUrl: './post-detail.component.html',
   styleUrl: './post-detail.component.css',
 })
