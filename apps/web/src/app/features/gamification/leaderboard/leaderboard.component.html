@@ -1,0 +1,43 @@
+<section class="bg-[#F8FAFC] pt-[100px]">
+  <div class="mx-auto w-full max-w-[1000px] px-6 py-12 sm:px-10 lg:px-0">
+    <div class="mb-8">
+      <h1 class="text-[32px] font-bold text-[#141219]">Classement</h1>
+      <p class="mt-2 text-[16px] text-[#64748B]">Classement par réputation</p>
+    </div>
+
+    @if (loading()) {
+      <p class="text-[16px] text-[#64748B]">Chargement...</p>
+    }
+
+    <div class="overflow-hidden rounded-[14px] bg-white shadow-sm">
+      <table class="w-full">
+        <thead class="bg-[#F8FAFC]">
+          <tr>
+            <th class="px-6 py-3 text-left text-[14px] font-medium text-[#64748B]">Rang</th>
+            <th class="px-6 py-3 text-left text-[14px] font-medium text-[#64748B]">Membre</th>
+            <th class="px-6 py-3 text-right text-[14px] font-medium text-[#64748B]">Réputation</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of entries(); track entry.id; let i = $index) {
+            <tr class="border-t border-[#E2E8F0]">
+              <td class="px-6 py-4 text-[16px] font-semibold text-[#141219]">#{{i + 1}}</td>
+              <td class="px-6 py-4">
+                <a [routerLink]="['/profile', entry.username]" class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#F1F5F9] text-[14px] font-semibold">
+                    {{initials(entry)}}
+                  </div>
+                  <div>
+                    <p class="text-[16px] font-medium text-[#141219]">{{entry.displayName || entry.username}}</p>
+                    <p class="text-[14px] text-[#64748B]">{{entry.username}}</p>
+                  </div>
+                </a>
+              </td>
+              <td class="px-6 py-4 text-right text-[16px] font-semibold text-[#0F6932]">{{entry.reputation}}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export type ForumSort = 'newest' | 'votes' | 'unanswered' | 'active';
@@ -156,5 +156,19 @@ export class ForumService {
   /** `DELETE /api/forum/answers/{answerId}` — auteur ou modérateur. */
   deleteAnswer(answerId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/answers/${encodeURIComponent(answerId)}`);
+  }
+
+  /** `POST /api/forum/posts/{id}/votes` */
+  votePost(id: string, value: 'UP' | 'DOWN'): Observable<{ action: string; newScore: number }> {
+    return this.http
+      .post<{ data: { action: string; newScore: number } } | { action: string; newScore: number }>(`${this.base}/posts/${encodeURIComponent(id)}/votes`, { value })
+      .pipe(map((res: any) => (res && res.data ? res.data : res)));
+  }
+
+  /** `POST /api/forum/answers/{id}/votes` */
+  voteAnswer(id: string, value: 'UP' | 'DOWN'): Observable<{ action: string; newScore: number }> {
+    return this.http
+      .post<{ data: { action: string; newScore: number } } | { action: string; newScore: number }>(`${this.base}/answers/${encodeURIComponent(id)}/votes`, { value })
+      .pipe(map((res: any) => (res && res.data ? res.data : res)));
   }
 }

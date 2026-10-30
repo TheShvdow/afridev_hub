@@ -1,0 +1,49 @@
+<section class="bg-[#F8FAFC]">
+  <div class="mx-auto w-full max-w-[1000px] px-6 py-12 sm:px-10 lg:px-0">
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-[32px] font-bold text-[#141219]">Mes alertes emploi</h1>
+        <p class="mt-2 text-[16px] text-[#64748B]">Soyez notifié des nouvelles offres correspondant à vos critères</p>
+      </div>
+      <button type="button" (click)="showForm = !showForm" class="inline-flex h-12 items-center justify-center rounded-full bg-[#0F1011] px-6 text-[16px] font-semibold text-white">
+        {{ showForm ? 'Annuler' : 'Créer une alerte' }}
+      </button>
+    </div>
+
+    @if (showForm) {
+      <form (ngSubmit)="create()" class="mb-6 flex flex-col gap-4 rounded-[14px] bg-white p-6 shadow-sm">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
+          <input [(ngModel)]="country" name="country" placeholder="Pays (SN, FR)" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" />
+          <input [(ngModel)]="mode" name="mode" placeholder="Mode (REMOTE, ONSITE, HYBRID)" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" />
+          <input [(ngModel)]="stack" name="stack" placeholder="Stack (angular,nestjs)" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" />
+          <input type="number" [(ngModel)]="salaryMin" name="salaryMin" placeholder="Salaire min" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" />
+        </div>
+        <div class="flex justify-end">
+          <button type="submit" class="rounded-full bg-[#0F6932] px-6 py-2 text-[16px] font-semibold text-white">Enregistrer</button>
+        </div>
+      </form>
+    }
+
+    @if (loading()) {
+      <p class="text-[16px] text-[#64748B]">Chargement...</p>
+    }
+
+    @if (!loading() && alerts().length === 0) {
+      <p class="text-[16px] text-[#64748B]">Aucune alerte créée.</p>
+    }
+
+    <div class="flex flex-col gap-3">
+      @for (alert of alerts(); track alert.id) {
+        <article class="flex flex-col gap-3 rounded-[14px] bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="text-[16px] font-semibold text-[#141219]">
+              {{ alert.country || 'Tous pays' }} • {{ alert.mode || 'Tous modes' }} • {{ alert.currency }} {{ alert.salaryMin || 0 }}
+            </p>
+            <p class="text-[14px] text-[#64748B]">{{ alert.stack?.join(', ') || 'Toutes technologies' }}</p>
+          </div>
+          <button type="button" (click)="delete(alert.id)" class="text-[14px] font-semibold text-red-500">Supprimer</button>
+        </article>
+      }
+    </div>
+  </div>
+</section>

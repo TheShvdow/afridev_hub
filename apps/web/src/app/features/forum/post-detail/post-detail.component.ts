@@ -211,6 +211,33 @@ export class PostDetailComponent implements OnInit {
     });
   }
 
+  votePost(value: 'UP' | 'DOWN'): void {
+    const post = this.post();
+    if (!post || !this.isAuthenticated()) return;
+    this.forum.votePost(post.id, value).subscribe({
+      next: (res: any) => {
+        this.post.update((p) => p ? { ...p, voteScore: res.newScore } : p);
+      },
+      error: () => {},
+    });
+  }
+
+  voteAnswer(answer: ForumAnswer, value: 'UP' | 'DOWN'): void {
+    if (!this.isAuthenticated()) return;
+    this.forum.voteAnswer(answer.id, value).subscribe({
+      next: (res: any) => {
+        this.post.update((p) => {
+          if (!p) return p;
+          return {
+            ...p,
+            answers: p.answers.map((a) => (a.id === answer.id ? { ...a, voteScore: res.newScore } : a)),
+          };
+        });
+      },
+      error: () => {},
+    });
+  }
+
   authorName(author: ForumAuthorSummary): string {
     return author.displayName ?? author.username;
   }

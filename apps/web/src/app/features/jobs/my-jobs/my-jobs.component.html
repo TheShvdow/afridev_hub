@@ -1,0 +1,70 @@
+<section class="bg-[#F8FAFC]">
+  <div class="mx-auto w-full max-w-[1200px] px-6 py-12 sm:px-10 lg:px-0">
+    <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="text-[32px] font-bold text-[#141219]">Mes offres</h1>
+        <p class="mt-2 text-[16px] text-[#64748B]">Toutes vos offres, tous statuts confondus</p>
+      </div>
+      <div class="flex items-center gap-3">
+        @if (plan()) {
+          <div class="rounded-full bg-white px-4 py-2 text-[14px] text-[#64748B] shadow-sm">
+            Plan {{ plan()!.planType }} • {{ plan()!.offersThisMonth }}/{{ plan()!.monthlyLimit ?? '∞' }} ce mois-ci
+          </div>
+        }
+        <a routerLink="/jobs/post" class="inline-flex h-12 items-center justify-center rounded-full bg-[#0F1011] px-6 text-[16px] font-semibold text-white">
+          Publier une offre
+        </a>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <p class="text-[16px] text-[#64748B]">Chargement...</p>
+    }
+
+    @if (!loading() && jobs().length === 0) {
+      <div class="rounded-[14px] bg-white p-8 text-center shadow-sm">
+        <p class="text-[16px] text-[#64748B]">Vous n'avez pas encore publié d'offre.</p>
+        <a routerLink="/jobs/post" class="mt-4 inline-block text-[16px] font-semibold text-[#0F6932]">Publier ma première offre</a>
+      </div>
+    }
+
+    <div class="flex flex-col gap-4">
+      @for (job of jobs(); track job.id) {
+        <article class="flex flex-col gap-4 rounded-[14px] bg-white p-6 shadow-sm">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#F1F5F9] text-[18px] font-semibold text-[#0F1011]">
+                {{ job.company?.[0] }}
+              </div>
+              <div>
+                <h3 class="text-[20px] font-bold text-[#141219]">{{ job.title }}</h3>
+                <p class="text-[16px] text-[#64748B]">{{ job.company }} • {{ job.country }} • {{ job.type }} • {{ job.mode }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="rounded-full px-4 py-1 text-[14px] font-medium" [ngClass]="getStatusClass(job.status)">{{ getStatusLabel(job.status) }}</span>
+              <span class="text-[16px] text-[#64748B]">{{ job.salaryMin | number:'1.0-0' }} - {{ job.salaryMax | number:'1.0-0' }} {{ job.currency }}</span>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <a [routerLink]="['/jobs', job.id, 'applications']" class="rounded-full border border-[#141219] px-4 py-2 text-[14px] font-semibold text-[#141219]">Candidatures</a>
+            @if (job.status === 'ACTIVE') {
+              <button type="button" (click)="close(job.id)" class="rounded-full border border-[#141219] px-4 py-2 text-[14px] font-semibold text-[#141219]">Fermer</button>
+            }
+            @if (job.status === 'ACTIVE' || job.status === 'EXPIRED') {
+              <button type="button" (click)="renew(job.id)" class="rounded-full border border-[#0F6932] px-4 py-2 text-[14px] font-semibold text-[#0F6932]">Renouveler (60j)</button>
+            }
+            @if (job.status === 'REJECTED') {
+              <a [routerLink]="['/jobs', job.id, 'edit']" class="rounded-full bg-[#0F1011] px-4 py-2 text-[14px] font-semibold text-white">Modifier et renvoyer</a>
+            }
+          </div>
+          @if (job.status === 'REJECTED') {
+            <div class="rounded-lg bg-red-50 p-4">
+              <p class="text-[14px] text-red-700">Offre refusée. Vous pouvez la modifier pour la soumettre à nouveau.</p>
+            </div>
+          }
+        </article>
+      }
+    </div>
+  </div>
+</section>

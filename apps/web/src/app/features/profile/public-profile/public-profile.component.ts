@@ -6,6 +6,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   PublicUserProfile,
   UsersService,
+  UserActivity,
+  UserBadge,
 } from '../../../core/services/users.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
 import { initialsFrom } from '../../../shared/utils/forum-thread.mapper';
@@ -36,6 +38,8 @@ export class PublicProfileComponent implements OnInit {
   private readonly meta = inject(Meta);
 
   readonly profile = signal<PublicUserProfile | null>(null);
+  readonly activity = signal<UserActivity | null>(null);
+  readonly badges = signal<UserBadge[]>([]);
   readonly loading = signal(true);
   readonly notFound = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -132,6 +136,14 @@ export class PublicProfileComponent implements OnInit {
           this.profile.set(profile);
           this.loading.set(false);
           this.applyMetadata(profile);
+          this.usersService.getUserActivity(username).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (activity) => this.activity.set(activity),
+            error: () => {},
+          });
+          this.usersService.getUserBadges(username).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (badges) => this.badges.set(badges),
+            error: () => {},
+          });
         },
         error: (error: HttpErrorResponse) => {
           this.loading.set(false);

@@ -1,0 +1,106 @@
+<section class="bg-[#F8FAFC]">
+  <div class="mx-auto w-full max-w-[800px] px-6 py-12 sm:px-10 lg:px-0">
+    <div class="mb-8">
+      <h1 class="text-[32px] font-bold text-[#141219]">Modifier l'offre</h1>
+      <p class="mt-2 text-[16px] text-[#64748B]">Si elle était refusée, elle repassera en validation.</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-6 rounded-[14px] bg-white p-6 shadow-sm sm:p-8">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <label class="flex flex-col gap-2">
+          <span class="text-[14px] font-medium text-[#141219]">Titre du poste</span>
+          <input formControlName="title" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" />
+        </label>
+        <label class="flex flex-col gap-2">
+          <span class="text-[14px] font-medium text-[#141219]">Entreprise</span>
+          <input formControlName="company" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" />
+        </label>
+      </div>
+
+      <label class="flex flex-col gap-2">
+        <span class="text-[14px] font-medium text-[#141219]">Description</span>
+        <textarea formControlName="description" rows="5" class="rounded-lg border border-[#E2E8F0] px-3 py-2 text-[16px]"></textarea>
+      </label>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <label class="flex flex-col gap-2">
+          <span class="text-[14px] font-medium text-[#141219]">Pays</span>
+          <select formControlName="country" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]">
+            <option value="SN">SN</option>
+            <option value="FR">FR</option>
+            <option value="NG">NG</option>
+            <option value="MA">MA</option>
+            <option value="CI">CI</option>
+            <option value="GH">GH</option>
+            <option value="KE">KE</option>
+          </select>
+        </label>
+        <label class="flex flex-col gap-2">
+          <span class="text-[14px] font-medium text-[#141219]">Type</span>
+          <select formControlName="type" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]">
+            <option value="FULL_TIME">FULL_TIME</option>
+            <option value="PART_TIME">PART_TIME</option>
+            <option value="CONTRACT">CONTRACT</option>
+            <option value="FREELANCE">FREELANCE</option>
+            <option value="INTERNSHIP">INTERNSHIP</option>
+          </select>
+        </label>
+        <label class="flex flex-col gap-2">
+          <span class="text-[14px] font-medium text-[#141219]">Mode</span>
+          <select formControlName="mode" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]">
+            <option value="REMOTE">REMOTE</option>
+            <option value="HYBRID">HYBRID</option>
+            <option value="ONSITE">ONSITE</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <label class="flex flex-col gap-2">
+          <span class="text-[14px] font-medium text-[#141219]">Salaire min</span>
+          <input type="number" formControlName="salaryMin" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" />
+        </label>
+        <label class="flex flex-col gap-2">
+          <span class="text-[14px] font-medium text-[#141219]">Salaire max</span>
+          <input type="number" formControlName="salaryMax" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" />
+        </label>
+        <label class="flex flex-col gap-2">
+          <span class="text-[14px] font-medium text-[#141219]">Devise</span>
+          <select formControlName="currency" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]">
+            <option value="XOF">XOF</option>
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+            <option value="NGN">NGN</option>
+          </select>
+        </label>
+      </div>
+
+      <div>
+        <div class="mb-2 flex items-center justify-between">
+          <span class="text-[14px] font-medium text-[#141219]">Stack</span>
+          <button type="button" (click)="addStack()" class="text-[14px] font-semibold text-[#0F6932]">Ajouter</button>
+        </div>
+        <div class="flex flex-col gap-2" formArrayName="stack">
+          @for (ctrl of stack.controls; track $index) {
+            <div class="flex items-center gap-2">
+              <input [formControlName]="$index" class="h-12 flex-1 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" />
+              @if (stack.length > 1) {
+                <button type="button" (click)="removeStack($index)" class="text-[14px] text-[#64748B]">Supprimer</button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      @if (error) {
+        <p class="text-[14px] text-red-600">{{ error }}</p>
+      }
+
+      <div class="flex justify-end">
+        <button type="submit" [disabled]="loading" class="inline-flex h-12 items-center justify-center rounded-full bg-[#0F1011] px-6 text-[16px] font-semibold text-white disabled:opacity-50">
+          {{ loading ? 'Envoi...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</section>

@@ -1,0 +1,40 @@
+<section class="bg-[#F8FAFC]">
+  <div class="mx-auto w-full max-w-[700px] px-6 py-12 sm:px-10 lg:px-0">
+    <div class="mb-8">
+      <h1 class="text-[32px] font-bold text-[#141219]">Postuler à l'offre</h1>
+      <p class="mt-2 text-[16px] text-[#64748B]">Envoyez votre candidature</p>
+    </div>
+
+    @if (success) {
+      <div class="rounded-[14px] bg-white p-8 text-center shadow-sm">
+        <h2 class="text-[24px] font-bold text-[#0F6932]">Candidature envoyée</h2>
+        <p class="mt-2 text-[16px] text-[#64748B]">Votre candidature a été enregistrée avec succès.</p>
+        <button type="button" routerLink="/jobs" class="mt-6 inline-flex h-12 items-center justify-center rounded-full bg-[#0F1011] px-6 text-[16px] font-semibold text-white">
+          Voir les offres
+        </button>
+      </div>
+    } @else {
+      <form (ngSubmit)="submit()" class="flex flex-col gap-6 rounded-[14px] bg-white p-6 shadow-sm sm:p-8">
+        <label class="flex flex-col gap-2">
+          <span class="text-[14px] font-medium text-[#141219]">Message de motivation</span>
+          <textarea [(ngModel)]="message" name="message" rows="6" class="rounded-lg border border-[#E2E8F0] px-3 py-2 text-[16px]" placeholder="Motivé par ce poste, 3 ans d'expérience NestJS."></textarea>
+        </label>
+
+        <label class="flex flex-col gap-2">
+          <span class="text-[14px] font-medium text-[#141219]">Clé CV (optionnel)</span>
+          <input [(ngModel)]="cvKey" name="cvKey" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" placeholder="cvs/xxx/yyy.pdf" />
+        </label>
+
+        @if (error) {
+          <p class="text-[14px] text-red-600">{{ error }}</p>
+        }
+
+        <div class="flex justify-end">
+          <button type="submit" [disabled]="loading" class="inline-flex h-12 items-center justify-center rounded-full bg-[#0F1011] px-6 text-[16px] font-semibold text-white disabled:opacity-50">
+            {{ loading ? 'Envoi...' : 'Postuler' }}
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</section>

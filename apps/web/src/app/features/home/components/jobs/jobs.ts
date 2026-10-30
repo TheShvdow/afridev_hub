@@ -1,50 +1,51 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SectionHeading } from '../section-heading/section-heading';
-import { CardJobComponent, Job } from '../../../../shared/components/card-job.component/card-job.component';
+import { CardJobComponent } from '../../../../shared/components/card-job.component/card-job.component';
 import { JobDetailPanelComponent } from '../../../../shared/components/job-detail-panel/job-detail-panel.component';
-import { JobFiltersComponent } from '../../../../shared/components/job-filters/job-filters.component';
-import {
-  ALL_COUNTRIES,
-  ALL_CURRENCIES,
-  ALL_WORK_TYPES,
-  filterJobs,
-  JOB_COUNTRIES,
-  JOB_CURRENCIES,
-  JOB_WORK_TYPES,
-  JOBS,
-} from '../../../../shared/data/jobs.data';
+import { JobsService, ApiJob } from '../../../../core/services/jobs.service';
 
 @Component({
   selector: 'app-jobs',
   standalone: true,
-  imports: [SectionHeading, RouterLink, CardJobComponent, JobDetailPanelComponent, JobFiltersComponent],
+  imports: [SectionHeading, RouterLink, CardJobComponent, JobDetailPanelComponent],
   templateUrl: './jobs.html',
   styleUrl: './jobs.css',
 })
-export class Jobs {
-  readonly jobs: Job[] = JOBS;
+export class Jobs implements OnInit {
+  private readonly jobsService = inject(JobsService);
 
-  readonly countries = JOB_COUNTRIES;
-  readonly workTypes = JOB_WORK_TYPES;
-  readonly currencies = JOB_CURRENCIES;
+  readonly jobs = signal<ApiJob[]>([]);
+  readonly loading = signal(false);
+  readonly selectedJob = signal<any | null>(null);
 
-  readonly selectedCountry = signal(ALL_COUNTRIES);
-  readonly selectedWorkType = signal(ALL_WORK_TYPES);
-  readonly selectedCurrency = signal(ALL_CURRENCIES);
+  ngOnInit(): void {
+    this.loadJobs();
+  }
 
-  readonly selectedJob = signal<Job | null>(null);
+  loadJobs(): void {
+    this.loading.set(true);
+    this.jobsService
+      .listJobs({ page: 1, limit: 4 })
+      .subscribe({
+        next: (res) => {
+          this.jobs.set(res.data);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.loading.set(false);
+        },
+      });
+  }
 
-  readonly filteredJobs = computed(() =>
-    filterJobs(this.jobs, {
-      country: this.selectedCountry(),
-      workType: this.selectedWorkType(),
-      currency: this.selectedCurrency(),
-    }),
-  );
-
-  openJob(job: Job): void {
+  openJob(job: ApiJob): void {
     this.selectedJob.set(job);
+    this.jobsService.getJob(job.id).subscribe({
+      next: (detail) => {
+        this.selectedJob.set({ ...job, ...detail });
+      },
+      error: () => {},
+    });
   }
 
   closeJob(): void {
