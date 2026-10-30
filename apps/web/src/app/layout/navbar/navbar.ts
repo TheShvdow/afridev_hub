@@ -1,5 +1,6 @@
-import { Component, HostListener, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { RealtimeService } from '../../core/services/realtime.service';
 import { AuthStore } from '../../core/store/auth.store';
 import { Icon } from '../../features/home/components/icon/icon';
 import { NotificationsService } from '../../core/services/notifications.service';
@@ -10,16 +11,23 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   standalone: true,
   imports: [RouterLink, Icon],
   templateUrl: './navbar.html',
-  styleUrl: './navbar.css',
 })
 export class Navbar {
   readonly authStore = inject(AuthStore);
   private readonly router = inject(Router);
+<<<<<<< HEAD
   private readonly notificationsService = inject(NotificationsService);
   readonly unreadCount = signal(0);
+=======
+  private readonly realtime = inject(RealtimeService);
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
 
   readonly menuOpen = signal(false);
   readonly userMenuOpen = signal(false);
+  /** Compteur partagé, tenu à jour en direct par la connexion temps réel. */
+  readonly unreadCount = this.realtime.unreadCount;
+  /** Nombre affiché sur la pastille, plafonné ; le même nombre est repris dans le nom accessible du bouton. */
+  readonly badgeCount = computed(() => Math.min(this.unreadCount(), 99));
 
   constructor() {
     if (this.authStore.isAuthenticated()) {
@@ -48,9 +56,16 @@ export class Navbar {
     { label: 'Classement', link: '/leaderboard' },
   ];
 
+  /** Les modérateurs et administrateurs accèdent à l'administration. */
+  readonly canModerate = computed(() => {
+    const role = this.authStore.currentUser()?.role;
+    return role === 'MODERATOR' || role === 'ADMIN';
+  });
+
   toggleUserMenu(event: Event): void {
     event.stopPropagation();
     this.userMenuOpen.set(!this.userMenuOpen());
+    if (this.userMenuOpen()) this.realtime.refreshUnread();
   }
 
   /** Referme le menu du compte dès qu'un clic a lieu ailleurs sur la page. */

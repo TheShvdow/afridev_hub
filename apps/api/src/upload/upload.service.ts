@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { DomainException } from '../common/errors/domain.exception';
 import { AvatarPresignDto } from './dto/avatar-presign.dto';
 import { CvPresignDto } from './dto/cv-presign.dto';

@@ -9,7 +9,6 @@ import { MENTORS } from '../../../../shared/data/mentors.data';
   standalone: true,
   imports: [SectionHeading, RouterLink, CardMentorComponent],
   templateUrl: './mentors.html',
-  styleUrl: './mentors.css',
 })
 export class Mentors {
   readonly mentors: Mentor[] = MENTORS;

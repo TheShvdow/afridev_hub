@@ -7,11 +7,11 @@ export function decodeJwtPayload<T extends Record<string, unknown>>(token: strin
   if (!segment) return null;
 
   try {
-    const base64 = segment.replace(/-/g, '+').replace(/_/g, '/');
+    const base64 = segment.replaceAll('-', '+').replaceAll('_', '/');
     const json = decodeURIComponent(
       atob(base64)
         .split('')
-        .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`)
+        .map((char) => `%${(char.codePointAt(0) ?? 0).toString(16).padStart(2, '0')}`)
         .join('')
     );
     return JSON.parse(json) as T;

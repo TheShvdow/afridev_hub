@@ -16,7 +16,6 @@ const PAGE_SIZE = 20;
   standalone: true,
   imports: [RouterLink, CardThreadComponent, ForumFiltersComponent, PageHeroComponent, ThreadModalComponent],
   templateUrl: './post-list.component.html',
-  styleUrl: './post-list.component.css',
 })
 export class PostListComponent implements OnInit {
   private readonly forum = inject(ForumService);
@@ -79,6 +78,13 @@ export class PostListComponent implements OnInit {
 
   openThread(thread: Thread): void {
     this.selectedThread.set(thread);
+  }
+
+  /** Reprend dans la carte le score modifié par un vote dans la fenêtre, sans recharger la liste. */
+  updateScore({ id, score }: { id: string; score: number }): void {
+    this.threads.update((threads) =>
+      threads.map((thread) => (thread.id === id && thread.votes !== String(score) ? { ...thread, votes: String(score) } : thread)),
+    );
   }
 
   closeThread(): void {

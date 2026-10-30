@@ -161,15 +161,39 @@ export class ForumService {
       .catch(() => null);
 
     // La modération voit le contenu masqué ; les autres voient le texte de remplacement.
-    if (viewer && MODERATOR_ROLES.has(viewer.role)) return post;
+    const visible = viewer && MODERATOR_ROLES.has(viewer.role)
+      ? post
+      : {
+          ...post,
+          ...(post.isHidden && { title: HIDDEN_CONTENT, body: HIDDEN_CONTENT }),
+          answers: post.answers.map((answer) =>
+            answer.isHidden ? { ...answer, body: HIDDEN_CONTENT } : answer,
+          ),
+        };
+
+    // Vote du visiteur connecté sur la question et chaque réponse : le front l'affiche et calcule
+    // le nouveau score sans attendre l'API (null pour un visiteur ou en l'absence de vote).
+    const votes = viewer ? await this.viewerVotes(viewer.id, post.id, post.answers.map((answer) => answer.id)) : null;
 
     return {
-      ...post,
-      ...(post.isHidden && { title: HIDDEN_CONTENT, body: HIDDEN_CONTENT }),
-      answers: post.answers.map((answer) =>
-        answer.isHidden ? { ...answer, body: HIDDEN_CONTENT } : answer,
-      ),
+      ...visible,
+      userVote: votes?.get(post.id) ?? null,
+      answers: visible.answers.map((answer) => ({ ...answer, userVote: votes?.get(answer.id) ?? null })),
     };
+  }
+
+  private async viewerVotes(userId: string, postId: string, answerIds: string[]) {
+    const votes = await this.prisma.vote.findMany({
+      where: {
+        userId,
+        OR: [
+          { entityType: 'POST', entityId: postId },
+          ...(answerIds.length ? [{ entityType: 'ANSWER' as const, entityId: { in: answerIds } }] : []),
+        ],
+      },
+      select: { entityId: true, value: true },
+    });
+    return new Map(votes.map((vote) => [vote.entityId, vote.value] as const));
   }
 
   async createPost(userId: string, dto: CreatePostDto) {

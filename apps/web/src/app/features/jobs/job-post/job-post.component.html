@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <section class="bg-[#F8FAFC]">
   <div class="mx-auto w-full max-w-[800px] px-6 py-12 sm:px-10 lg:px-0">
     <div class="mb-8">
@@ -98,15 +99,182 @@
           <p>{{ error }}</p>
           @if (errorCode === 'JOBS_RECRUITER_REQUIRED') {
             <a routerLink="/profile" class="mt-2 inline-block font-semibold underline">Activer mon profil recruteur</a>
+=======
+<app-page-hero
+  [title]="editing ? 'Modifier mon offre' : 'Publier une offre'"
+  [subtitle]="editing ? 'Corrigez ou complétez votre offre. Une offre refusée est de nouveau relue par la modération.' : 'Votre offre sera relue par la modération avant d\'être visible, et reste en ligne 60 jours.'"
+/>
+
+<section class="bg-white">
+  <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-0 lg:py-10">
+    @if (loadingOffer()) {
+      <p class="py-12 text-center text-[16px] text-[#64748B]">Chargement de l'offre…</p>
+    } @else if (offerProblem()) {
+      <div class="flex flex-col items-center gap-4 py-12 text-center">
+        <p role="alert" class="text-[16px] text-[#64748B]">
+          @switch (offerProblem()) {
+            @case ('notFound') { Cette offre n'existe pas. }
+            @case ('forbidden') { Seul l'auteur d'une offre peut la modifier. }
+            @default { L'offre n'a pas pu être chargée. Réessayez dans un instant. }
+          }
+        </p>
+        <a routerLink="/jobs/mine" class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink">Retour à mes offres</a>
+      </div>
+    } @else {
+    @if (editing && offerStatus() === 'REJECTED') {
+      <output class="mx-auto mb-6 block max-w-[800px] rounded-2xl border border-[#FBBF24]/50 bg-[#FEFCE8] px-4 py-3 text-sm font-medium text-[#A16207]">
+        Cette offre a été refusée par la modération. Une fois corrigée, elle repart en validation.
+      </output>
+    }
+    <form class="mx-auto flex w-full max-w-[800px] flex-col gap-6" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (errorMessage()) {
+        <div
+          role="alert"
+          class="flex flex-col gap-3 rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium leading-5 text-[#FB2C36]"
+        >
+          <p>{{ errorMessage() }}</p>
+          @if (recruiterRequired()) {
+            <button
+              type="button"
+              (click)="activateRecruiter()"
+              [disabled]="activating()"
+              class="inline-flex h-10 items-center justify-center self-start rounded-full bg-ink px-4 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {{ activating() ? 'Activation…' : "Activer mon profil recruteur avec ce nom d'entreprise" }}
+            </button>
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
           }
         </div>
       }
 
+<<<<<<< HEAD
       <div class="flex justify-end">
         <button type="submit" [disabled]="loading" class="inline-flex h-12 items-center justify-center rounded-full bg-[#0F1011] px-6 text-[16px] font-semibold text-white disabled:opacity-50">
           {{ loading ? 'Envoi...' : "Soumettre l'offre" }}
         </button>
       </div>
     </form>
+=======
+      <div class="flex flex-col gap-2">
+        <label for="job-title" class="text-[16px] font-semibold text-[#141219]">Intitulé du poste *</label>
+        <input id="job-title" formControlName="title" type="text" [attr.maxlength]="limits.title.max" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none" />
+        @if (form.controls.title.touched && form.controls.title.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">L'intitulé doit contenir entre 5 et 120 caractères.</p>
+        }
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="job-company" class="text-[16px] font-semibold text-[#141219]">Entreprise *</label>
+        <input id="job-company" formControlName="company" type="text" [attr.maxlength]="limits.company.max" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none" />
+        @if (form.controls.company.touched && form.controls.company.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">Le nom de l'entreprise est requis.</p>
+        }
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="job-country" class="text-[16px] font-semibold text-[#141219]">Pays *</label>
+        <select id="job-country" formControlName="country" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none bg-white">
+          <option value="" disabled>Choisir un pays</option>
+          @for (country of countries(); track country.code) {
+            <option [value]="country.code">{{ country.name }}</option>
+          }
+        </select>
+        @if (form.controls.country.touched && form.controls.country.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">Le pays est requis.</p>
+        }
+      </div>
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <div class="flex flex-col gap-2">
+        <label for="job-type" class="text-[16px] font-semibold text-[#141219]">Contrat *</label>
+        <select id="job-type" formControlName="type" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none bg-white">
+          @for (type of types; track type.value) {
+            <option [value]="type.value">{{ type.label }}</option>
+          }
+        </select>
+        @if (form.controls.type.touched && form.controls.type.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">Le contrat est requis.</p>
+        }
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="job-mode" class="text-[16px] font-semibold text-[#141219]">Mode de travail *</label>
+        <select id="job-mode" formControlName="mode" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none bg-white">
+          @for (mode of modes; track mode.value) {
+            <option [value]="mode.value">{{ mode.label }}</option>
+          }
+        </select>
+        @if (form.controls.mode.touched && form.controls.mode.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">Le mode est requis.</p>
+        }
+      </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+      <div class="flex flex-col gap-2">
+        <label for="job-salary-min" class="text-[16px] font-semibold text-[#141219]">Salaire minimum *</label>
+        <input id="job-salary-min" formControlName="salaryMin" type="number" min="1" step="1" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none" />
+        @if (form.controls.salaryMin.touched && form.controls.salaryMin.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">Indiquez un montant positif.</p>
+        }
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="job-salary-max" class="text-[16px] font-semibold text-[#141219]">Salaire maximum *</label>
+        <input id="job-salary-max" formControlName="salaryMax" type="number" min="1" step="1" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none" />
+        @if (form.controls.salaryMax.touched && form.controls.salaryMax.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">Indiquez un montant positif.</p>
+        }
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="job-currency" class="text-[16px] font-semibold text-[#141219]">Devise *</label>
+        <select id="job-currency" formControlName="currency" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none bg-white">
+          @for (currency of currencies; track currency) {
+            <option [value]="currency">{{ currency }}</option>
+          }
+        </select>
+        @if (form.controls.currency.touched && form.controls.currency.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">La devise est requise.</p>
+        }
+      </div>
+      </div>
+      @if (form.hasError('salaryRange') && form.controls.salaryMax.touched) {
+        <p class="-mt-4 text-[14px] font-medium text-[#FB2C36]">Le salaire minimum ne peut pas dépasser le maximum.</p>
+      }
+
+      <div class="flex flex-col gap-2">
+        <label for="job-stack" class="text-[16px] font-semibold text-[#141219]">Technologies *</label>
+        <input id="job-stack" formControlName="stack" type="text" placeholder="Angular, NestJS, PostgreSQL" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none" />
+        <p class="text-[14px] text-[#64748B]">Séparez-les par des virgules (1 à 5).</p>
+        @if (form.controls.stack.touched && form.controls.stack.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">Indiquez entre 1 et 5 technologies.</p>
+        }
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="job-description" class="text-[16px] font-semibold text-[#141219]">Description *</label>
+        <textarea
+          id="job-description"
+          formControlName="description"
+          rows="10"
+          [attr.maxlength]="limits.description.max"
+          class="rounded-2xl border border-[#E2E8F0] px-5 py-4 text-[16px] leading-[26px] text-[#141219] focus:border-[#0F1011] focus:outline-none"
+        ></textarea>
+        <p class="text-[14px] text-[#64748B]">Missions, profil recherché, avantages : 100 caractères minimum.</p>
+        @if (form.controls.description.touched && form.controls.description.invalid) {
+          <p class="text-[14px] font-medium text-[#FB2C36]">La description doit contenir au moins 100 caractères.</p>
+        }
+      </div>
+
+      <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <a [routerLink]="editing ? '/jobs/mine' : '/jobs'" class="inline-flex h-14 items-center justify-center rounded-full px-6 text-base font-semibold text-[#64748B] hover:text-ink">
+          Annuler
+        </a>
+        <button
+          type="submit"
+          [disabled]="sending()"
+          class="inline-flex h-14 items-center justify-center rounded-full bg-ink px-6 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+        >
+          {{ sending() ? 'Envoi…' : editing ? 'Enregistrer les modifications' : "Soumettre l'offre" }}
+        </button>
+      </div>
+    </form>
+    }
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
   </div>
 </section>

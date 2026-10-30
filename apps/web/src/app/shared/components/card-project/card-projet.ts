@@ -20,7 +20,6 @@ export interface Project {
   standalone: true,
   imports: [RouterLink],
   templateUrl: './card-projet.html',
-  styleUrl: './card-projet.css',
 })
 export class CardProjet {
   readonly project = input.required<Project>();

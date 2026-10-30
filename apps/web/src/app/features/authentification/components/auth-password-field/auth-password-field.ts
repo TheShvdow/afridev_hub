@@ -7,7 +7,6 @@ import { Icon } from '../../../home/components/icon/icon';
   standalone: true,
   imports: [Icon],
   templateUrl: './auth-password-field.html',
-  styleUrl: './auth-password-field.css',
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

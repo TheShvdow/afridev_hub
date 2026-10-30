@@ -11,6 +11,8 @@ const browserDistFolder = resolve(serverDistFolder, '../browser');
 const indexHtml = join(serverDistFolder, 'index.server.html');
 
 const app = express();
+// Ne pas annoncer le framework et sa version dans chaque réponse.
+app.disable('x-powered-by');
 const commonEngine = new CommonEngine();
 
 // Servir les fichiers statiques

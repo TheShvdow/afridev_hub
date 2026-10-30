@@ -23,3 +23,23 @@ describe('NotificationsListener — votes', () => {
     expect(notifications.notifyUpvote).not.toHaveBeenCalled();
   });
 });
+
+describe('NotificationsListener — accusé de réception', () => {
+  const event = { applicationId: 'app-1', jobId: 'job-1', jobTitle: 'Dev', recruiterId: 'rec', applicantId: 'cand' };
+
+  it('sends the receipt for a new application', async () => {
+    const notifications = { sendApplicationReceipt: jest.fn().mockResolvedValue(undefined) };
+    const listener = new NotificationsListener(notifications as never, {} as never);
+
+    await listener.onApplicationReceipt(event);
+
+    expect(notifications.sendApplicationReceipt).toHaveBeenCalledWith('app-1');
+  });
+
+  it('does not let a mail failure break the application flow', async () => {
+    const notifications = { sendApplicationReceipt: jest.fn().mockRejectedValue(new Error('Resend indisponible')) };
+    const listener = new NotificationsListener(notifications as never, {} as never);
+
+    await expect(listener.onApplicationReceipt(event)).resolves.toBeUndefined();
+  });
+});

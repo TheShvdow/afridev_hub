@@ -65,6 +65,7 @@ describe('ForumService.getPost — contenu masqué', () => {
   function build() {
     const prisma = {
       post: { findUnique: jest.fn().mockResolvedValue(post), update: jest.fn().mockResolvedValue({}) },
+      vote: { findMany: jest.fn().mockResolvedValue([]) },
     };
     return new ForumService(prisma as never, { emit: jest.fn() } as never);
   }
@@ -80,6 +81,42 @@ describe('ForumService.getPost — contenu masqué', () => {
     const result = await build().getPost('p1', { id: 'm1', role: 'MODERATOR' });
     expect(result.body).toBe('Corps');
     expect(result.answers[1].body).toBe('Spam');
+  });
+});
+
+describe('ForumService.getPost — vote du visiteur', () => {
+  const post = {
+    id: 'p1', title: 'Titre', body: 'Corps', isHidden: false,
+    answers: [{ id: 'a1', body: 'Un', isHidden: false }, { id: 'a2', body: 'Deux', isHidden: false }],
+  };
+  function build(votes: { entityId: string; value: string }[]) {
+    const prisma = {
+      post: { findUnique: jest.fn().mockResolvedValue(post), update: jest.fn().mockResolvedValue({}) },
+      vote: { findMany: jest.fn().mockResolvedValue(votes) },
+    };
+    return { service: new ForumService(prisma as never, { emit: jest.fn() } as never), prisma };
+  }
+
+  it('returns the viewer vote on the question and on each answer', async () => {
+    const { service, prisma } = build([{ entityId: 'p1', value: 'UP' }, { entityId: 'a2', value: 'DOWN' }]);
+
+    const result = await service.getPost('p1', { id: 'u1', role: 'MEMBER' });
+
+    expect(result.userVote).toBe('UP');
+    expect(result.answers.map((a) => a.userVote)).toEqual([null, 'DOWN']);
+    expect(prisma.vote.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ userId: 'u1' }),
+    }));
+  });
+
+  it('returns no vote and does not query votes for an anonymous visitor', async () => {
+    const { service, prisma } = build([]);
+
+    const result = await service.getPost('p1', null);
+
+    expect(result.userVote).toBeNull();
+    expect(result.answers.every((a) => a.userVote === null)).toBe(true);
+    expect(prisma.vote.findMany).not.toHaveBeenCalled();
   });
 });
 

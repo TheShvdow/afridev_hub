@@ -28,7 +28,7 @@
 
       <!-- Filters -->
       <app-job-filters
-        [countries]="countries"
+        [countries]="countries()"
         [workTypes]="workTypes"
         [currencies]="currencies"
         [(selectedCountry)]="selectedCountry"
@@ -36,13 +36,46 @@
         [(selectedCurrency)]="selectedCurrency"
       />
 
+<<<<<<< HEAD
       <!-- Cards grid -->
       <div class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-2">
         @for (job of jobs(); track job.id) {
           <app-card-job [job]="job" (selected)="openJob($event)" />
-        }
-      </div>
+=======
+      <p class="text-[15px] text-[#475569]">
+        Vous ne trouvez pas votre offre ?
+        <a routerLink="/jobs/alerts" [queryParams]="alertParams()" class="font-semibold text-[#0F6932] hover:underline">Créer une alerte</a>
+        et soyez prévenu des nouvelles offres correspondantes.
+      </p>
 
+      @if (loading()) {
+        <p class="py-10 text-center text-[16px] text-[#64748B]">Chargement des offres…</p>
+      } @else if (loadError()) {
+        <div class="flex flex-col items-center gap-4 py-10 text-center">
+          <p role="alert" class="text-[16px] text-[#64748B]">{{ loadError() }}</p>
+          <button
+            type="button"
+            (click)="retry()"
+            class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink"
+          >
+            Réessayer
+          </button>
+        </div>
+      } @else {
+        <div class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-2">
+          @for (job of jobs(); track job.id) {
+            <app-card-job [job]="job" (selected)="openJob($event)" />
+          }
+        </div>
+
+        @if (jobs().length === 0) {
+          <p class="py-10 text-center text-[16px] text-[#64748B]">
+            Aucune offre ne correspond à ces filtres. Essayez de les modifier.
+          </p>
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
+        }
+
+<<<<<<< HEAD
       <!-- Empty state -->
       @if (!loading() && jobs().length === 0) {
         <p class="py-10 text-center text-[16px] text-[#64748B]">
@@ -61,6 +94,21 @@
           {{ loading() ? 'Chargement...' : 'Charger plus' }}
         </button>
       </div>
+=======
+        @if (hasMore()) {
+          <div class="flex justify-center">
+            <button
+              type="button"
+              (click)="loadMore()"
+              [disabled]="loadingMore()"
+              class="inline-flex h-14 items-center justify-center gap-2.5 rounded-full border border-ink px-5 text-base font-semibold leading-[26px] text-ink disabled:opacity-60"
+            >
+              {{ loadingMore() ? 'Chargement…' : 'Charger plus' }}
+            </button>
+          </div>
+        }
+      }
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
     </div>
   </div>
 </section>

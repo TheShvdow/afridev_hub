@@ -43,8 +43,8 @@ import { serializeRequest, serializeResponse } from './common/logging/request-se
     // ── Rate limiting ─────────────────────────────────────────────
     ThrottlerModule.forRoot([
       {
-        ttl:   parseInt(process.env['THROTTLE_TTL']   ?? '60000'),
-        limit: parseInt(process.env['THROTTLE_LIMIT'] ?? '60'),
+        ttl:   Number.parseInt(process.env['THROTTLE_TTL']   ?? '60000'),
+        limit: Number.parseInt(process.env['THROTTLE_LIMIT'] ?? '60'),
       },
     ]),
 

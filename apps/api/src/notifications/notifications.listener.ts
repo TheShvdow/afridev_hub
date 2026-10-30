@@ -55,6 +55,12 @@ export class NotificationsListener {
     );
   }
 
+  // Accusé de réception par email au candidat ; un échec d'envoi n'annule pas la candidature.
+  @OnEvent('jobs.application.created')
+  onApplicationReceipt(event: JobsApplicationCreatedEvent) {
+    return this.safely('APPLICATION_RECEIPT', () => this.notifications.sendApplicationReceipt(event.applicationId));
+  }
+
   @OnEvent('jobs.offer.reviewed')
   onJobReviewed(event: JobsOfferReviewedEvent) {
     return this.safely('JOB_REVIEWED', () =>

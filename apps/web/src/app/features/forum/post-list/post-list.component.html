@@ -72,4 +72,4 @@
   </div>
 </section>
 
-<app-thread-modal [thread]="selectedThread()" (closed)="closeThread()" />
+<app-thread-modal [thread]="selectedThread()" (closed)="closeThread()" (scoreChanged)="updateScore($event)" />

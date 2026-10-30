@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <section class="bg-[#F8FAFC]">
   <div class="mx-auto w-full max-w-[800px] px-6 py-12 sm:px-10 lg:px-0">
     <div class="mb-8 flex items-center justify-between">
@@ -32,5 +33,89 @@
         </button>
       }
     </div>
+=======
+<app-page-hero title="Notifications" subtitle="Réponses, votes, candidatures et décisions de la modération." />
+
+<section class="bg-white">
+  <div class="mx-auto w-full max-w-[800px] px-6 py-16 sm:px-10 lg:px-0 lg:py-10">
+    @if (loading()) {
+      <p class="py-16 text-center text-[16px] text-[#64748B]">Chargement des notifications…</p>
+    } @else if (errorMessage() && items().length === 0) {
+      <div class="flex flex-col items-center gap-4 py-16 text-center">
+        <p role="alert" class="text-[16px] text-[#64748B]">{{ errorMessage() }}</p>
+        <button
+          type="button"
+          (click)="retry()"
+          class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink"
+        >
+          Réessayer
+        </button>
+      </div>
+    } @else if (items().length === 0) {
+      <p class="py-16 text-center text-[16px] text-[#64748B]">Vous n'avez aucune notification pour le moment.</p>
+    } @else {
+      <div class="mb-6 flex items-center justify-between gap-4">
+        <p class="text-[16px] text-[#64748B]" aria-live="polite">
+          {{ unreadCount() }} non lue{{ unreadCount() > 1 ? 's' : '' }}
+        </p>
+        <button
+          type="button"
+          (click)="markAllAsRead()"
+          [disabled]="unreadCount() === 0"
+          class="rounded-full border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#141219] transition-colors hover:border-ink disabled:opacity-50"
+        >
+          Tout marquer comme lu
+        </button>
+      </div>
+
+      @if (errorMessage()) {
+        <p role="alert" class="mb-4 text-sm font-medium text-[#FB2C36]">{{ errorMessage() }}</p>
+      }
+
+      <ul class="flex flex-col gap-3">
+        @for (notification of items(); track notification.id) {
+          <li>
+            <button
+              type="button"
+              (click)="open(notification)"
+              [class]="
+                'flex w-full flex-col gap-1 rounded-2xl border p-4 text-left transition-colors hover:border-ink ' +
+                (notification.isRead ? 'border-[#E2E8F0] bg-white' : 'border-[#0F6932]/40 bg-[#F0FDF4]')
+              "
+            >
+              <span class="flex items-center justify-between gap-3">
+                <span class="text-[16px] font-semibold text-[#141219]">{{ notification.title ?? notification.message }}</span>
+                @if (!notification.isRead) {
+                  <span class="rounded-full bg-[#0F6932] px-2 py-0.5 text-[12px] font-medium text-white">Nouveau</span>
+                }
+              </span>
+              @if (notification.title) {
+                <span class="text-[15px] leading-[24px] text-[#475569]">{{ notification.message }}</span>
+              }
+              <span class="text-[13px] text-[#94A3B8]">
+                @if (notification.actor) {
+                  {{ notification.actor.displayName ?? notification.actor.username }} ·
+                }
+                {{ timeAgo(notification.createdAt) }}
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+
+      @if (hasMore()) {
+        <div class="mt-8 flex justify-center">
+          <button
+            type="button"
+            (click)="loadMore()"
+            [disabled]="loadingMore()"
+            class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink disabled:opacity-60"
+          >
+            {{ loadingMore() ? 'Chargement…' : 'Voir plus' }}
+          </button>
+        </div>
+      }
+    }
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
   </div>
 </section>

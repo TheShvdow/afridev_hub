@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <section class="mx-auto w-full max-w-[1200px] px-6 py-8">
   <div class="mb-6 flex items-center justify-between">
     <div>
@@ -47,3 +48,82 @@
     }
   </div>
 </section>
+=======
+<h2 class="text-[24px] font-bold text-[#141219]">Offres à valider</h2>
+
+@if (loading()) {
+  <p class="py-12 text-center text-[16px] text-[#64748B]">Chargement des offres…</p>
+} @else if (errorMessage()) {
+  <div class="flex flex-col items-center gap-4 py-12 text-center">
+    <p role="alert" class="text-[16px] text-[#64748B]">{{ errorMessage() }}</p>
+    <button type="button" (click)="retry()" class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink">
+      Réessayer
+    </button>
+  </div>
+} @else if (offers().length === 0) {
+  <p class="py-12 text-center text-[16px] text-[#64748B]">Aucune offre en attente de validation.</p>
+} @else {
+  <p class="mt-4 text-[14px] text-[#64748B]">{{ total() }} offre{{ total() > 1 ? 's' : '' }} en attente</p>
+  <ul class="mt-4 flex flex-col gap-4">
+    @for (offer of offers(); track offer.id) {
+      <li class="rounded-2xl border border-[#E2E8F0] p-5">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 class="text-[18px] font-bold text-[#141219]">{{ offer.title }}</h3>
+          <span class="text-[13px] text-[#94A3B8]">soumise {{ timeAgo(offer.createdAt) }}</span>
+        </div>
+        <p class="text-[15px] text-[#64748B]">
+          {{ offer.company }} · {{ offer.country }} · {{ salary(offer) }} · recruteur {{ offer.recruiter.username }}
+        </p>
+        <p class="mt-2 line-clamp-3 whitespace-pre-line text-[15px] leading-[24px] text-[#475569]">{{ offer.description }}</p>
+        <a [routerLink]="['/jobs', offer.id]" class="mt-2 inline-block text-[14px] font-semibold text-[#0F6932] hover:underline">Voir l'offre complète</a>
+
+        <div class="mt-4 flex flex-wrap gap-3 border-t border-[#E2E8F0] pt-4">
+          <button
+            type="button"
+            (click)="approve(offer)"
+            [disabled]="busyId() === offer.id"
+            class="rounded-full bg-[#0F6932] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-60"
+          >
+            Publier
+          </button>
+          <button
+            type="button"
+            (click)="startReject(offer)"
+            [disabled]="busyId() === offer.id"
+            class="rounded-full border border-[#FB2C36]/40 px-4 py-2 text-[14px] font-semibold text-[#FB2C36] disabled:opacity-60"
+          >
+            Refuser
+          </button>
+        </div>
+
+        @if (rejectingId() === offer.id) {
+          <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-start">
+            <div class="flex flex-1 flex-col gap-1">
+              <label [for]="'reason-' + offer.id" class="text-[13px] font-semibold text-[#141219]">Motif du refus (visible du recruteur)</label>
+              <input
+                #reason
+                [id]="'reason-' + offer.id"
+                type="text"
+                maxlength="500"
+                class="rounded-xl border border-[#E2E8F0] px-3 py-2 text-[14px]"
+              />
+              @if (reasonError()) {
+                <p role="alert" class="text-[13px] font-medium text-[#FB2C36]">{{ reasonError() }}</p>
+              }
+            </div>
+            <button
+              type="button"
+              (click)="reject(offer, reason.value)"
+              [disabled]="busyId() === offer.id"
+              class="rounded-full bg-[#FB2C36] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-60 sm:mt-6"
+            >
+              Confirmer le refus
+            </button>
+          </div>
+        }
+      </li>
+    }
+  </ul>
+  <app-pager [page]="page()" [totalPages]="totalPages()" (pageChange)="goTo($event)" />
+}
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b

@@ -1,18 +1,27 @@
+<<<<<<< HEAD
 import { Component, inject, OnInit, signal } from '@angular/core';
+=======
+import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
 import { CardJobComponent } from '../../../shared/components/card-job.component/card-job.component';
 import { JobDetailPanelComponent } from '../../../shared/components/job-detail-panel/job-detail-panel.component';
 import { JobFiltersComponent } from '../../../shared/components/job-filters/job-filters.component';
 import { PageHeroComponent } from '../../../shared/components/page-hero/page-hero.component';
+<<<<<<< HEAD
 import { RouterLink } from '@angular/router';
 import { JobsService, ApiJob } from '../../../core/services/jobs.service';
+=======
+import { JobsBoardBase } from '../../../shared/jobs/jobs-board.base';
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
 
 @Component({
   selector: 'app-job-list',
   standalone: true,
   imports: [RouterLink, CardJobComponent, JobDetailPanelComponent, JobFiltersComponent, PageHeroComponent],
   templateUrl: './job-list.component.html',
-  styleUrl: './job-list.component.css',
 })
+<<<<<<< HEAD
 export class JobListComponent implements OnInit {
   private readonly jobsService = inject(JobsService);
 
@@ -69,4 +78,8 @@ export class JobListComponent implements OnInit {
   closeJob(): void {
     this.selectedJob.set(null);
   }
+=======
+export class JobListComponent extends JobsBoardBase {
+  protected readonly pageSize = 12;
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
 }

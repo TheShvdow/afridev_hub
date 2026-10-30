@@ -206,7 +206,7 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
 
-    if (!user || !user.passwordHash) {
+    if (!user?.passwordHash) {
       throw new DomainException('AUTH_INVALID_CREDENTIALS', 'Email ou mot de passe incorrect.', 401);
     }
 
@@ -297,7 +297,7 @@ export class AuthService {
     }
 
     const user = await this.prisma.user.findUnique({ where: { id: claims.userId } });
-    if (!user || !user.passwordHash) {
+    if (!user?.passwordHash) {
       throw new DomainException('AUTH_INVALID_CREDENTIALS', 'Email ou mot de passe incorrect.', 401);
     }
     if (!(await bcrypt.compare(password, user.passwordHash))) {
@@ -331,7 +331,7 @@ export class AuthService {
   private async uniqueUsername(base: string): Promise<string> {
     const clean = base.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || 'membre';
     const taken = await this.prisma.user.findUnique({ where: { username: clean } });
-    return taken ? `${clean}_${Math.floor(Math.random() * 9999)}` : clean;
+    return taken ? `${clean}_${randomInt(9999)}` : clean;
   }
 
   // ── Refresh tokens ───────────────────────────────────────────────────

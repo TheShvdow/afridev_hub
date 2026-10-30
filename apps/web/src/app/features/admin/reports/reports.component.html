@@ -1,0 +1,89 @@
+<div class="flex flex-wrap items-center justify-between gap-4">
+  <h2 class="text-[24px] font-bold text-[#141219]">Signalements</h2>
+  <label class="flex items-center gap-2 text-[15px] text-[#64748B]">
+    Statut
+    <select
+      [value]="status()"
+      (change)="selectStatus($any($event.target).value)"
+      class="rounded-full border border-[#E2E8F0] bg-white px-4 py-2 text-[15px] font-medium text-[#141219]"
+    >
+      @for (item of statuses; track item.value) {
+        <option [value]="item.value">{{ item.label }}</option>
+      }
+    </select>
+  </label>
+</div>
+
+@if (loading()) {
+  <p class="py-12 text-center text-[16px] text-[#64748B]">Chargement des signalements…</p>
+} @else if (errorMessage()) {
+  <div class="flex flex-col items-center gap-4 py-12 text-center">
+    <p role="alert" class="text-[16px] text-[#64748B]">{{ errorMessage() }}</p>
+    <button type="button" (click)="retry()" class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink">
+      Réessayer
+    </button>
+  </div>
+} @else if (reports().length === 0) {
+  <p class="py-12 text-center text-[16px] text-[#64748B]">Aucun signalement dans cette catégorie.</p>
+} @else {
+  <p class="mt-4 text-[14px] text-[#64748B]">{{ total() }} signalement{{ total() > 1 ? 's' : '' }}</p>
+  <ul class="mt-4 flex flex-col gap-4">
+    @for (report of reports(); track report.id) {
+      <li class="rounded-2xl border border-[#E2E8F0] p-5">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span class="rounded-full bg-[#F8FAFC] px-3 py-1 text-[13px] font-semibold text-[#141219]">{{ report.entityType }}</span>
+          <span class="text-[16px] font-semibold text-[#141219]">{{ reasonLabel(reasonOf(report).code) }}</span>
+          <span class="text-[13px] text-[#94A3B8]">par {{ report.user.username }} · {{ timeAgo(report.createdAt) }}</span>
+        </div>
+        @if (reasonOf(report).details; as details) {
+          <p class="mt-2 text-[15px] leading-[24px] text-[#475569]">{{ details }}</p>
+        }
+        @if (contentLink(report); as link) {
+          <a [routerLink]="link" class="mt-2 inline-block text-[14px] font-semibold text-[#0F6932] hover:underline">Voir la question</a>
+        }
+
+        @if (isOpen(report)) {
+          <div class="mt-4 flex flex-col gap-3 border-t border-[#E2E8F0] pt-4 sm:flex-row sm:items-end">
+            <label class="flex flex-col gap-1 text-[13px] font-semibold text-[#141219]">
+              Décision
+              <select
+                (change)="setResolution(report.id, $any($event.target).value)"
+                class="rounded-xl border border-[#E2E8F0] px-3 py-2 text-[14px] font-normal"
+              >
+                @for (resolution of resolutions; track resolution.value) {
+                  <option [value]="resolution.value">{{ resolution.label }}</option>
+                }
+              </select>
+            </label>
+            <label class="flex flex-1 flex-col gap-1 text-[13px] font-semibold text-[#141219]">
+              Note (facultatif)
+              <input
+                type="text"
+                maxlength="1000"
+                (input)="setNote(report.id, $any($event.target).value)"
+                class="rounded-xl border border-[#E2E8F0] px-3 py-2 text-[14px] font-normal"
+              />
+            </label>
+            <button
+              type="button"
+              (click)="resolve(report)"
+              [disabled]="busyId() === report.id"
+              class="rounded-full bg-ink px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-60"
+            >
+              Appliquer
+            </button>
+            <button
+              type="button"
+              (click)="dismiss(report)"
+              [disabled]="busyId() === report.id"
+              class="rounded-full border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#475569] disabled:opacity-60"
+            >
+              Ignorer
+            </button>
+          </div>
+        }
+      </li>
+    }
+  </ul>
+  <app-pager [page]="page()" [totalPages]="totalPages()" (pageChange)="goTo($event)" />
+}

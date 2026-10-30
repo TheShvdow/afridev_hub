@@ -1,6 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+<<<<<<< HEAD
 import { Observable, map } from 'rxjs';
+=======
+import { Observable } from 'rxjs';
+import type { VoteValue } from './votes.service';
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
 import { environment } from '../../../environments/environment';
 
 export type ForumSort = 'newest' | 'votes' | 'unanswered' | 'active';
@@ -81,6 +86,8 @@ export interface ForumAnswer {
   body: string;
   isAccepted: boolean;
   voteScore: number;
+  /** Vote du membre connecté, absent ou null sans vote. */
+  userVote?: VoteValue | null;
   isHidden: boolean;
   createdAt: string;
   user: ForumAuthorSummary;
@@ -89,6 +96,7 @@ export interface ForumAnswer {
 /** Réponse de `GET /api/forum/posts/{id}` : la question avec ses réponses. */
 export interface ForumPostDetail extends ForumPost {
   userId: string;
+  userVote?: VoteValue | null;
   body: string;
   isHidden: boolean;
   updatedAt: string;
@@ -151,6 +159,11 @@ export class ForumService {
       `${this.base}/posts/${encodeURIComponent(postId)}/answers`,
       dto,
     );
+  }
+
+  /** `PATCH /api/forum/answers/{answerId}/accept` — auteur de la question uniquement. */
+  acceptAnswer(answerId: string): Observable<unknown> {
+    return this.http.patch(`${this.base}/answers/${encodeURIComponent(answerId)}/accept`, {});
   }
 
   /** `DELETE /api/forum/answers/{answerId}` — auteur ou modérateur. */

@@ -7,6 +7,5 @@ import { Icon } from '../../../home/components/icon/icon';
   standalone: true,
   imports: [Icon, RouterLink],
   templateUrl: './auth-close.html',
-  styleUrl: './auth-close.css',
 })
 export class AuthClose {}

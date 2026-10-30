@@ -13,6 +13,7 @@
         "outputPath": "dist/apps/web",
         "index": "apps/web/src/index.html",
         "browser": "apps/web/src/main.ts",
+        "allowedCommonJsDependencies": ["debug", "xmlhttprequest-ssl"],
         "polyfills": ["zone.js"],
         "tsConfig": "apps/web/tsconfig.app.json",
         "assets": [
@@ -46,7 +47,7 @@
           "budgets": [
             {
               "type": "initial",
-              "maximumWarning": "500kb",
+              "maximumWarning": "550kb",
               "maximumError": "1mb"
             },
             {

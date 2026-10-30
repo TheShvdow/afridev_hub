@@ -2,12 +2,19 @@ import { Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface Job {
+<<<<<<< HEAD
   logo?: string;
+=======
+  /** Identifiant de l'offre côté API (absent des données de démonstration). */
+  id?: string;
+  logo: string;
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
   company: string;
   title: string;
   location?: string;
   country?: string;
   type: string;
+<<<<<<< HEAD
   mode?: string;
   experience?: string;
   skills?: string[];
@@ -20,6 +27,16 @@ export interface Job {
   publishedAt?: any;
   isNew?: boolean;
   description?: string;
+=======
+  mode: string;
+  experience?: string;
+  skills: string[];
+  salary: string;
+  currency: string;
+  posted: string;
+  isNew?: boolean;
+  description: string;
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
   missions?: string[];
   profile?: string[];
   benefits?: string[];
@@ -30,7 +47,6 @@ export interface Job {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './card-job.component.html',
-  styleUrl: './card-job.component.scss',
 })
 export class CardJobComponent {
   readonly job = input.required<Job>();

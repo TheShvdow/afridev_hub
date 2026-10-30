@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
 import { Icon } from '../home/components/icon/icon';
+import { PreviewBannerComponent } from '../../shared/components/preview-banner/preview-banner.component';
 
 @Component({
   selector: 'app-communautes',
   standalone: true,
-  imports: [Icon],
+  imports: [Icon, PreviewBannerComponent],
   templateUrl: './communautes.html',
-  styleUrl: './communautes.css',
 })
 export class Communautes {
   readonly communities = [

@@ -5,6 +5,7 @@ import {
   computed,
   inject,
   signal,
+  HostListener,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -15,13 +16,14 @@ import { CountriesService } from '../../../core/services/countries.service';
 import { AuthStore } from '../../../core/store/auth.store';
 import { ToastService } from '../../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
+import { ReportButtonComponent } from '../../../shared/components/report-button/report-button.component';
 import { compactCount } from '../../../shared/utils/project-card.mapper';
 import { initialsFrom, relativeTime } from '../../../shared/utils/forum-thread.mapper';
 
 @Component({
   selector: 'app-project-detail',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, ReportButtonComponent],
   templateUrl: './project-detail.component.html',
   styleUrl: './project-detail.component.css',
 })
@@ -272,6 +274,11 @@ export class ProjectDetailComponent implements OnInit {
     if (!this.canDelete()) return;
     this.deleteError.set(null);
     this.confirmingDelete.set(true);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.confirmingDelete()) this.cancelDelete();
   }
 
   cancelDelete(): void {

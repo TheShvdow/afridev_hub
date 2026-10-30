@@ -46,6 +46,9 @@ export class UserProfileDto {
   @ApiProperty({ nullable: true }) bio!: string | null;
   @ApiProperty({ nullable: true }) avatarUrl!: string | null;
   @ApiProperty({ nullable: true }) location!: string | null;
+  @ApiProperty({ nullable: true, example: 'SN', description: 'Code ISO 3166-1 alpha-2' }) country!: string | null;
+  @ApiProperty({ type: [String], example: ['TypeScript', 'NestJS'] }) stack!: string[];
+  @ApiProperty({ enum: ['JUNIOR', 'MID', 'SENIOR'], nullable: true }) level!: 'JUNIOR' | 'MID' | 'SENIOR' | null;
   @ApiProperty({ nullable: true }) websiteUrl!: string | null;
   @ApiProperty({ nullable: true }) githubUsername!: string | null;
   @ApiProperty({ nullable: true }) linkedinUsername!: string | null;
@@ -87,9 +90,11 @@ export class AnswerDto {
   @ApiProperty() isHidden!: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
   @ApiProperty({ type: AuthorSummaryDto }) user!: AuthorSummaryDto;
+  @ApiProperty({ enum: ['UP', 'DOWN'], nullable: true, description: 'Vote du visiteur connecté, null sinon' }) userVote!: 'UP' | 'DOWN' | null;
 }
 
 export class PostDetailDto extends PostDto {
+  @ApiProperty({ enum: ['UP', 'DOWN'], nullable: true, description: 'Vote du visiteur connecté, null sinon' }) userVote!: 'UP' | 'DOWN' | null;
   @ApiProperty({ type: [AnswerDto] }) answers!: AnswerDto[];
 }
 
@@ -170,6 +175,18 @@ export class JobApplicationDto {
   @ApiPropertyOptional({ description: 'Profil candidat tronqué (plan gratuit)' }) profileTruncated?: boolean;
   @ApiProperty({ enum: ApplicationStatus }) status!: ApplicationStatus;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
+  @ApiPropertyOptional({ nullable: true, example: 'Aminata Diallo' }) fullName?: string | null;
+  @ApiPropertyOptional({ nullable: true, example: '+221 77 123 45 67' }) phone?: string | null;
+  @ApiPropertyOptional({ nullable: true, example: 'SN', description: 'Pays de résidence' }) country?: string | null;
+  @ApiPropertyOptional({ nullable: true, example: 'Dakar' }) city?: string | null;
+  @ApiPropertyOptional({ nullable: true }) linkedinUrl?: string | null;
+  @ApiPropertyOptional({ nullable: true }) githubUrl?: string | null;
+  @ApiPropertyOptional({ nullable: true }) portfolioUrl?: string | null;
+  @ApiPropertyOptional({ nullable: true, example: 3 }) experienceYears?: number | null;
+  @ApiPropertyOptional({ nullable: true, format: 'date', example: '2026-12-01' }) availableFrom?: string | null;
+  @ApiPropertyOptional({ nullable: true, example: 900000 }) expectedSalary?: number | null;
+  @ApiPropertyOptional({ nullable: true, example: 'XOF' }) expectedCurrency?: string | null;
+  @ApiPropertyOptional({ type: [String], example: ['Angular', 'NestJS'] }) stack?: string[];
 }
 
 export class RecruiterPlanDto {

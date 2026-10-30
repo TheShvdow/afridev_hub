@@ -1,17 +1,26 @@
+<<<<<<< HEAD
 import { Component, inject, OnInit, signal } from '@angular/core';
+=======
+import { Component } from '@angular/core';
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
 import { RouterLink } from '@angular/router';
 import { SectionHeading } from '../section-heading/section-heading';
 import { CardJobComponent } from '../../../../shared/components/card-job.component/card-job.component';
 import { JobDetailPanelComponent } from '../../../../shared/components/job-detail-panel/job-detail-panel.component';
+<<<<<<< HEAD
 import { JobsService, ApiJob } from '../../../../core/services/jobs.service';
+=======
+import { JobFiltersComponent } from '../../../../shared/components/job-filters/job-filters.component';
+import { JobsBoardBase } from '../../../../shared/jobs/jobs-board.base';
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
 
 @Component({
   selector: 'app-jobs',
   standalone: true,
   imports: [SectionHeading, RouterLink, CardJobComponent, JobDetailPanelComponent],
   templateUrl: './jobs.html',
-  styleUrl: './jobs.css',
 })
+<<<<<<< HEAD
 export class Jobs implements OnInit {
   private readonly jobsService = inject(JobsService);
 
@@ -51,4 +60,8 @@ export class Jobs implements OnInit {
   closeJob(): void {
     this.selectedJob.set(null);
   }
+=======
+export class Jobs extends JobsBoardBase {
+  protected readonly pageSize = 4;
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
 }

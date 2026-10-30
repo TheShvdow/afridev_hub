@@ -8,6 +8,16 @@ describe('UsersService — métadonnées Open Graph (story E2-9)', () => {
   }
   const base = { id: 'u1', username: 'amadou', displayName: 'Amadou Fall', bio: null, avatarUrl: 'https://cdn.test/a.png' };
 
+  it('selects country, stack and level so the profile page can edit them', async () => {
+    const prisma = { user: { findUnique: jest.fn().mockResolvedValue(base) } };
+    const config = { get: jest.fn((_key: string, d?: string) => d) };
+    const service = new UsersService(prisma as never, { emit: jest.fn() } as never, config as never);
+    await service.findByUsername('amadou');
+    const select = prisma.user.findUnique.mock.calls[0][0].select;
+    expect(select).toMatchObject({ country: true, stack: true, level: true });
+    expect(select).not.toHaveProperty('email');
+  });
+
   it('builds title, description, image and canonical url', async () => {
     const og = (await build(base).findByUsername('amadou') as { ogMeta: Record<string, unknown> }).ogMeta;
     expect(og).toEqual({

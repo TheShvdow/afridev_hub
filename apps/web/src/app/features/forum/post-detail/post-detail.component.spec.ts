@@ -1,8 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { PostDetailComponent } from './post-detail.component';
 import { ForumPostDetail, ForumService } from '../../../core/services/forum.service';
+import { ModerationService } from '../../../core/services/moderation.service';
+import { VotesService } from '../../../core/services/votes.service';
 import { AuthStore } from '../../../core/store/auth.store';
 
 const DETAIL: ForumPostDetail = {
@@ -49,6 +51,12 @@ const forumStub = {
   getPost: jest.fn(() => of(DETAIL)),
   deletePost: jest.fn(() => of(undefined)),
   deleteAnswer: jest.fn(() => of(undefined)),
+  acceptAnswer: jest.fn(() => of({})),
+};
+
+const votesStub = {
+  votePost: jest.fn(() => of({ action: 'added', newScore: 4 })),
+  voteAnswer: jest.fn(() => of({ action: 'added', newScore: 2 })),
 };
 
 const authStub = {
@@ -64,6 +72,9 @@ describe('PostDetailComponent', () => {
     forumStub.getPost.mockClear();
     forumStub.deletePost.mockClear();
     forumStub.deleteAnswer.mockClear();
+    forumStub.acceptAnswer.mockClear();
+    votesStub.votePost.mockClear();
+    votesStub.voteAnswer.mockClear();
     authStub.currentUser.mockReturnValue({ id: DETAIL.userId, role: 'MEMBER' });
 
     await TestBed.configureTestingModule({
@@ -72,6 +83,8 @@ describe('PostDetailComponent', () => {
         provideRouter([]),
         { provide: ForumService, useValue: forumStub },
         { provide: AuthStore, useValue: authStub },
+        { provide: VotesService, useValue: votesStub },
+        { provide: ModerationService, useValue: { report: jest.fn(() => of({})) } },
         {
           provide: ActivatedRoute,
           useValue: { paramMap: of(convertToParamMap({ id: DETAIL.id })) },
@@ -176,5 +189,85 @@ describe('PostDetailComponent', () => {
     expect(notFoundFixture.nativeElement.textContent).toContain('Question introuvable');
 
     notFoundFixture.destroy();
+  });
+  it('should not offer to vote on the viewer\'s own question', () => {
+    expect(fixture.nativeElement.querySelector('[aria-label="Voter pour cette question"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[aria-label="Voter pour cette réponse"]')).toBeTruthy();
+  });
+
+  it('should offer to report an answer of another member', () => {
+    const buttons = Array.from(fixture.nativeElement.querySelectorAll('app-report-button button') as NodeListOf<HTMLButtonElement>);
+
+    // L'auteur de la question ne signale pas sa propre question, mais bien la réponse d'un autre membre.
+    expect(buttons.map((button) => button.textContent?.trim())).toEqual(['Signaler']);
+  });
+
+  it('should vote on an answer and show the new score', () => {
+    const button = fixture.nativeElement.querySelector('[aria-label="Voter pour cette réponse"]') as HTMLButtonElement;
+    button.click();
+    fixture.detectChanges();
+
+    expect(votesStub.voteAnswer).toHaveBeenCalledWith('answer-1', 'UP');
+    expect(fixture.componentInstance.post()?.answers[0].voteScore).toBe(2);
+  });
+
+  it('should show the vote immediately, before the API answers', () => {
+    const pending = new Subject<{ action: string; newScore: number }>();
+    votesStub.voteAnswer.mockReturnValueOnce(pending as never);
+
+    const button = fixture.nativeElement.querySelector('[aria-label="Voter pour cette réponse"]') as HTMLButtonElement;
+    button.click();
+    fixture.detectChanges();
+
+    // Score 1 → 2 et pouce plein dès le clic, sans attendre la réponse.
+    expect(fixture.componentInstance.post()?.answers[0].voteScore).toBe(2);
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+
+    pending.next({ action: 'added', newScore: 2 });
+    fixture.detectChanges();
+    expect(fixture.componentInstance.post()?.answers[0].userVote).toBe('UP');
+  });
+
+  it('should restore the previous score and thumb when the API refuses the vote', () => {
+    votesStub.voteAnswer.mockReturnValueOnce(
+      throwError(() => ({ status: 403, error: { error: { message: 'Il faut au moins 10 points de réputation pour voter.' } } })) as never,
+    );
+
+    (fixture.nativeElement.querySelector('[aria-label="Voter pour cette réponse"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const answer = fixture.componentInstance.post()?.answers[0];
+    expect(answer?.voteScore).toBe(1);
+    expect(answer?.userVote ?? null).toBeNull();
+  });
+
+  it('should cancel an existing vote on a second click and switch it with +2', () => {
+    const component = fixture.componentInstance;
+    component.post.set({ ...DETAIL, answers: [{ ...DETAIL.answers[0], voteScore: 4, userVote: 'UP' }] });
+    votesStub.voteAnswer
+      .mockReturnValueOnce(of({ action: 'removed', newScore: 3 }) as never)
+      .mockReturnValueOnce(of({ action: 'changed', newScore: 1 }) as never);
+
+    component.voteOnAnswer(component.post()!.answers[0], 'UP');
+    expect(component.post()?.answers[0]).toMatchObject({ voteScore: 3, userVote: null });
+
+    component.voteOnAnswer(component.post()!.answers[0], 'DOWN');
+    expect(component.post()?.answers[0]).toMatchObject({ voteScore: 1, userVote: 'DOWN' });
+  });
+
+  it('should let the question author accept another answer', () => {
+    const component = fixture.componentInstance;
+    const other = { ...DETAIL.answers[0], id: 'answer-2', isAccepted: false };
+    component.post.set({ ...DETAIL, isResolved: false, answers: [{ ...DETAIL.answers[0], isAccepted: false }, other] });
+    fixture.detectChanges();
+
+    const accept = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+      .filter((button) => button.textContent?.includes('Accepter cette réponse'))[1];
+    accept.click();
+    fixture.detectChanges();
+
+    expect(forumStub.acceptAnswer).toHaveBeenCalledWith('answer-2');
+    expect(component.post()?.answers.map((answer) => answer.isAccepted)).toEqual([false, true]);
+    expect(component.post()?.isResolved).toBe(true);
   });
 });

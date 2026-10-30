@@ -5,7 +5,6 @@ import { Component, input, model } from '@angular/core';
   standalone: true,
   imports: [],
   templateUrl: './mentor-filters.component.html',
-  styleUrl: './mentor-filters.component.css',
 })
 export class MentorFiltersComponent {
   readonly specialties = input.required<string[]>();

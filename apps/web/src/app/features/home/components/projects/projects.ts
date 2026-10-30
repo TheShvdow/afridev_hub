@@ -15,7 +15,6 @@ const DISPLAY_LIMIT = 3;
   standalone: true,
   imports: [SectionHeading, RouterLink, CardProjet],
   templateUrl: './projects.html',
-  styleUrl: './projects.css',
 })
 export class Projects implements OnInit {
   private readonly projectsService = inject(ProjectsService);

@@ -3,7 +3,13 @@
   [class.pointer-events-none]="!thread()"
   [class.opacity-0]="!thread()"
 >
-  <div class="absolute inset-0 bg-[#0F1011]/50" (click)="close()"></div>
+  <button
+    type="button"
+    tabindex="-1"
+    aria-label="Fermer"
+    class="absolute inset-0 cursor-default bg-[#0F1011]/50"
+    (click)="close()"
+  ></button>
 
   <div
     role="dialog"
@@ -34,7 +40,7 @@
           aria-label="Fermer"
           class="shrink-0 rounded-full p-2 text-[#64748B] transition-colors hover:bg-[#F1F5F9] hover:text-[#141219]"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
         </button>
@@ -75,6 +81,16 @@
               <p class="text-[16px] font-semibold leading-[26px] text-[#141219]">{{ authorName(question.user) }}</p>
               <p class="text-[14px] leading-[22px] text-[#64748B]">{{ question.user.reputation }} points · {{ timeAgo(question.createdAt) }}</p>
               <p class="mt-2 whitespace-pre-line break-words text-[16px] leading-[26px] text-[#475569]">{{ question.body }}</p>
+              <div class="mt-3 flex flex-wrap items-center gap-2">
+                <app-vote-control
+                  [score]="question.voteScore"
+                  [userVote]="question.userVote"
+                  target="cette question"
+                  [canVote]="canVote(question.userId)"
+                  (voted)="voteOnQuestion($event)"
+                />
+                <app-report-button entityType="POST" [entityId]="question.id" [authorId]="question.userId" />
+              </div>
             </div>
           </article>
 
@@ -112,6 +128,27 @@
                     </div>
                     <p class="text-[13px] leading-[20px] text-[#64748B]">{{ answer.user.reputation }} points · {{ timeAgo(answer.createdAt) }}</p>
                     <p class="mt-2 whitespace-pre-line break-words text-[15px] leading-[24px] text-[#475569]">{{ answer.body }}</p>
+
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                      <app-vote-control
+                        [score]="answer.voteScore"
+                        [userVote]="answer.userVote"
+                        target="cette réponse"
+                        [canVote]="canVote(answer.user.id)"
+                        (voted)="voteOnAnswer(answer, $event)"
+                      />
+                      @if (canAccept(answer)) {
+                        <button
+                          type="button"
+                          (click)="acceptAnswer(answer)"
+                          [disabled]="pendingActionId() === answer.id"
+                          class="rounded-full border border-[#0F6932] px-3 py-1 text-[13px] font-semibold text-[#0F6932] transition-colors hover:bg-[#F0FDF4] disabled:opacity-50"
+                        >
+                          Accepter cette réponse
+                        </button>
+                      }
+                      <app-report-button entityType="ANSWER" [entityId]="answer.id" [authorId]="answer.user.id" />
+                    </div>
 
                     @if (answerDeleteError() && confirmingAnswerId() === answer.id) {
                       <p
@@ -170,11 +207,13 @@
                 </p>
               }
               <form [formGroup]="answerForm" (ngSubmit)="submitAnswer()" novalidate class="flex flex-col gap-3 sm:flex-row sm:items-start">
+                <label for="thread-answer-body" class="sr-only">Votre réponse</label>
                 <input
+                  id="thread-answer-body"
                   type="text"
                   formControlName="body"
                   maxlength="50000"
-                  placeholder="Écrire une réponse…"
+                  placeholder="Écrire une réponse (30 caractères minimum)…"
                   class="min-w-0 flex-1 rounded-full border border-[#E2E8F0] bg-white px-[20px] py-[14px] text-[16px] text-[#141219] placeholder:text-[#94A3B8] focus:border-[#0F1011] focus:outline-none"
                 />
                 <button

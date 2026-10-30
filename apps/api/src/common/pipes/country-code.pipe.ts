@@ -7,7 +7,8 @@ import { CountryCode, isCountryCode } from '../countries';
 export class OptionalCountryCodePipe implements PipeTransform<unknown, CountryCode | undefined> {
   transform(value: unknown): CountryCode | undefined {
     if (value === undefined || value === null || value === '') return undefined;
-    const raw = String(value).trim();
+    // Un paramètre répété ou imbriqué (tableau, objet) n'est pas un code pays.
+    const raw = typeof value === 'string' ? value.trim() : '';
     // Deux lettres ASCII avant la mise en majuscules : `'ß'.toUpperCase()` donne `SS`.
     const code = /^[a-z]{2}$/i.test(raw) ? raw.toUpperCase() : '';
     if (!isCountryCode(code)) {

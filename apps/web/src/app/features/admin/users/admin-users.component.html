@@ -1,0 +1,111 @@
+<div class="flex flex-wrap items-center justify-between gap-4">
+  <h2 class="text-[24px] font-bold text-[#141219]">Utilisateurs</h2>
+  <form (submit)="$event.preventDefault(); find(term.value)" class="flex gap-2">
+    <label for="user-search" class="sr-only">Rechercher un utilisateur</label>
+    <input
+      #term
+      id="user-search"
+      type="search"
+      placeholder="Pseudo ou e-mail"
+      class="rounded-full border border-[#E2E8F0] px-4 py-2 text-[15px]"
+    />
+    <button type="submit" class="rounded-full bg-ink px-4 py-2 text-[14px] font-semibold text-white">Rechercher</button>
+  </form>
+</div>
+
+@if (loading()) {
+  <p class="py-12 text-center text-[16px] text-[#64748B]">Chargement des utilisateurs…</p>
+} @else if (errorMessage()) {
+  <div class="flex flex-col items-center gap-4 py-12 text-center">
+    <p role="alert" class="text-[16px] text-[#64748B]">{{ errorMessage() }}</p>
+    <button type="button" (click)="retry()" class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink">
+      Réessayer
+    </button>
+  </div>
+} @else if (users().length === 0) {
+  <p class="py-12 text-center text-[16px] text-[#64748B]">Aucun utilisateur trouvé.</p>
+} @else {
+  <p class="mt-4 text-[14px] text-[#64748B]">{{ total() }} utilisateur{{ total() > 1 ? 's' : '' }}</p>
+  <ul class="mt-4 flex flex-col gap-3">
+    @for (user of users(); track user.id) {
+      <li class="rounded-2xl border border-[#E2E8F0] p-4">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-[16px] font-semibold text-[#141219]">
+              {{ user.username }}
+              @if (user.isVerified) {
+                <span class="ml-2 rounded-full bg-[#F0FDF4] px-2 py-0.5 text-[12px] font-medium text-[#0F6932]">Vérifié</span>
+              }
+              @if (user.isBanned) {
+                <span class="ml-2 rounded-full bg-[#FB2C36]/10 px-2 py-0.5 text-[12px] font-semibold text-[#FB2C36]">Banni</span>
+              }
+            </p>
+            <p class="truncate text-[13px] text-[#64748B]">{{ user.email }} · {{ user.reputation }} points</p>
+          </div>
+
+          <label class="flex items-center gap-2 text-[13px] text-[#64748B]">
+            Rôle
+            <select
+              [value]="user.role"
+              [disabled]="isMe(user) || busyId() === user.id"
+              (change)="changeRole(user, $any($event.target).value)"
+              class="rounded-full border border-[#E2E8F0] bg-white px-3 py-1.5 text-[14px] font-medium text-[#141219] disabled:opacity-60"
+            >
+              @for (role of roles; track role.value) {
+                <option [value]="role.value">{{ role.label }}</option>
+              }
+            </select>
+          </label>
+
+          @if (!isMe(user)) {
+            @if (user.isBanned) {
+              <button
+                type="button"
+                (click)="unban(user)"
+                [disabled]="busyId() === user.id"
+                class="rounded-full border border-[#E2E8F0] px-3 py-1.5 text-[13px] font-semibold text-[#475569] disabled:opacity-60"
+              >
+                Lever le ban
+              </button>
+            } @else {
+              <button
+                type="button"
+                (click)="startBan(user)"
+                class="rounded-full border border-[#FB2C36]/40 px-3 py-1.5 text-[13px] font-semibold text-[#FB2C36]"
+              >
+                Bannir
+              </button>
+            }
+          }
+        </div>
+
+        @if (banningId() === user.id) {
+          <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-start">
+            <div class="flex flex-1 flex-col gap-1">
+              <label [for]="'ban-' + user.id" class="text-[13px] font-semibold text-[#141219]">Motif du bannissement</label>
+              <input
+                #reason
+                [id]="'ban-' + user.id"
+                type="text"
+                maxlength="500"
+                class="rounded-xl border border-[#E2E8F0] px-3 py-2 text-[14px]"
+              />
+              @if (banError()) {
+                <p role="alert" class="text-[13px] font-medium text-[#FB2C36]">{{ banError() }}</p>
+              }
+            </div>
+            <button
+              type="button"
+              (click)="ban(user, reason.value)"
+              [disabled]="busyId() === user.id"
+              class="rounded-full bg-[#FB2C36] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-60 sm:mt-6"
+            >
+              Confirmer le ban
+            </button>
+          </div>
+        }
+      </li>
+    }
+  </ul>
+  <app-pager [page]="page()" [totalPages]="totalPages()" (pageChange)="goTo($event)" />
+}

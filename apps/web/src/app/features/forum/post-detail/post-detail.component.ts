@@ -9,34 +9,25 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import {
-  ForumAnswer,
-  ForumAuthorSummary,
-  ForumPostDetail,
-  ForumService,
-} from '../../../core/services/forum.service';
-import { AuthStore } from '../../../core/store/auth.store';
-import { ToastService } from '../../../core/services/toast.service';
+import { ForumPostDetail } from '../../../core/services/forum.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
-import { initialsFrom, relativeTime } from '../../../shared/utils/forum-thread.mapper';
+import { ReportButtonComponent } from '../../../shared/components/report-button/report-button.component';
+import { VoteControlComponent } from '../../../shared/components/vote-control/vote-control.component';
+import { AnswerThreadBase } from '../../../shared/forum/answer-thread.base';
 
 @Component({
   selector: 'app-post-detail',
   standalone: true,
-  imports: [RouterLink, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule, ReportButtonComponent, VoteControlComponent],
   templateUrl: './post-detail.component.html',
   styleUrl: './post-detail.component.css',
 })
-export class PostDetailComponent implements OnInit {
+export class PostDetailComponent extends AnswerThreadBase implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly forum = inject(ForumService);
-  protected readonly authStore = inject(AuthStore);
-  private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly fb = inject(FormBuilder);
 
   readonly post = signal<ForumPostDetail | null>(null);
   readonly canEdit = computed(() => {
@@ -59,15 +50,7 @@ export class PostDetailComponent implements OnInit {
   readonly confirmingDelete = signal(false);
   readonly deleting = signal(false);
   readonly deleteError = signal<string | null>(null);
-  readonly answering = signal(false);
-  readonly answerError = signal<string | null>(null);
-  readonly confirmingAnswerId = signal<string | null>(null);
-  readonly deletingAnswerId = signal<string | null>(null);
-  readonly answerDeleteError = signal<string | null>(null);
 
-  readonly answerForm = this.fb.nonNullable.group({
-    body: ['', [Validators.required, Validators.maxLength(50000)]],
-  });
 
   private currentId: string | null = null;
 
@@ -164,6 +147,7 @@ export class PostDetailComponent implements OnInit {
       },
     });
   }
+<<<<<<< HEAD
 
   submitAnswer(): void {
     if (this.answering()) return;
@@ -315,4 +299,6 @@ export class PostDetailComponent implements OnInit {
   timeAgo(iso: string): string {
     return relativeTime(iso);
   }
+=======
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
 }

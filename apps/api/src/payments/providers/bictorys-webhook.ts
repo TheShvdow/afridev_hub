@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 // Vérification des webhooks Bictorys — doc « Comment valider les webhooks ».
 // Deux méthodes : HMAC-SHA256 si X-Webhook-Signature est présent (fenêtre de 5 minutes),

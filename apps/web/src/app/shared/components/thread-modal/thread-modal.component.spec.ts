@@ -4,6 +4,8 @@ import { of } from 'rxjs';
 import { ThreadModalComponent } from './thread-modal.component';
 import { Thread } from '../card-thread/card-thread.component';
 import { ForumAnswer, ForumPostDetail, ForumService } from '../../../core/services/forum.service';
+import { ModerationService } from '../../../core/services/moderation.service';
+import { VotesService } from '../../../core/services/votes.service';
 import { AuthStore } from '../../../core/store/auth.store';
 
 const THREAD: Thread = {
@@ -78,6 +80,12 @@ const forumStub = {
   getPost: jest.fn(() => of(DETAIL)),
   createAnswer: jest.fn(() => of(ANSWER)),
   deleteAnswer: jest.fn(() => of(undefined)),
+  acceptAnswer: jest.fn(() => of({})),
+};
+
+const votesStub = {
+  votePost: jest.fn(() => of({ action: 'added', newScore: 5 })),
+  voteAnswer: jest.fn(() => of({ action: 'added', newScore: 2 })),
 };
 
 const authStub = {
@@ -93,6 +101,7 @@ describe('ThreadModalComponent', () => {
     forumStub.createAnswer.mockClear();
     forumStub.deleteAnswer.mockClear();
     authStub.isAuthenticated.mockReturnValue(true);
+    authStub.currentUser.mockReturnValue({ id: 'user-2', role: 'MEMBER' });
 
     await TestBed.configureTestingModule({
       imports: [ThreadModalComponent],
@@ -100,6 +109,8 @@ describe('ThreadModalComponent', () => {
         provideRouter([]),
         { provide: ForumService, useValue: forumStub },
         { provide: AuthStore, useValue: authStub },
+        { provide: VotesService, useValue: votesStub },
+        { provide: ModerationService, useValue: { report: jest.fn(() => of({})) } },
       ],
     }).compileComponents();
 
@@ -152,6 +163,47 @@ describe('ThreadModalComponent', () => {
     });
     expect(component.post()?.answers.length).toBe(DETAIL.answers.length + 1);
     expect(fixture.nativeElement.textContent).toContain(ANSWER.body);
+  });
+
+  it('should refuse an answer shorter than 30 characters', () => {
+    const component = fixture.componentInstance;
+    forumStub.createAnswer.mockClear();
+    component.answerForm.setValue({ body: '   Trop court.   ' });
+
+    component.submitAnswer();
+
+    expect(component.answerForm.controls.body.hasError('minlength')).toBe(true);
+    expect(forumStub.createAnswer).not.toHaveBeenCalled();
+  });
+
+  it('should let a member vote on the question from the modal', () => {
+    const button = fixture.nativeElement.querySelector('[aria-label="Voter pour cette question"]') as HTMLButtonElement;
+    button.click();
+    fixture.detectChanges();
+
+    expect(votesStub.votePost).toHaveBeenCalledWith(DETAIL.id, 'UP');
+    expect(fixture.componentInstance.post()?.voteScore).toBe(5);
+  });
+
+  it('should not offer to vote on the viewer\'s own answer', () => {
+    // L'utilisateur courant (user-2) a écrit la réponse answer-1 : seule la question reçoit des flèches.
+    expect(fixture.nativeElement.querySelector('[aria-label="Voter pour cette réponse"]')).toBeNull();
+  });
+
+  it('should let the question author accept an answer', () => {
+    authStub.currentUser.mockReturnValue({ id: 'user-1', role: 'MEMBER' });
+    const authorFixture = TestBed.createComponent(ThreadModalComponent);
+    authorFixture.componentRef.setInput('thread', THREAD);
+    authorFixture.detectChanges();
+    authorFixture.detectChanges();
+
+    const accept = Array.from(authorFixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+      .find((button) => button.textContent?.includes('Accepter cette réponse'));
+    accept?.click();
+    authorFixture.detectChanges();
+
+    expect(forumStub.acceptAnswer).toHaveBeenCalledWith(DETAIL.answers[0].id);
+    expect(authorFixture.componentInstance.post()?.answers[0].isAccepted).toBe(true);
   });
 
   it('should delete an answer authored by the current user', () => {

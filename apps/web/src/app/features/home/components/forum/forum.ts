@@ -17,7 +17,6 @@ const DISPLAY_LIMIT = 4;
   standalone: true,
   imports: [SectionHeading, RouterLink, CardThreadComponent, ForumFiltersComponent, ThreadModalComponent],
   templateUrl: './forum.html',
-  styleUrl: './forum.css',
 })
 export class Forum implements OnInit {
   private readonly forum = inject(ForumService);

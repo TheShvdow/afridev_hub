@@ -45,54 +45,62 @@ interface OperationLike {
   security?: unknown[];
 }
 
+const dataEnvelope = (data: unknown) => ({ type: 'object', required: ['data'], properties: { data } });
+
+// Succès : le schéma de la réponse est enveloppé dans { data } ; une réponse sans contenu reçoit un { data } nul.
+function wrapSuccessResponse(res: ResponseLike): void {
+  const json = res.content?.['application/json'];
+  if (json?.schema && !json.schema.properties?.data) {
+    json.schema = dataEnvelope(json.schema);
+  } else if (!res.content) {
+    res.content = { 'application/json': { schema: dataEnvelope({ nullable: true }) } };
+  }
+}
+
+// Codes d'erreur qui s'appliquent à l'opération : 500 toujours, 400 avec un corps ou une requête, 401 et 403 si
+// elle est protégée, 404 avec un paramètre de chemin.
+function applicableErrorCodes(op: OperationLike, path: string): Set<string> {
+  const codes = new Set<string>(['500']);
+  if (op.requestBody || (op.parameters ?? []).some((parameter) => parameter.in === 'query')) codes.add('400');
+  if (op.security) {
+    codes.add('401');
+    codes.add('403');
+  }
+  if (path.includes('{')) codes.add('404');
+  return codes;
+}
+
+function applyEnvelopeToOperation(op: OperationLike, path: string): void {
+  op.description ??= op.summary;
+  op.responses ??= {};
+  const responses = op.responses;
+
+  const codes = Object.keys(responses);
+  if (codes.some((code) => code.startsWith('3'))) return; // redirection : pas d'enveloppe
+
+  for (const code of codes) {
+    if (code.startsWith('2') && code !== '204') wrapSuccessResponse(responses[code]);
+  }
+
+  for (const code of applicableErrorCodes(op, path)) {
+    responses[code] = {
+      description: responses[code]?.description ?? ERROR_DESCRIPTIONS[code],
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } },
+    };
+  }
+}
+
 // Passe sur le document OpenAPI généré : applique l'enveloppe AD-7 à toutes les opérations
 // (succès { data }, erreurs { error }) et complète les descriptions manquantes.
 // Les réponses de redirection (ex. callback OAuth) ne sont pas enveloppées.
 export function applyEnvelopeToDocument(doc: OpenAPIObject): void {
-  doc.components = doc.components ?? {};
-  doc.components.schemas = { ...(doc.components.schemas ?? {}), ErrorEnvelope: ERROR_ENVELOPE as never };
+  doc.components ??= {};
+  doc.components.schemas = { ...doc.components.schemas, ErrorEnvelope: ERROR_ENVELOPE as never };
 
   for (const [path, item] of Object.entries(doc.paths)) {
     for (const method of HTTP_METHODS) {
       const op = (item as Record<string, OperationLike | undefined>)[method];
-      if (!op) continue;
-
-      op.description ??= op.summary;
-      op.responses ??= {};
-
-      const codes = Object.keys(op.responses);
-      if (codes.some((c) => c.startsWith('3'))) continue; // redirection : pas d'enveloppe
-
-      for (const code of codes) {
-        if (!code.startsWith('2') || code === '204') continue;
-        const res = op.responses[code];
-        const json = res.content?.['application/json'];
-        if (json?.schema && !json.schema.properties?.data) {
-          json.schema = { type: 'object', required: ['data'], properties: { data: json.schema } };
-        } else if (!res.content) {
-          res.content = {
-            'application/json': {
-              schema: { type: 'object', required: ['data'], properties: { data: { nullable: true } } },
-            },
-          };
-        }
-      }
-
-      const errorCodes = new Set<string>(['500']);
-      if (op.requestBody || (op.parameters ?? []).some((p) => p.in === 'query')) errorCodes.add('400');
-      if (op.security) {
-        errorCodes.add('401');
-        errorCodes.add('403');
-      }
-      if (path.includes('{')) errorCodes.add('404');
-
-      for (const code of errorCodes) {
-        const existing = op.responses[code];
-        op.responses[code] = {
-          description: existing?.description ?? ERROR_DESCRIPTIONS[code],
-          content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } },
-        };
-      }
+      if (op) applyEnvelopeToOperation(op, path);
     }
   }
 }

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <section class="bg-[#F8FAFC]">
   <div class="mx-auto w-full max-w-[1200px] px-6 py-12 sm:px-10 lg:px-0">
     <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -66,5 +67,148 @@
         </article>
       }
     </div>
+=======
+<app-page-hero title="Mes offres" subtitle="Suivez vos offres, leur validation et les candidatures reçues." />
+
+<section class="bg-white">
+  <div class="mx-auto w-full max-w-[1000px] px-6 py-12 sm:px-10 lg:px-0 lg:py-10">
+    @if (loading()) {
+      <p class="py-12 text-center text-[16px] text-[#64748B]">Chargement de vos offres…</p>
+    } @else if (errorMessage()) {
+      <div class="flex flex-col items-center gap-4 py-12 text-center">
+        <p role="alert" class="text-[16px] text-[#64748B]">{{ errorMessage() }}</p>
+        <button type="button" (click)="retry()" class="inline-flex h-12 items-center justify-center rounded-full border border-ink px-5 text-base font-semibold text-ink">Réessayer</button>
+      </div>
+    } @else {
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        @if (plan(); as plan) {
+          <p class="text-[15px] text-[#475569]">
+            {{ quotaText(plan) }}
+            @if (quotaReached(plan)) {
+              <span class="font-semibold text-[#FB2C36]">Quota atteint.</span>
+            }
+          </p>
+        } @else {
+          <span></span>
+        }
+        <a routerLink="/jobs/post" class="inline-flex h-12 items-center justify-center rounded-full bg-ink px-5 text-base font-semibold text-white transition-opacity hover:opacity-90">Publier une offre</a>
+      </div>
+
+      @if (offers().length === 0) {
+        <p class="py-12 text-center text-[16px] text-[#64748B]">Vous n'avez publié aucune offre pour le moment.</p>
+      } @else {
+        <ul class="mt-6 flex flex-col gap-5">
+          @for (offer of offers(); track offer.id) {
+            <li class="rounded-2xl border border-[#E2E8F0] p-5">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h2 class="text-[20px] font-bold leading-[28px] text-[#141219]">{{ offer.title }}</h2>
+                  <p class="text-[14px] text-[#64748B]">{{ offer.company }} · {{ countryName(offer.country) }} · {{ salary(offer) }}</p>
+                </div>
+                <span [class]="'rounded-full px-3 py-1 text-[13px] font-semibold ' + statusClass(offer)">{{ statusLabel(offer) }}</span>
+              </div>
+
+              <p class="mt-2 text-[14px] text-[#64748B]">
+                Soumise {{ timeAgo(offer.createdAt) }}
+                @if (offer.status === 'ACTIVE') {
+                  · expire le {{ date(offer.expiresAt) }}
+                }
+                · {{ offer._count.applications }} candidature{{ offer._count.applications > 1 ? 's' : '' }}
+              </p>
+
+              @if (offer.status === 'REJECTED' && offer.rejectionReason) {
+                <p class="mt-3 rounded-xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-2 text-[14px] text-[#FB2C36]">
+                  <strong>Motif du refus :</strong> {{ offer.rejectionReason }}
+                </p>
+              }
+
+              <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-[#E2E8F0] pt-4">
+                <a [routerLink]="['/jobs', offer.id]" class="rounded-full border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#141219] transition-colors hover:border-ink disabled:opacity-60">Voir l'offre</a>
+                @if (canEdit(offer)) {
+                  <a [routerLink]="['/jobs', offer.id, 'edit']" class="rounded-full border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#141219] transition-colors hover:border-ink disabled:opacity-60">Modifier</a>
+                }
+                @if (offer._count.applications > 0) {
+                  <button type="button" (click)="toggleApplications(offer)" [attr.aria-expanded]="openApplicationsId() === offer.id" class="rounded-full border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#141219] transition-colors hover:border-ink disabled:opacity-60">
+                    {{ openApplicationsId() === offer.id ? 'Masquer les candidatures' : 'Voir les candidatures (' + offer._count.applications + ')' }}
+                  </button>
+                }
+                @if (canRenew(offer)) {
+                  <button type="button" (click)="renew(offer)" [disabled]="busyId() === offer.id" class="rounded-full border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#141219] transition-colors hover:border-ink disabled:opacity-60">Renouveler (60 jours)</button>
+                }
+                @if (canClose(offer)) {
+                  @if (closingId() === offer.id) {
+                    <span class="text-[14px] font-medium text-[#64748B]">Clôturer cette offre ?</span>
+                    <button type="button" (click)="confirmClose(offer)" [disabled]="busyId() === offer.id" class="rounded-full bg-[#FB2C36] px-4 py-2 text-[14px] font-semibold text-white disabled:opacity-60">Confirmer</button>
+                    <button type="button" (click)="askClose(offer)" class="rounded-full border border-[#E2E8F0] px-4 py-2 text-[14px] font-semibold text-[#141219] transition-colors hover:border-ink disabled:opacity-60">Annuler</button>
+                  } @else {
+                    <button type="button" (click)="askClose(offer)" class="rounded-full border border-[#FB2C36]/40 px-4 py-2 text-[14px] font-semibold text-[#FB2C36]">Clôturer</button>
+                  }
+                }
+              </div>
+
+              @if (openApplicationsId() === offer.id) {
+                <div class="mt-4 flex flex-col gap-4">
+                  @if (loadingApplications()) {
+                    <p class="text-[15px] text-[#64748B]">Chargement des candidatures…</p>
+                  } @else if (applicationsError()) {
+                    <p role="alert" class="text-[15px] text-[#FB2C36]">{{ applicationsError() }}</p>
+                  } @else {
+                    @for (application of applications(); track application.id) {
+                      <article class="rounded-2xl bg-[#F8FAFC] p-4">
+                        <div class="flex flex-wrap items-baseline justify-between gap-2">
+                          <h3 class="text-[17px] font-bold text-[#141219]">{{ applicantName(application) }}</h3>
+                          <span class="text-[13px] text-[#94A3B8]">{{ timeAgo(application.createdAt) }}</span>
+                        </div>
+                        <p class="text-[14px] text-[#64748B]">
+                          <a [routerLink]="['/u', application.user.username]" class="font-semibold text-[#0F6932] hover:underline">&#64;{{ application.user.username }}</a>
+                          @if (application.user.email; as email) {
+                            · <a [href]="'mailto:' + email" class="hover:underline">{{ email }}</a>
+                          }
+                          @if (application.phone) {
+                            · {{ application.phone }}
+                          }
+                        </p>
+                        @if (application.country || application.city) {
+                          <p class="text-[14px] text-[#64748B]">{{ application.city }}{{ application.city && application.country ? ', ' : '' }}{{ countryName(application.country) }}</p>
+                        }
+
+                        <dl class="mt-3 grid grid-cols-1 gap-x-6 gap-y-1 text-[14px] sm:grid-cols-2">
+                          @if (application.experienceYears !== null && application.experienceYears !== undefined) {
+                            <div class="flex gap-2"><dt class="text-[#64748B]">Expérience</dt><dd class="font-medium text-[#141219]">{{ application.experienceYears }} an{{ application.experienceYears > 1 ? 's' : '' }}</dd></div>
+                          }
+                          @if (application.availableFrom) {
+                            <div class="flex gap-2"><dt class="text-[#64748B]">Disponible dès le</dt><dd class="font-medium text-[#141219]">{{ date(application.availableFrom) }}</dd></div>
+                          }
+                          @if (application.expectedSalary) {
+                            <div class="flex gap-2"><dt class="text-[#64748B]">Prétentions</dt><dd class="font-medium text-[#141219]">{{ application.expectedSalary.toLocaleString('fr-FR') }} {{ application.expectedCurrency }} / mois</dd></div>
+                          }
+                          @if (application.stack?.length) {
+                            <div class="flex gap-2"><dt class="text-[#64748B]">Technologies</dt><dd class="font-medium text-[#141219]">{{ application.stack?.join(', ') }}</dd></div>
+                          }
+                        </dl>
+
+                        <div class="mt-3 flex flex-wrap gap-3 text-[14px]">
+                          @if (application.linkedinUrl) { <a [href]="application.linkedinUrl" target="_blank" rel="noopener noreferrer" class="font-semibold text-[#0F6932] hover:underline">LinkedIn</a> }
+                          @if (application.githubUrl) { <a [href]="application.githubUrl" target="_blank" rel="noopener noreferrer" class="font-semibold text-[#0F6932] hover:underline">GitHub</a> }
+                          @if (application.portfolioUrl) { <a [href]="application.portfolioUrl" target="_blank" rel="noopener noreferrer" class="font-semibold text-[#0F6932] hover:underline">Portfolio</a> }
+                          @if (application.cvDownloadUrl) { <a [href]="application.cvDownloadUrl" target="_blank" rel="noopener noreferrer" class="font-semibold text-[#0F6932] hover:underline">Télécharger le CV</a> }
+                        </div>
+
+                        <p class="mt-3 whitespace-pre-line break-words text-[15px] leading-[24px] text-[#475569]">{{ application.message }}</p>
+
+                        @if (application.profileTruncated) {
+                          <p class="mt-3 text-[13px] text-[#64748B]">Plan gratuit : le profil du candidat est réduit. Le plan premium affiche le profil complet.</p>
+                        }
+                      </article>
+                    }
+                  }
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+    }
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
   </div>
 </section>

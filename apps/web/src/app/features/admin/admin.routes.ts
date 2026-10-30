@@ -1,4 +1,9 @@
 import { Routes } from '@angular/router';
+import { adminHomeGuard, roleGuard } from '../../core/guards/role.guard';
+
+// L'API réserve /admin/* aux ADMIN ; signalements (/moderation/*) et offres à valider (/jobs/review)
+// restent ouverts aux modérateurs.
+const ADMIN_ONLY = { canActivate: [roleGuard], data: { roles: ['ADMIN'] } };
 
 export const ADMIN_ROUTES: Routes = [
   {
@@ -8,7 +13,15 @@ export const ADMIN_ROUTES: Routes = [
         (m) => m.AdminShellComponent
       ),
     children: [
-      { path: '', redirectTo: 'reports', pathMatch: 'full' },
+      // Les administrateurs arrivent sur le tableau de bord, les modérateurs sur les signalements.
+      { path: '', pathMatch: 'full', canActivate: [adminHomeGuard], children: [] },
+      {
+        path: 'dashboard',
+        ...ADMIN_ONLY,
+        loadComponent: () =>
+          import('./dashboard/admin-dashboard.component').then((m) => m.AdminDashboardComponent),
+        title: 'Tableau de bord — Admin',
+      },
       {
         path: 'reports',
         loadComponent: () =>
@@ -17,6 +30,7 @@ export const ADMIN_ROUTES: Routes = [
       },
       {
         path: 'users',
+        ...ADMIN_ONLY,
         loadComponent: () =>
           import('./users/admin-users.component').then(
             (m) => m.AdminUsersComponent
@@ -24,23 +38,16 @@ export const ADMIN_ROUTES: Routes = [
         title: 'Utilisateurs — Admin',
       },
       {
-        path: 'projects',
-        loadComponent: () =>
-          import('./projects/admin-projects.component').then(
-            (m) => m.AdminProjectsComponent
-          ),
-        title: 'Projets à approuver — Admin',
-      },
-      {
         path: 'jobs',
         loadComponent: () =>
           import('./jobs/admin-jobs.component').then(
             (m) => m.AdminJobsComponent
           ),
-        title: 'Offres d\'emploi — Admin',
+        title: 'Offres à valider — Admin',
       },
       {
         path: 'audit',
+        ...ADMIN_ONLY,
         loadComponent: () =>
           import('./audit/audit-log.component').then(
             (m) => m.AuditLogComponent

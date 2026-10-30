@@ -1,0 +1,332 @@
+# tickets.toml — epic-front-phase1 (E7)
+# Interfaces web Phase 1 alignées sur l'API. Les stories 1 à 9 ont été livrées directement, hors ticket,
+# sur la branche feat/import-front (PR #13) : chaque description renvoie aux commits et le plan porte le statut done.
+# Build order : 10 (données) puis 11 à 20 en parallèle, 21 (refactor sweep), 22 (bout en bout).
+# Tracer bullet : story 3, offres d'emploi — chemin complet écran, API, base.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Page Mon compte : conditions du badge vérifié"
+description = """
+Pays, niveau, stack et bio ≥ 50 caractères modifiables depuis Mon compte avec la liste des conditions du badge ; GET /users/:username renvoie pays, stack et niveau. Commits c9411a9 et 27c66fb.
+"""
+verify = "Un membre remplit les cinq conditions depuis la page et voit le badge attribué."
+covers = ["CAP-2"]
+after = ["2.8"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Forum : formulaires et réponses partagés, réponse ≥ 30 caractères"
+description = """
+Champs de question et logique de réponses factorisés ; règle du glossaire « réponse ≥ 30 caractères » appliquée par l'API (CreateAnswerDto) et par le front. Commits 7e5feb8, 4de9f62 et 9530b95.
+"""
+verify = "Une réponse de moins de 30 caractères est refusée par le formulaire et par l'API."
+covers = ["CAP-3"]
+after = ["3.1"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Offres d'emploi branchées sur /jobs"
+description = """
+Liste et section d'accueil filtrées par pays, mode et devise avec pagination, détail, candidature par message et publication avec activation du profil recruteur ; données de démonstration supprimées. Commit 1c2cc36.
+"""
+verify = "Un membre filtre les offres réelles, ouvre une offre et postule ; un recruteur soumet une offre qui part en validation."
+covers = ["CAP-5"]
+after = ["5.8", "5.9"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Vote et acceptation d'une réponse"
+description = """
+Votes ▲▼ sur la question et sur les réponses, bouton « Accepter cette réponse » pour l'auteur, erreurs de l'API en toast. Commit 19bce14.
+"""
+verify = "L'auteur d'une question accepte une réponse et le score d'une réponse change après un vote."
+covers = ["CAP-3"]
+after = ["3.1"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Notifications : page, compteur et lien vers le contenu"
+description = """
+Notification.link enregistré par l'API (migration 20261027120000_notification_link), page /notifications avec lecture et « tout marquer lu », compteur dans le menu du compte. Commits dd6b31c et 8655d8f.
+"""
+verify = "Une réponse reçue apparaît dans la liste et un clic ouvre la question concernée."
+covers = ["CAP-2", "CAP-3"]
+after = ["2.6", "3.6"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 6
+type = "story"
+title = "Signalement d'une question, d'une réponse ou d'un projet"
+description = """
+Bouton « Signaler » avec motif et précisions sur les questions, les réponses et les projets ; masqué aux visiteurs et à l'auteur. Commit bb0899b.
+"""
+verify = "Un membre signale une question ; un second signalement du même contenu est refusé avec un message clair."
+covers = ["CAP-3", "CAP-4"]
+after = ["3.5"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 7
+type = "story"
+title = "Pages d'administration : signalements, offres, utilisateurs, audit"
+description = """
+Signalements (décision ou rejet), offres à valider (publier, refuser avec motif), utilisateurs (rôle, bannir, lever le ban) et journal d'audit ; page « Projets à approuver » supprimée, l'API publie les projets d'emblée. Commit f55b57d.
+"""
+verify = "Un modérateur traite un signalement et valide une offre ; un administrateur change un rôle."
+covers = ["CAP-3", "CAP-5"]
+after = ["3.5", "5.6"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 8
+type = "story"
+title = "Messages d'erreur de l'API en français"
+description = """
+Message lisible pour le 429 et traduction des messages par défaut 401, 403 et 404 dans l'enveloppe AD-7. Commits c9411a9 et 4de9f62.
+"""
+verify = "Un 429 et un 404 de route renvoient un message en français dans l'enveloppe d'erreur."
+covers = ["CAP-1"]
+after = []
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 9
+type = "story"
+title = "Accessibilité et qualité du front"
+description = """
+Noms accessibles sur les icônes, équivalents clavier sur les éléments cliquables, 37 feuilles de style vides supprimées, Quality Gate SonarCloud de la PR #13 au vert. Commits 6827a0f, 765e8c7 et 0edbb43.
+"""
+verify = "Le Quality Gate de la PR est au vert et aucun élément cliquable n'est inaccessible au clavier."
+covers = ["CAP-1"]
+after = []
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 10
+type = "story"
+title = "Base de démonstration : migrations et données"
+description = """
+Base Neon dédiée à la démonstration (ep-falling-mouse), séparée de la base de développement : prisma migrate reset puis les 15 migrations, npm run prisma:seed (référence) et npm run prisma:seed:demo (7 membres, 4 questions, 3 projets, 5 offres). Réalisée le 2026-10-27, le reset lancé par le mainteneur.
+"""
+verify = "prisma migrate status indique une base à jour et les écrans liste, forum et offres affichent les données de démonstration."
+covers = ["CAP-1"]
+after = [5, 3]
+hitl = true
+risk = "medium"
+
+[[entry]]
+id = 11
+type = "story"
+title = "Modification d'une réponse"
+description = """
+Bouton « Modifier » sur une réponse de l'auteur qui appelle PATCH /forum/answers/:id avec la même règle de 30 caractères.
+"""
+verify = "L'auteur modifie sa réponse et la nouvelle version s'affiche ; un texte de moins de 30 caractères est refusé."
+covers = ["CAP-3"]
+after = [2, "3.4"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 12
+type = "story"
+title = "Afficher le vote déjà donné"
+description = """
+L'API renvoie le vote du membre connecté sur chaque question et réponse (userVote) et le front met le bouton en évidence ; un second clic annule le vote. Mise à jour immédiate du score et du pouce avec retour arrière en cas de refus. Commits de cette story : API `userVote`, composant `app-vote-control`.
+"""
+verify = "Après rechargement, la flèche du vote donné est mise en évidence et un second clic l'annule."
+covers = ["CAP-3"]
+after = [4]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 13
+type = "story"
+title = "Signalements : lien vers la cible et signalement des offres"
+description = """
+L'API renvoie l'identifiant de la question parente et le slug du projet, et accepte le type JOB ; le front lie chaque signalement à sa cible et ajoute « Signaler » sur une offre.
+"""
+verify = "Un modérateur ouvre en un clic la réponse ou le projet signalé ; un membre signale une offre."
+covers = ["CAP-3", "CAP-5"]
+after = [6, 7]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 14
+type = "story"
+title = "Administration : tableau de bord et état de bannissement"
+description = """
+Écran des statistiques et indicateurs SM-2 à SM-7 (GET /admin/stats) ; la liste des utilisateurs indique qui est banni.
+"""
+verify = "Un administrateur voit les indicateurs et sait en un coup d'œil quels comptes sont bannis."
+covers = ["CAP-3", "CAP-4", "CAP-5", "CAP-6"]
+after = [7, "3.7", "4.8", "5.12", "6.5"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 15
+type = "story"
+title = "Temps réel : notifications et réputation par WebSocket"
+description = """
+Le front se connecte au gateway Socket.io pour recevoir les notifications et la mise à jour de la réputation sans rechargement.
+"""
+verify = "Une réponse reçue incrémente le compteur de notifications en moins de 3 secondes sans recharger la page."
+covers = ["CAP-2", "CAP-3"]
+after = [5, "2.6"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 16
+type = "story"
+title = "Recruteur : tableau de bord des offres, quota et renouvellement"
+description = """
+Écran « Mes offres » (GET /jobs/mine) avec statuts et motifs de refus, quota du plan (GET /jobs/plan), modifier, fermer et renouveler. Livré : liste, motifs de refus, quota, renouveler, clôturer et lecture des candidatures reçues (coordonnées, liens, CV) ; la modification d'une offre reste à faire.
+"""
+verify = "Un recruteur voit ses offres refusées avec le motif, en renouvelle une et voit son quota du mois."
+covers = ["CAP-5"]
+after = [3, "5.7", "5.10"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 17
+type = "story"
+title = "Candidature avec CV PDF"
+description = """
+Envoi du CV via POST /upload/cv-presign puis cvKey dans la candidature, limité à un PDF de 5 Mo.
+"""
+verify = "Un membre joint un PDF à sa candidature et le recruteur peut le télécharger."
+covers = ["CAP-5"]
+after = [3, "5.5"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 18
+type = "story"
+title = "Alertes emploi"
+description = """
+Création, liste et suppression des alertes (5 au plus) depuis les filtres de la liste.
+"""
+verify = "Un membre crée une alerte depuis une recherche et la supprime ; une sixième est refusée."
+covers = ["CAP-5"]
+after = [3, "5.11"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 19
+type = "story"
+title = "Plan recruteur premium et paiement Bictorys"
+description = """
+Écran du plan et lancement du paiement Bictorys avec suivi du statut et confirmation in-app.
+"""
+verify = "Un recruteur paie en sandbox et voit son plan passer en premium."
+covers = ["CAP-6"]
+after = [16, "6.2", "6.6"]
+hitl = true
+risk = "high"
+unknown = "Le paiement par carte renvoie-t-il une page de paiement exploitable côté Bictorys ? Il renvoyait une 404 en sandbox."
+
+[[entry]]
+id = 20
+type = "story"
+title = "Décision sur les pages Mentorat et Communautés"
+description = """
+Décider avec le product owner si ces pages de phase 2, à données statiques, restent en vitrine ou sont masquées du menu.
+"""
+verify = "La décision est consignée dans les Notes de l'épic et le menu la reflète. Décision du 2026-10-28 : garder en vitrine avec bandeau « Aperçu » et actions désactivées ; livré."
+covers = ["CAP-1"]
+after = []
+hitl = true
+risk = "low"
+
+[[entry]]
+id = 21
+type = "story"
+title = "Refactor sweep — E7"
+description = """
+Nettoyage du front à partir des plans et des constats différés : notes SonarCloud restantes (rôles ARIA, jest.config.ts), doublons de logique de pagination. Livré le 2026-10-28 : vulnérabilité (nombre pseudo-aléatoire), bug (promesse non attendue au démarrage), point critique (complexité de l'enveloppe Swagger, avec tests de caractérisation), imports en double, chaînes `String.raw`, `node:crypto`, `async` inutiles, seed dupliqué supprimé, boucles du seed en transactions, section Formations retirée de l'accueil. Reste volontairement : 12 « await dans une boucle » de l'API (traitements séquentiels voulus : relances d'e-mails, réconciliation des paiements, nouvelles tentatives Bictorys).
+"""
+verify = "Le Quality Gate reste au vert et les tests web passent."
+covers = ["CAP-1"]
+after = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 22
+type = "story"
+title = "Parcours de bout en bout du front"
+description = """
+Suite de bout en bout contre l'API réelle : inscription, profil et badge, question et réponse, vote, offre et candidature, signalement et modération. Livré : apps/web-e2e (Playwright), 47 scénarios, comptes e2e_* créés puis supprimés ; branchement à la CI restant à faire.
+"""
+verify = "La suite passe contre une base de test peuplée par le seed de démonstration."
+covers = ["CAP-1"]
+after = [21]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 23
+type = "story"
+title = "Candidature enrichie : coordonnées, liens, profil et CV"
+description = """
+Formulaire de candidature complet (nom, téléphone, pays, ville, LinkedIn, GitHub, portfolio, années d'expérience, disponibilité, prétentions salariales, technologies, CV PDF, message) prérempli depuis le profil ; migration 20261028120000_job_application_details, ApplyJobDto étendu et validé, envoi du CV vers R2 par URL signée avec fetch.
+"""
+verify = "Un membre postule avec ses informations et un CV PDF ; la candidature enregistrée contient tous les champs et le CV est joint."
+covers = ["CAP-5"]
+after = [3, 17]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 24
+type = "story"
+title = "Accusé de réception de candidature par e-mail"
+description = """
+Le candidat reçoit un e-mail récapitulatif (offre, entreprise, date, CV joint, référence) à l'envoi de sa candidature, même s'il a désactivé les e-mails d'activité ; un échec d'envoi n'annule pas la candidature.
+"""
+verify = "Après une candidature, un e-mail de confirmation arrive à l'adresse du candidat avec les détails de l'offre."
+covers = ["CAP-5"]
+after = [3, "5.9"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 25
+type = "story"
+title = "Modification d'une offre d'emploi"
+description = """
+Route /jobs/:id/edit : le formulaire de publication prérempli envoie PATCH /jobs/:id ; bouton « Modifier » dans « Mes offres » ; une offre refusée corrigée repart en validation.
+"""
+verify = "Un recruteur modifie le salaire d'une offre en ligne et la voit mise à jour ; une offre refusée corrigée passe en attente de validation."
+covers = ["CAP-5"]
+after = [16, "5.6"]
+hitl = false
+risk = "low"
+

@@ -3,7 +3,7 @@
 <section class="relative overflow-hidden bg-[#0F1011]">
   <!-- decorative brush (subtle) -->
   <div class="pointer-events-none absolute inset-0 flex justify-center" aria-hidden="true">
-    <svg
+    <svg aria-hidden="true"
       viewBox="0 0 535 97"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -25,6 +25,8 @@
   </div>
 </section>
 
+<app-preview-banner feature="Les communautés" />
+
 <!-- Main section -->
 <section class="bg-[#F8FAFC]">
   <div class="mx-auto w-full max-w-[1200px] px-6 py-16 sm:px-10 lg:px-0 lg:py-10">
@@ -33,12 +35,14 @@
       <div class="flex flex-wrap items-center gap-4">
         <button
           type="button"
+          disabled
           class="inline-flex h-9 items-center justify-center rounded-full border border-[#0F1011] bg-[#0F1011] px-4 text-base font-medium leading-[26px] text-white"
         >
           Tous
         </button>
         <button
           type="button"
+          disabled
           class="inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 text-base font-medium leading-[26px] text-ink"
         >
           Pays
@@ -46,6 +50,7 @@
         </button>
         <button
           type="button"
+          disabled
           class="inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 text-base font-medium leading-[26px] text-ink"
         >
           Technologies
@@ -63,7 +68,7 @@
               <div class="flex items-center gap-3.5">
                 <div class="flex h-12 items-center gap-2.5 rounded-medium border border-[#E2E8F0] px-4">
                     <span class="text-base font-normal leading-[26px] text-[#64748B]">{{ community.members }}</span>
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M9.51004 2.97C9.87004 3.5025 10.08 4.14 10.08 4.83C10.0725 6.63 8.65504 8.0925 6.87004 8.1525C6.79504 8.145 6.70504 8.145 6.62254 8.1525C4.83754 8.0925 3.42004 6.63 3.42004 4.83C3.42004 2.9925 4.90504 1.5 6.75004 1.5" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M12.3075 3C13.7625 3 14.9325 4.1775 14.9325 5.625C14.9325 7.0425 13.8075 8.1975 12.405 8.25C12.345 8.2425 12.2775 8.2425 12.21 8.25" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M3.12004 10.92C1.30504 12.135 1.30504 14.115 3.12004 15.3225C5.18254 16.7025 8.56504 16.7025 10.6275 15.3225C12.4425 14.1075 12.4425 12.1275 10.6275 10.92C8.57254 9.5475 5.19004 9.5475 3.12004 10.92Z" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -72,10 +77,11 @@
                 </div>
                 <button
                   type="button"
+                  disabled
                   class="flex size-12 items-center justify-center rounded-medium border border-[#E2E8F0] text-[#64748B]"
                   aria-label="Partager"
                 >
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M9 2.25C3.75 2.25 2.25 3.75 2.25 9C2.25 14.25 3.75 15.75 9 15.75C12.9703 15.75 14.7959 14.8921 15.45 12.375" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M6 10.5C6 9 6.75 6.75 10.125 6.75C14.5295 6.75 14.9964 6.75 14.9964 6.75" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M12.75 3.75L15.75 6.75L12.75 9.75" stroke="#64748B" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
@@ -88,24 +94,28 @@
             <h3 class="mt-[16px] text-[20px] font-bold leading-8 text-[#141219]">{{ community.title }}</h3>
 
             <!-- Join button -->
-            <a
-              href="#"
-              class="mt-[16px] inline-flex h-14 w-full items-center justify-center  rounded-full bg-[#0F1011] px-[10px] py-[14px] text-[16px] font-semibold leading-[26px] text-white"
+            <button
+              type="button"
+              disabled
+              title="Bientôt disponible"
+              class="mt-[16px] inline-flex h-14 w-full items-center justify-center  rounded-full bg-[#0F1011] px-[10px] py-[14px] text-[16px] font-semibold leading-[26px] text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               Rejoindre le groupe
-            </a>
+            </button>
 
             <!-- Event box -->
             <div class="mt-[16px] flex flex-col gap-[16px] rounded-large bg-[#F8FAFC] px-[16px] py-[8px]">
               <p class="text-[#0F6932] text-[16px] font-medium leading-[26px]">Prochain événement</p>
               <p class="text-[18px] font-bold leading-[29px] text-[#141219]">{{ community.event }}</p>
               <p class="text-[16px] font-medium leading-[26px] text-[#64748B]">{{ community.meta }}</p>
-              <a
-                href="#"
-                class="inline-flex w-fit items-center justify-center rounded-full border border-[#E2E8F0] px-[19px] py-[14px] text-[16px] font-semibold leading-[26px] text-[#141219]"
+              <button
+                type="button"
+                disabled
+                title="Bientôt disponible"
+                class="inline-flex w-fit items-center justify-center rounded-full border border-[#E2E8F0] px-[19px] py-[14px] text-[16px] font-semibold leading-[26px] text-[#141219] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Je participe
-              </a>
+              </button>
             </div>
           </article>
         }
@@ -115,6 +125,7 @@
       <div class="flex justify-center">
         <button
           type="button"
+          disabled
                 class="inline-flex w-fit items-center justify-center rounded-full border border-[#141219] px-[20px] md:px-[63px] py-[14px] text-[16px] font-semibold leading-[26px] text-[#141219]"
         >
           Charger plus

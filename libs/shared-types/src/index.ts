@@ -306,6 +306,7 @@ export interface NotificationItem {
   message:    string;
   targetType: string | null;
   targetId:   string | null;
+  link:       string | null;
   isRead:     boolean;
   createdAt:  string;
   actor:      UserSummary | null;

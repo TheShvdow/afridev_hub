@@ -5,6 +5,7 @@ import { of, throwError } from 'rxjs';
 import { ProjectDetailComponent } from './project-detail.component';
 import { ProjectDetail, ProjectsService } from '../../../core/services/projects.service';
 import { CountriesService } from '../../../core/services/countries.service';
+import { ModerationService } from '../../../core/services/moderation.service';
 import { AuthStore } from '../../../core/store/auth.store';
 
 const PROJECT: ProjectDetail = {
@@ -77,6 +78,7 @@ describe('ProjectDetailComponent', () => {
         { provide: ProjectsService, useValue: projectsStub },
         { provide: CountriesService, useValue: countriesStub },
         { provide: AuthStore, useValue: authStub },
+        { provide: ModerationService, useValue: { report: jest.fn(() => of({})) } },
         {
           provide: ActivatedRoute,
           useValue: { paramMap: of(convertToParamMap({ idOrSlug: PROJECT.slug })) },

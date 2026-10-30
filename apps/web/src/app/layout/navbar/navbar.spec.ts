@@ -1,9 +1,11 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { Navbar } from './navbar';
 import { AuthStore } from '../../core/store/auth.store';
+import { RealtimeService } from '../../core/services/realtime.service';
 import { envelopeInterceptor } from '../../core/interceptors/envelope.interceptor';
 import { authInterceptor } from '../../core/interceptors/auth.interceptor';
 import type { UserMe } from '@afridev/shared-types';
@@ -25,11 +27,14 @@ const user: UserMe = {
 };
 
 describe('Navbar', () => {
+  const realtime = { unreadCount: signal(0), refreshUnread: jest.fn() };
   let fixture: ReturnType<typeof TestBed.createComponent<Navbar>>;
   let store: InstanceType<typeof AuthStore>;
   let controller: HttpTestingController;
 
   beforeEach(async () => {
+    realtime.unreadCount.set(0);
+    realtime.refreshUnread.mockClear();
     localStorage.clear();
     sessionStorage.clear();
 
@@ -37,6 +42,7 @@ describe('Navbar', () => {
       imports: [Navbar],
       providers: [
         provideRouter([]),
+        { provide: RealtimeService, useValue: realtime },
         provideHttpClient(
           withInterceptors([envelopeInterceptor, authInterceptor])
         ),
@@ -84,13 +90,28 @@ describe('Navbar', () => {
     fixture.nativeElement
       .querySelector('button[aria-label="Menu du compte"]')
       .click();
+    realtime.unreadCount.set(3);
     fixture.detectChanges();
 
     const text = fixture.nativeElement.textContent;
 
     expect(text).toContain('idrissa_wade');
     expect(text).toContain('Mon profil');
+    expect(text).toContain('Notifications');
+    expect(text).toContain('3');
     expect(text).toContain('Déconnexion');
+  });
+
+  it('propose « Mes offres » aux recruteurs seulement', () => {
+    store.setTokens('at-1', 'rt-1');
+    store.setUser({ ...user, isRecruiter: true });
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('button[aria-label="Menu du compte"]').click();
+    realtime.unreadCount.set(0);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Mes offres');
   });
 
   it('déconnecte et ferme le menu au clic sur « Déconnexion »', () => {
@@ -101,6 +122,7 @@ describe('Navbar', () => {
     fixture.nativeElement
       .querySelector('button[aria-label="Menu du compte"]')
       .click();
+    realtime.unreadCount.set(0);
     fixture.detectChanges();
 
     const buttons = Array.from(

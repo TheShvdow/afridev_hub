@@ -4,7 +4,7 @@
       routerLink="/forum"
       class="inline-flex items-center gap-2 text-[16px] font-semibold text-[#0F6932] transition-opacity hover:opacity-80"
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       Retour au forum
@@ -90,7 +90,7 @@
 
           @if (question.isResolved) {
             <span class="inline-flex items-center gap-1.5 rounded-full bg-[#F0FDF4] px-3 py-1 text-[13px] font-medium text-[#0F6932]">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M5 12.5L9.5 17L19 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               Résolue
@@ -106,8 +106,13 @@
             </a>
           }
 
+<<<<<<< HEAD
           <button type="button" (click)="votePost('UP')" class="text-[14px] text-[#0F6932]">+1</button>
           <button type="button" (click)="votePost('DOWN')" class="text-[14px] text-red-600">-1</button>
+=======
+          <app-report-button entityType="POST" [entityId]="question.id" [authorId]="question.userId" />
+
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
           @if (canDelete()) {
             <button
               type="button"
@@ -122,8 +127,13 @@
 
         <div class="mt-6 grid grid-cols-3 gap-3 sm:max-w-[360px]">
           <div class="flex flex-col items-center justify-center rounded-2xl bg-[#F8FAFC] px-3 py-3">
-            <span class="text-[22px] font-semibold leading-[30px] text-[#141219]">{{ question.voteScore }}</span>
-            <span class="text-[13px] leading-[20px] text-[#64748B]">votes</span>
+            <app-vote-control
+              [score]="question.voteScore"
+              [userVote]="question.userVote"
+              target="cette question"
+              [canVote]="canVote(question.userId)"
+              (voted)="voteOnQuestion($event)"
+            />
           </div>
           <div class="flex flex-col items-center justify-center rounded-2xl bg-[#F8FAFC] px-3 py-3">
             <span class="text-[22px] font-semibold leading-[30px] text-[#141219]">{{ question.viewCount }}</span>
@@ -195,18 +205,39 @@
 
                   @if (answer.isAccepted) {
                     <span class="inline-flex items-center gap-1.5 rounded-full bg-[#0F6932] px-3 py-1 text-[13px] font-medium text-white">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M5 12.5L9.5 17L19 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                       Réponse acceptée
                     </span>
                   }
 
+<<<<<<< HEAD
                   <span class="rounded-full bg-[#F8FAFC] px-3 py-1 text-[13px] font-medium text-[#64748B]">
                   <button type="button" (click)="voteAnswer(answer, 'UP')" class="text-sm text-[#0F6932]">+1</button>
                     {{ answer.voteScore }} votes
                   <button type="button" (click)="voteAnswer(answer, 'DOWN')" class="text-sm text-red-600">-1</button>
                   </span>
+=======
+                  <app-vote-control
+                    [score]="answer.voteScore"
+                    [userVote]="answer.userVote"
+                    target="cette réponse"
+                    [canVote]="canVote(answer.user.id)"
+                    (voted)="voteOnAnswer(answer, $event)"
+                  />
+                  <app-report-button entityType="ANSWER" [entityId]="answer.id" [authorId]="answer.user.id" />
+                  @if (canAccept(answer)) {
+                    <button
+                      type="button"
+                      (click)="acceptAnswer(answer)"
+                      [disabled]="pendingActionId() === answer.id"
+                      class="rounded-full border border-[#0F6932] px-3 py-1 text-[13px] font-semibold text-[#0F6932] transition-colors hover:bg-[#F0FDF4] disabled:opacity-50"
+                    >
+                      Accepter cette réponse
+                    </button>
+                  }
+>>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
                 </div>
 
                 <p class="mt-4 whitespace-pre-line break-words text-[16px] leading-[26px] text-[#475569]">
@@ -272,7 +303,9 @@
             }
 
             <form class="mt-4 flex flex-col gap-4" [formGroup]="answerForm" (ngSubmit)="submitAnswer()" novalidate>
+              <label for="answer-body" class="sr-only">Votre réponse</label>
               <textarea
+                id="answer-body"
                 formControlName="body"
                 rows="6"
                 maxlength="50000"
@@ -281,7 +314,7 @@
               ></textarea>
               @if (answerForm.controls.body.touched && answerForm.controls.body.invalid) {
                 <p class="text-[14px] font-medium text-[#FB2C36]">
-                  La réponse est requise.
+                  {{ answerForm.controls.body.hasError('required') ? 'La réponse est requise.' : 'La réponse doit contenir au moins 30 caractères.' }}
                 </p>
               }
 
@@ -318,7 +351,13 @@
 
   @if (confirmingDelete()) {
     <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
-      <div class="absolute inset-0 bg-[#0F1011]/50" (click)="cancelDelete()"></div>
+      <button
+        type="button"
+        tabindex="-1"
+        aria-label="Fermer"
+        class="absolute inset-0 cursor-default bg-[#0F1011]/50"
+        (click)="cancelDelete()"
+      ></button>
 
       <div
         role="dialog"
@@ -330,7 +369,7 @@
           aria-hidden="true"
           class="flex size-12 items-center justify-center rounded-full bg-[#FB2C36]/10 text-[#FB2C36]"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M4 7H20M10 11V16M14 11V16M6 7L7 19C7 20.1046 7.89543 21 9 21H15C16.1046 21 17 20.1046 17 19L18 7M9 7V4C9 3.44772 9.44772 3 10 3H14C14.5523 3 15 3.44772 15 4V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </span>

@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Icon } from '../../home/components/icon/icon';
 import { AuthClose } from '../components/auth-close/auth-close';
@@ -20,6 +21,8 @@ import { extractApiErrorCode, extractApiErrorMessage } from '../../../core/utils
   selector: 'app-verification-email',
   standalone: true,
   imports: [
+    // Fournit `ngSubmit` : sans lui, le formulaire part en GET natif et l'URL perd `?email=…`.
+    FormsModule,
     Icon,
     AuthClose,
     AuthLayout,
@@ -28,7 +31,6 @@ import { extractApiErrorCode, extractApiErrorMessage } from '../../../core/utils
     RouterLink,
   ],
   templateUrl: './verification-email.html',
-  styleUrl: './verification-email.css',
 })
 export class VerificationEmail implements OnInit {
   private readonly route       = inject(ActivatedRoute);

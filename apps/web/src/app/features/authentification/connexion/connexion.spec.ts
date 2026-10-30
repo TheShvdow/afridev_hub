@@ -177,7 +177,7 @@ describe('Connexion', () => {
 
     const profile = controller.expectOne(`${API}/users/me`);
     expect(profile.request.method).toBe('PATCH');
-    expect(profile.request.body).toEqual({ bio: 'Spécialité : Développement web' });
+    expect(profile.request.body).toEqual({ stack: ['Développement web'] });
     profile.flush({ data: {} });
 
     expect(sessionStorage.getItem('afridev_pending_speciality')).toBeNull();
@@ -209,6 +209,8 @@ describe('Connexion', () => {
     component.submit();
 
     controller.expectNone(`${API}/auth/login`);
+    expect(component.form.invalid).toBe(true);
+    expect(component.loading()).toBe(false);
   });
 
   it('affiche l\'erreur renvoyée par l\'API après un callback OAuth en échec', () => {

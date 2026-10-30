@@ -27,6 +27,9 @@ export class UsersService {
         bio:             true,
         avatarUrl:       true,
         location:        true,
+        country:         true,
+        stack:           true,
+        level:           true,
         websiteUrl:      true,
         githubUsername:  true,
         linkedinUsername:true,
@@ -158,7 +161,7 @@ export class UsersService {
     this.events.emit('users.profile.updated', payload);
   }
 
-  async updateAvatar(userId: string, avatarUrl: string) {
+  updateAvatar(userId: string, avatarUrl: string) {
     return this.prisma.user.update({
       where: { id: userId },
       data: { avatarUrl },

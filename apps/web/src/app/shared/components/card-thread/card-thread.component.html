@@ -1,5 +1,9 @@
 <article
+  tabindex="0"
+  role="button"
   (click)="opened.emit(thread())"
+  (keydown.enter)="opened.emit(thread())"
+  (keydown.space)="$event.preventDefault(); opened.emit(thread())"
   class="flex cursor-pointer items-center gap-3 rounded-2xl transition-colors hover:bg-[#F8FAFC] sm:gap-4 lg:h-[130px]"
 >
   <span

@@ -11,7 +11,6 @@ import { Icon } from '../../../home/components/icon/icon';
   standalone: true,
   imports: [Icon],
   templateUrl: './social-auth.html',
-  styleUrl: './social-auth.css',
 })
 export class SocialAuth {
   readonly disabled = input(false);
