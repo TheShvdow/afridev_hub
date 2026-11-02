@@ -6,6 +6,7 @@ import { resolveTagIds } from '../common/tags/resolve-tags';
 import { CreatePostDto } from './dto/create-post.dto';
 import { CreateAnswerDto } from './dto/create-answer.dto';
 import { ListPostsDto } from './dto/list-posts.dto';
+import { ANSWERS_PAGE_SIZE, ListAnswersDto } from './dto/list-answers.dto';
 import { Prisma } from '@prisma/client';
 import { DomainException } from '../common/errors/domain.exception';
 
@@ -32,7 +33,7 @@ const LIST_SELECT = {
   lastActivityAt: true,
   createdAt:      true,
   user: {
-    select: { id: true, username: true, displayName: true, avatarUrl: true, reputation: true },
+    select: { id: true, username: true, displayName: true, avatarUrl: true, reputation: true, role: true },
   },
   postTags: {
     select: { tag: { select: { name: true, slug: true } } },
@@ -142,14 +143,6 @@ export class ForumService {
           select: { id: true, username: true, displayName: true, avatarUrl: true, reputation: true, role: true },
         },
         postTags: { include: { tag: true } },
-        answers: {
-          include: {
-            user: {
-              select: { id: true, username: true, displayName: true, avatarUrl: true, reputation: true },
-            },
-          },
-          orderBy: [{ isAccepted: 'desc' }, { voteScore: 'desc' }, { createdAt: 'asc' }],
-        },
       },
     });
 
@@ -166,19 +159,60 @@ export class ForumService {
       : {
           ...post,
           ...(post.isHidden && { title: HIDDEN_CONTENT, body: HIDDEN_CONTENT }),
-          answers: post.answers.map((answer) =>
-            answer.isHidden ? { ...answer, body: HIDDEN_CONTENT } : answer,
-          ),
         };
 
-    // Vote du visiteur connecté sur la question et chaque réponse : le front l'affiche et calcule
-    // le nouveau score sans attendre l'API (null pour un visiteur ou en l'absence de vote).
-    const votes = viewer ? await this.viewerVotes(viewer.id, post.id, post.answers.map((answer) => answer.id)) : null;
+    // Seule la première page de réponses part avec la question ; la suite se charge à la demande
+    // (GET /forum/posts/:id/answers).
+    const firstPage = await this.answersPage(post.id, 1, ANSWERS_PAGE_SIZE, viewer);
+
+    // Vote du visiteur connecté sur la question : le front l'affiche et calcule le nouveau score
+    // sans attendre l'API (null pour un visiteur ou en l'absence de vote).
+    const questionVote = viewer
+      ? (await this.viewerVotes(viewer.id, post.id, [])).get(post.id) ?? null
+      : null;
 
     return {
       ...visible,
-      userVote: votes?.get(post.id) ?? null,
-      answers: visible.answers.map((answer) => ({ ...answer, userVote: votes?.get(answer.id) ?? null })),
+      userVote: questionVote,
+      answers: firstPage.data,
+      answersMeta: firstPage.meta,
+    };
+  }
+
+  /** Une page de réponses : la réponse acceptée d'abord, puis les mieux notées, puis les plus anciennes. */
+  async listAnswers(postId: string, query: ListAnswersDto, viewer?: ForumViewer | null) {
+    const exists = await this.prisma.post.findUnique({ where: { id: postId }, select: { id: true } });
+    if (!exists) throw new DomainException('FORUM_QUESTION_NOT_FOUND', 'Question introuvable.', 404);
+
+    return this.answersPage(postId, query.page ?? 1, query.limit ?? ANSWERS_PAGE_SIZE, viewer);
+  }
+
+  private async answersPage(postId: string, page: number, limit: number, viewer?: ForumViewer | null) {
+    const [answers, total] = await Promise.all([
+      this.prisma.answer.findMany({
+        where: { postId },
+        include: {
+          user: {
+            select: { id: true, username: true, displayName: true, avatarUrl: true, reputation: true, role: true },
+          },
+        },
+        orderBy: [{ isAccepted: 'desc' }, { voteScore: 'desc' }, { createdAt: 'asc' }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.answer.count({ where: { postId } }),
+    ]);
+
+    // La modération voit le contenu masqué ; les autres voient le texte de remplacement.
+    const canSeeHidden = !!viewer && MODERATOR_ROLES.has(viewer.role);
+    const votes = viewer ? await this.viewerVotes(viewer.id, postId, answers.map((answer) => answer.id)) : null;
+
+    return {
+      data: answers.map((answer) => ({
+        ...(answer.isHidden && !canSeeHidden ? { ...answer, body: HIDDEN_CONTENT } : answer),
+        userVote: votes?.get(answer.id) ?? null,
+      })),
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
 
@@ -283,7 +317,7 @@ export class ForumService {
         data: { body: dto.body, postId, userId },
         include: {
           user: {
-            select: { id: true, username: true, displayName: true, avatarUrl: true, reputation: true },
+            select: { id: true, username: true, displayName: true, avatarUrl: true, reputation: true, role: true },
           },
         },
       }),

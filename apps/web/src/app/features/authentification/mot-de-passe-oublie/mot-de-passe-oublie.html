@@ -1,0 +1,70 @@
+<app-auth-layout>
+  <form
+    auth-form
+    class="mx-auto flex w-full max-w-[420px] flex-col gap-8"
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    novalidate
+  >
+    <app-auth-close />
+
+    <div class="flex flex-col gap-2.5">
+      <h1 class="font-display text-2xl font-bold leading-8 text-ink">Mot de passe oublié</h1>
+      <p class="text-sm font-medium leading-[22px] tracking-[0.07px] text-slate-500">
+        Saisis l’adresse e-mail de ton compte : nous t’envoyons un code à 6 caractères pour choisir un nouveau mot de passe.
+      </p>
+    </div>
+
+    @if (errorMessage()) {
+      <p
+        role="alert"
+        class="rounded-2xl border border-[#FB2C36]/30 bg-[#FB2C36]/5 px-4 py-3 text-sm font-medium leading-5 text-[#FB2C36]"
+      >
+        {{ errorMessage() }}
+      </p>
+    }
+
+    <div class="flex flex-col gap-3">
+      <app-auth-field
+        label="Adresse e-mail"
+        placeholder="toi@exemple.com"
+        icon="mail"
+        name="email"
+        autocomplete="email"
+        [invalid]="form.controls.email.invalid && form.controls.email.touched"
+        formControlName="email"
+      />
+
+      @if (form.controls.email.invalid && form.controls.email.touched) {
+        <p class="text-xs font-medium leading-4 text-[#FB2C36]">Saisis une adresse e-mail valide.</p>
+      }
+    </div>
+
+    <button type="submit" class="auth-btn" [disabled]="loading()">
+      @if (loading()) {
+        Envoi du code…
+      } @else {
+        Recevoir un code
+        <app-icon name="arrow-up-right" class="size-6"></app-icon>
+      }
+    </button>
+
+    <div class="flex flex-wrap items-center justify-center gap-2.5">
+      <span class="text-base font-medium leading-[26px] tracking-[0.08px] text-slate-500">Tu t’en souviens ?</span>
+      <a
+        routerLink="/auth/login"
+        class="text-sm font-normal leading-5 text-slate-500 underline-offset-4 transition-colors hover:text-ink hover:underline"
+      >
+        Retour à la connexion
+      </a>
+    </div>
+  </form>
+
+  <app-auth-side
+    auth-panel
+    eyebrow="Compte"
+    title="Retrouver ton accès"
+    description="Un code envoyé par e-mail suffit : tes projets, tes réponses et ta réputation t’attendent."
+    [steps]="steps"
+  />
+</app-auth-layout>

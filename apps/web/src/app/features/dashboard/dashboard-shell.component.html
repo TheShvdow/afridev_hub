@@ -1,0 +1,138 @@
+<div class="min-h-screen bg-[#F8FAFC] lg:flex">
+  <!-- Barre du haut : téléphone et tablette -->
+  <header class="sticky top-0 z-40 flex items-center gap-3 bg-[#0F1011] px-4 py-3 text-white lg:hidden">
+    <button
+      type="button"
+      class="inline-flex size-10 items-center justify-center rounded-full border border-white/15 bg-white/5 hover:bg-white/10"
+      aria-controls="dashboard-nav"
+      [attr.aria-expanded]="menuOpen()"
+      [attr.aria-label]="menuOpen() ? 'Fermer le menu' : 'Ouvrir le menu'"
+      (click)="menuOpen.set(!menuOpen())"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="size-5" aria-hidden="true">
+        <path d="M4 7h16" />
+        <path d="M4 12h16" />
+        <path d="M4 17h16" />
+      </svg>
+    </button>
+    <a [routerLink]="home" class="flex min-w-0 flex-1 items-center" aria-label="Tableau de bord">
+      <img src="assets/images/logo.png" alt="AfriDev Hub" class="h-7 w-auto" />
+    </a>
+    <a routerLink="/" class="shrink-0 rounded-full border border-white/20 px-3 py-1.5 text-[13px] font-semibold hover:bg-white/10">Retour au site</a>
+  </header>
+
+  @if (menuOpen()) {
+    <button type="button" class="fixed inset-0 z-40 cursor-default bg-black/50 lg:hidden" aria-label="Fermer le menu" tabindex="-1" (click)="closeMenu()"></button>
+  }
+
+  <aside
+    id="dashboard-nav"
+    class="fixed inset-y-0 left-0 z-50 flex w-[290px] max-w-[85vw] flex-col overflow-y-auto bg-[#0F1011] text-white transition-transform duration-200 lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:max-w-none lg:shrink-0 lg:translate-x-0"
+    [ngClass]="menuOpen() ? 'translate-x-0' : '-translate-x-full'"
+    aria-label="Navigation du tableau de bord"
+  >
+    <div class="flex items-center justify-between gap-3 px-5 pt-5">
+      <a [routerLink]="home" class="flex items-center" aria-label="Tableau de bord" (click)="closeMenu()">
+        <img src="assets/images/logo.png" alt="AfriDev Hub" class="h-8 w-auto" />
+      </a>
+      <button
+        type="button"
+        class="inline-flex size-9 items-center justify-center rounded-full border border-white/15 hover:bg-white/10 lg:hidden"
+        aria-label="Fermer le menu"
+        (click)="closeMenu()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="size-5" aria-hidden="true">
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <a
+      routerLink="/"
+      class="mx-5 mt-5 inline-flex items-center justify-center gap-2 rounded-full border border-[#FBBF24]/60 px-4 py-2.5 text-[14px] font-semibold text-[#FBBF24] transition-colors hover:bg-[#FBBF24] hover:text-[#141219]"
+      (click)="closeMenu()"
+    >
+      <app-icon name="arrow-left" class="size-4" />
+      Retour au site
+    </a>
+
+    @if (me(); as current) {
+      <div class="mx-5 mt-5 flex items-center gap-3 rounded-2xl bg-white/5 p-3">
+        @if (current.avatarUrl) {
+          <img [src]="current.avatarUrl" alt="" class="size-11 shrink-0 rounded-full object-cover" />
+        } @else {
+          <span class="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#FBBF24] text-[15px] font-bold text-[#141219]" aria-hidden="true">{{ initials() }}</span>
+        }
+        <div class="min-w-0">
+          <p class="truncate text-[15px] font-semibold">{{ displayName() }}</p>
+          <p class="truncate text-[13px] text-white/60">&#64;{{ current.username }}</p>
+          <div class="mt-1.5 flex flex-wrap gap-1">
+            @for (role of roles(); track role) {
+              <span class="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/80">{{ role }}</span>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <nav class="mt-5 flex-1 px-3 pb-4" aria-label="Fonctions du compte">
+      <a
+        [routerLink]="home"
+        routerLinkActive="bg-white/10 text-white"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-semibold text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+        (click)="closeMenu()"
+      >
+        <app-icon name="star" class="size-5 shrink-0 text-[#FBBF24]" />
+        Vue d'ensemble
+      </a>
+
+      @for (section of sections(); track section.id) {
+        <p class="mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-white/40">{{ section.title }}</p>
+        <ul class="mt-1.5 flex flex-col gap-0.5">
+          @for (item of section.items; track item.id) {
+            <li>
+              <a
+                [routerLink]="item.link"
+                routerLinkActive="bg-white/10 text-white"
+                class="flex items-center gap-3 rounded-xl px-3 py-2 text-[14px] font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                (click)="closeMenu()"
+              >
+                <app-icon [name]="item.icon" class="size-5 shrink-0 text-white/60" />
+                <span class="min-w-0 flex-1 truncate">{{ item.title }}</span>
+                @if (item.badge) {
+                  <span class="shrink-0 rounded-full bg-[#FBBF24] px-2 py-0.5 text-[11px] font-semibold text-[#141219]">{{ item.badge }}</span>
+                }
+                @if (item.site) {
+                  <app-icon name="arrow-up-right" class="size-4 shrink-0 text-white/40" />
+                }
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </nav>
+
+    <div class="border-t border-white/10 p-4">
+      <button
+        type="button"
+        class="block w-full rounded-xl px-3 py-2.5 text-left text-[14px] font-medium text-white/80 transition-colors hover:bg-white/10"
+        (click)="signOut()"
+      >
+        Déconnexion
+      </button>
+    </div>
+  </aside>
+
+  <!-- Le site a déjà son <main> : celui-ci est un simple bloc. Les pages du site n'ont aucune marge à
+       cette largeur ; le conteneur leur en donne et borne la largeur. -->
+  <div class="min-w-0 flex-1" id="dashboard-content">
+    <div
+      class="mx-auto w-full max-w-[1100px] pb-10 lg:px-8"
+      [ngClass]="paddedPage() ? 'px-6 pt-6 sm:px-10 lg:px-8 lg:pt-8' : ''"
+    >
+      <router-outlet />
+    </div>
+  </div>
+</div>

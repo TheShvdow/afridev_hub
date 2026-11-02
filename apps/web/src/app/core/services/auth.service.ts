@@ -73,6 +73,27 @@ export class AuthService {
   }
 
   /**
+   * Demande un code de réinitialisation. Route publique : la réponse est identique que
+   * l'adresse ait un compte ou non.
+   */
+  forgotPassword(email: string): Observable<AuthMessageResponse> {
+    return this.http.post<AuthMessageResponse>(`${this.base}/forgot-password`, { email });
+  }
+
+  /** Choisit un nouveau mot de passe avec le code reçu. Ferme toutes les sessions du compte. */
+  resetPassword(email: string, code: string, newPassword: string): Observable<AuthMessageResponse> {
+    return this.http.post<AuthMessageResponse>(`${this.base}/reset-password`, { email, code, newPassword });
+  }
+
+  /**
+   * Change le mot de passe d'un membre connecté. Les autres appareils sont déconnectés ; la réponse
+   * porte les nouveaux jetons de celui-ci, à ranger tout de suite.
+   */
+  changePassword(currentPassword: string, newPassword: string): Observable<AuthTokens> {
+    return this.http.post<AuthTokens>(`${this.base}/change-password`, { currentPassword, newPassword });
+  }
+
+  /**
    * Déconnecte la session courante et révoque son refresh token.
    * Le jeton d'accès est passé explicitement : la session peut déjà avoir été
    * purgée du store au moment de l'appel.

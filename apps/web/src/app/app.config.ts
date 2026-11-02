@@ -12,6 +12,7 @@ import { provideServiceWorker } from '@angular/service-worker';
 
 import { appRoutes } from './app.routes';
 import { envelopeInterceptor } from './core/interceptors/envelope.interceptor';
+import { cacheInterceptor } from './core/interceptors/cache.interceptor';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 
@@ -34,9 +35,10 @@ export const appConfig: ApplicationConfig = {
     // HTTP client avec intercepteurs.
     // L'ordre compte : `envelopeInterceptor` est le plus externe, il dépouille
     // l'enveloppe `{ data }` avant que la réponse n'atteigne les composants.
+    // `cacheInterceptor` vient juste après : il garde la réponse brute de l'API.
     provideHttpClient(
       withFetch(),
-      withInterceptors([envelopeInterceptor, authInterceptor, errorInterceptor])
+      withInterceptors([envelopeInterceptor, cacheInterceptor, authInterceptor, errorInterceptor])
     ),
 
     // Hydratation SSR

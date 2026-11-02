@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ModerationActionType, ModerationTargetType, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { DomainException } from '../common/errors/domain.exception';
 
 @Injectable()
 export class AdminService {
@@ -146,7 +147,23 @@ export class AdminService {
   }
 
   // Chaque changement de rôle est journalisé : qui, quel compte, quel rôle.
+  // Garde-fous : on ne change pas son propre rôle, et le dernier administrateur ne peut pas être rétrogradé
+  // (le site se retrouverait sans personne pour gérer les rôles).
   async updateUserRole(userId: string, role: UserRole, actorId: string) {
+    if (userId === actorId) {
+      throw new DomainException('ADMIN_OWN_ROLE_CHANGE_FORBIDDEN', 'Vous ne pouvez pas modifier votre propre rôle.', 403);
+    }
+
+    const target = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (!target) throw new DomainException('USERS_USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
+
+    if (target.role === UserRole.ADMIN && role !== UserRole.ADMIN) {
+      const admins = await this.prisma.user.count({ where: { role: UserRole.ADMIN } });
+      if (admins <= 1) {
+        throw new DomainException('ADMIN_LAST_ADMIN', 'Impossible de rétrograder le dernier administrateur.', 409);
+      }
+    }
+
     const user = await this.prisma.user.update({
       where: { id: userId },
       data:  { role },

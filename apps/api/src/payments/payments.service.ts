@@ -10,6 +10,7 @@ import type { PaymentsPaymentCapturedEvent } from '@afridev/shared-types';
 import { DomainException } from '../common/errors/domain.exception';
 import { verifyBictorysWebhook, BictorysWebhookHeaders } from './providers/bictorys-webhook';
 import { mapBictorysStatus, isOutcomeConfirmed } from './providers/bictorys-status';
+import { webhookAmountMatches } from './providers/bictorys-amount';
 import { PAYMENT_PROVIDER, type IPaymentProvider } from './providers/payment-provider.interface';
 import { PRODUCTS, PRODUCT_CODES, ProductCode } from './catalog';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
@@ -23,6 +24,9 @@ interface BictorysWebhookPayload {
   status?:            string;
   paymentReference?:  string;
   amount?:            number;
+  customerFees?:      number;
+  merchantFees?:      number;
+  settledAmount?:     number;
   currency?:          string;
 }
 
@@ -67,14 +71,22 @@ export class PaymentsService {
     const product = PRODUCTS[dto.product];
     const amount = this.priceOf(dto.product);
 
-    if (product.entityType === PaymentEntityType.RECRUITER_PLAN) {
-      const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { isRecruiter: true } });
-      if (!user?.isRecruiter) {
-        throw new DomainException('PAYMENTS_RECRUITER_REQUIRED', 'Activez votre profil recruteur avant de souscrire au plan premium.', 403);
-      }
+    const user = await this.prisma.user.findUnique({
+      where:  { id: userId },
+      select: { isRecruiter: true, email: true, displayName: true, username: true },
+    });
+    if (product.entityType === PaymentEntityType.RECRUITER_PLAN && !user?.isRecruiter) {
+      throw new DomainException('PAYMENTS_RECRUITER_REQUIRED', 'Activez votre profil recruteur avant de souscrire au plan premium.', 403);
     }
 
-    const input = { ...dto, userId, amount, currency: product.currency };
+    const country = dto.country ?? this.config.get<string>('BICTORYS_COUNTRY', 'SN');
+    // Identité du payeur : ce que le client envoie prime, sinon le compte connecté.
+    const customer = {
+      name:  user?.displayName ?? user?.username,
+      email: user?.email,
+      ...dto.customer,
+    };
+    const input = { ...dto, country, customer, userId, amount, currency: product.currency };
     const commissionAmount = Math.round(input.amount * this.commissionRate);
 
     const payment = await this.prisma.payment.create({
@@ -155,7 +167,10 @@ export class PaymentsService {
     }
 
     // Journal sans données personnelles : seulement les clés et le statut, pour valider le format en sandbox.
-    this.logger.log(`Webhook Bictorys reçu : clés=${Object.keys(payload).join(',')} statut=${payload.status ?? 'absent'}`);
+    this.logger.log(
+      `Webhook Bictorys reçu : clés=${Object.keys(payload).join(',')} statut=${payload.status ?? 'absent'} `
+      + `montants=${payload.amount}/${payload.customerFees}/${payload.merchantFees}/${payload.settledAmount} ${payload.currency} id=${payload.id}`,
+    );
 
     await this.applyWebhook(payload);
     return { received: true };
@@ -188,16 +203,23 @@ export class PaymentsService {
       return;
     }
 
-    const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
+    let payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
     if (!payment) {
       this.logger.warn(`Webhook Bictorys : paiement ${paymentId} introuvable`);
       return;
     }
 
     // Contrôle anti-fraude de la doc : le montant et la devise doivent correspondre.
-    if (payload.amount !== payment.amount || payload.currency !== payment.currency) {
+    if (!webhookAmountMatches(payload, payment.amount) || payload.currency !== payment.currency) {
       this.logger.error(`Webhook Bictorys incohérent pour ${paymentId} (montant ou devise)`);
       return;
+    }
+
+    // Le webhook (signé, montant vérifié) donne l'identifiant du paiement : on le garde pour que la
+    // réconciliation interroge celui-ci et non le chargeId, dont le statut reste « pending ».
+    if (payload.id && payload.id !== payment.externalRef && payment.status === 'PENDING') {
+      await this.prisma.payment.update({ where: { id: payment.id }, data: { externalRef: payload.id } });
+      payment = { ...payment, externalRef: payload.id };
     }
 
     const outcome = mapBictorysStatus(payload.status);
@@ -209,18 +231,27 @@ export class PaymentsService {
 
     // Confirmation côté Bictorys : un webhook seul ne change jamais l'état d'un paiement.
     // Une erreur de l'appel remonte (502) pour que Bictorys renvoie le webhook.
-    const transactionId = payment.externalRef ?? payload.id;
-    if (!transactionId) {
+    // En checkout hébergé, la charge porte un chargeId (externalRef) et le paiement un autre
+    // identifiant (payload.id) : le statut de la charge reste « pending », celui du paiement fait foi.
+    const candidates = [...new Set([payload.id, payment.externalRef].filter((id): id is string => !!id))];
+    if (candidates.length === 0) {
       this.logger.warn(`Webhook Bictorys pour ${paymentId} sans identifiant de transaction : ignoré`);
       return;
     }
-    const confirmed = await this.provider.getStatus(transactionId);
+
+    let confirmed = '';
+    let confirmedId = candidates[0];
+    for (const candidate of candidates) {
+      confirmed = await this.provider.getStatus(candidate);
+      confirmedId = candidate;
+      if (isOutcomeConfirmed(payload.status, confirmed)) break;
+    }
     if (!isOutcomeConfirmed(payload.status, confirmed)) {
       this.logger.warn(`Webhook Bictorys non confirmé pour ${paymentId} : webhook=${payload.status}, Bictorys=${confirmed}`);
       return;
     }
 
-    await this.settle(payment, outcome, payload.status, payload.id ?? transactionId);
+    await this.settle(payment, outcome, payload.status, confirmedId);
   }
 
   // Règlement commun aux webhooks et à la réconciliation. Mise à jour conditionnelle :

@@ -44,6 +44,50 @@ describe('ReportsComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('lien publicitaire');
   });
 
+  describe('link to the reported content', () => {
+    const link = (report: Partial<AdminReport>) => create().componentInstance.contentLink({ ...REPORT, ...report });
+
+    it('opens the question for a reported question', () => {
+      expect(link({ target: { title: 'Q', postId: 'p1' } })).toEqual({ commands: ['/forum', 'p1'], label: 'Voir la question' });
+    });
+
+    it('opens the parent question for a reported answer', () => {
+      expect(link({ entityType: 'ANSWER', entityId: 'a1', target: { title: 'Q mère', postId: 'p9' } })).toEqual({
+        commands: ['/forum', 'p9'],
+        label: 'Voir la réponse dans sa question',
+      });
+    });
+
+    it('opens the project by its slug', () => {
+      expect(link({ entityType: 'PROJECT', target: { title: 'Wolof API', slug: 'wolof-api' } })).toEqual({
+        commands: ['/projects', 'wolof-api'],
+        label: 'Voir le projet',
+      });
+    });
+
+    it('opens the offer for a reported job', () => {
+      expect(link({ entityType: 'JOB', target: { title: 'Dev Angular', jobId: 'j1' } })).toEqual({
+        commands: ['/jobs', 'j1'],
+        label: 'Voir l\'offre',
+      });
+    });
+
+    it('gives no link, and says so, once the content has been deleted', () => {
+      moderation.listReports.mockReturnValue(of(page([{ ...REPORT, target: null }])));
+      const fixture = create();
+      expect(fixture.componentInstance.contentLink({ ...REPORT, target: null })).toBeNull();
+      expect(fixture.nativeElement.textContent).toContain('Ce contenu a été supprimé');
+    });
+
+    it('shows the title of the reported content and a readable type', () => {
+      moderation.listReports.mockReturnValue(of(page([{ ...REPORT, entityType: 'JOB', target: { title: 'Dev Angular', jobId: 'j1' } }])));
+      const text = create().nativeElement.textContent;
+      expect(text).toContain('« Dev Angular »');
+      expect(text).toContain('Offre');
+      expect(text).toContain('Voir l\'offre');
+    });
+  });
+
   it('applies the chosen decision with the note, then reloads', () => {
     moderation.resolveReport.mockReturnValue(of({}));
     const fixture = create();

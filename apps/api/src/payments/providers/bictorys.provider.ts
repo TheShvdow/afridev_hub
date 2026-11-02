@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PaymentProvider } from '@prisma/client';
 import { DomainException } from '../../common/errors/domain.exception';
+import { normalizeCharge } from './bictorys-charge';
 import type { ChargeRequest, ChargeResponse, IPaymentProvider } from './payment-provider.interface';
 
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -18,9 +19,10 @@ export class BictorysProvider implements IPaymentProvider {
 
   async initiate(request: ChargeRequest): Promise<ChargeResponse> {
     const apiKey = this.requirePublicKey();
-    const query = request.paymentType === 'card'
-      ? 'payment_type=card&payment_category=card'
-      : `payment_type=${encodeURIComponent(request.paymentType)}`;
+    // Sans payment_type, Bictorys passe en checkout hébergé : sa page propose les moyens de paiement.
+    let query = '';
+    if (request.paymentType === 'card') query = '?payment_type=card&payment_category=card';
+    else if (request.paymentType) query = `?payment_type=${encodeURIComponent(request.paymentType)}`;
 
     const body: Record<string, unknown> = {
       amount:             request.amount,
@@ -30,14 +32,19 @@ export class BictorysProvider implements IPaymentProvider {
       successRedirectUrl: request.successRedirectUrl,
       ErrorRedirectUrl:   request.errorRedirectUrl,   // E majuscule : tel que dans la doc
     };
-    if (request.customer) body['customerObject'] = request.customer;
+    if (request.customer) body['customerObject'] = { country: request.country, ...request.customer };
 
-    const response = await this.send(`/pay/v1/charges?${query}`, {
+    const response = await this.send(`/pay/v1/charges${query}`, {
       method:  'POST',
       headers: { 'X-Api-Key': apiKey, 'Content-Type': 'application/json' },
       body:    JSON.stringify(body),
     });
-    return (await response.json()) as ChargeResponse;
+    try {
+      return normalizeCharge(await response.json());
+    } catch (error) {
+      this.logger.error(`Réponse Bictorys inexploitable : ${error instanceof Error ? error.message : String(error)}`);
+      throw new DomainException('PAYMENTS_PROVIDER_ERROR', 'Le fournisseur de paiement a renvoyé une réponse inattendue.', 502);
+    }
   }
 
   async getStatus(transactionId: string): Promise<string> {

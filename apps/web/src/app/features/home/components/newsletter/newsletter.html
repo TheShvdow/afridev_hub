@@ -38,13 +38,14 @@
 
         <div class="newsletter-content">
           <h2 id="newsletter-title" class="newsletter-title">
-            Abonnez-vous à notre<br />newsletter pour recevoir des mises à jour
+            Abonnez-vous à notre<br class="hidden sm:inline" />
+            newsletter pour recevoir des mises à jour
           </h2>
 
           <form class="newsletter-form" (submit)="$event.preventDefault()">
             <label class="sr-only" for="newsletter-email">Votre adresse email</label>
             <div class="newsletter-field">
-              <app-icon name="sms" class="newsletter-field__icon" />
+              <app-icon name="mail" class="newsletter-field__icon" />
               <input
                 id="newsletter-email"
                 class="newsletter-input"
@@ -54,7 +55,7 @@
                 placeholder="Votre adresse email"
               />
             </div>
-            <button class="btn-glass" type="submit">S’inscrire</button>
+            <button class="newsletter-submit" type="submit">S’inscrire</button>
           </form>
         </div>
       </div>

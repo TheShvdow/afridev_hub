@@ -1,9 +1,23 @@
-import { Routes } from '@angular/router';
-
+import { Routes, UrlMatchResult, UrlSegment } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
-import { noAuthGuard } from './core/guards/no-auth.guard';
+import { roleGuard } from './core/guards/role.guard';
+
+/** `/@pseudo` : un seul segment qui commence par « @ ». Le pseudo (sans le « @ ») devient le paramètre `username`. */
+export function profileMatcher(segments: UrlSegment[]): UrlMatchResult | null {
+  const [segment] = segments;
+  if (segments.length !== 1 || !segment.path.startsWith('@') || segment.path.length < 2) return null;
+  return { consumed: segments, posParams: { username: new UrlSegment(segment.path.slice(1), {}) } };
+}
+
+const LEGAL_TITLES = {
+  'mentions-legales': 'Mentions légales',
+  'conditions-generales': "Conditions d'utilisation",
+  confidentialite: 'Confidentialité',
+  cookies: 'Cookies',
+} as const;
 
 export const appRoutes: Routes = [
+  // ── Landing / vitrine ────────────────────────────────────────────
   {
     path: '',
     loadComponent: () =>
@@ -11,47 +25,104 @@ export const appRoutes: Routes = [
     title: 'AfriDev Hub',
   },
   {
-    path: 'forum',
-    loadChildren: () => import('./features/forum/forum.routes').then((m) => m.FORUM_ROUTES),
-  },
-  {
     path: 'projets',
-    loadChildren: () => import('./features/projects/projects.routes').then((m) => m.PROJECTS_ROUTES),
-  },
-  {
-    path: 'projects',
-    loadChildren: () => import('./features/projects/projects.routes').then((m) => m.PROJECTS_ROUTES),
-  },
-  {
-    path: 'mentorat',
-    loadComponent: () => import('./features/mentorat/mentor-list/mentor-list.component').then((m) => m.MentorListComponent),
+    loadComponent: () =>
+      import('./features/projects/project-list/projets').then((m) => m.Projets),
+    title: 'Projets — AfriDev Hub',
   },
   {
     path: 'communautes',
-    loadComponent: () => import('./features/communities/communautes').then((m) => m.Communautes),
+    loadComponent: () =>
+      import('./features/communities/communautes').then((m) => m.Communautes),
+    title: 'Communautés — AfriDev Hub',
   },
   {
-    path: 'jobs',
-    loadChildren: () => import('./features/jobs/jobs.routes').then((m) => m.JOBS_ROUTES),
+    path: 'mentorat',
+    loadComponent: () =>
+      import('./features/mentorat/mentor-list/mentor-list.component').then(
+        (m) => m.MentorListComponent,
+      ),
+    title: 'Mentorat — AfriDev Hub',
   },
+
+  // ── Pages légales ────────────────────────────────────────────────
+  ...(['mentions-legales', 'conditions-generales', 'confidentialite', 'cookies'] as const).map((doc) => ({
+    path: doc,
+    data: { doc },
+    loadComponent: () => import('./features/legal/legal-page.component').then((m) => m.LegalPageComponent),
+    title: `${LEGAL_TITLES[doc]} — AfriDev Hub`,
+  })),
+
+  // ── Auth ─────────────────────────────────────────────────────────
+  // L'implémentation vit dans `features/authentification` (design connexion,
+  // inscription et vérification d'e-mail). L'URL reste `/auth` : l'API y
+  // redirige les callbacks OAuth.
+  // `noAuthGuard` est posé sur les pages login/register, pas sur le parent :
+  // la page de vérification d'email doit rester accessible à un utilisateur
+  // déjà connecté (il vient de s'inscrire et l'API l'a déjà authentifié).
   {
     path: 'auth',
-    canActivate: [noAuthGuard],
     loadChildren: () =>
-      import('./features/authentification/authentification.routes').then((m) => m.AUTHENTIFICATION_ROUTES),
+      import('./features/authentification/authentification.routes').then(
+        (m) => m.AUTHENTIFICATION_ROUTES
+      ),
   },
+
+  // ── Forum Q&A ────────────────────────────────────────────────────
+  {
+    path: 'forum',
+    loadChildren: () =>
+      import('./features/forum/forum.routes').then((m) => m.FORUM_ROUTES),
+  },
+
+  // ── Vitrine Projets ───────────────────────────────────────────────
+  {
+    path: 'projects',
+    loadChildren: () =>
+      import('./features/projects/projects.routes').then((m) => m.PROJECTS_ROUTES),
+  },
+
+  // ── Job Board ─────────────────────────────────────────────────────
+  {
+    path: 'jobs',
+    loadChildren: () =>
+      import('./features/jobs/jobs.routes').then((m) => m.JOBS_ROUTES),
+  },
+
+  // ── Retour de paiement Bictorys ───────────────────────────────────
+  {
+    path: 'payment/result',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/payment/payment-result.component').then((m) => m.PaymentResultComponent),
+    title: 'Paiement — AfriDev Hub',
+  },
+
+  // ── Première connexion : profil en trois étapes ───────────────────
+  {
+    path: 'bienvenue',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/onboarding/onboarding.component').then((m) => m.OnboardingComponent),
+  },
+
+  // ── Tableau de bord : toutes les fonctions du compte, selon son rôle ──
+  {
+    path: 'tableau-de-bord',
+    canActivate: [authGuard],
+    loadChildren: () =>
+      import('./features/dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES),
+  },
+
+  // ── Profil utilisateur ────────────────────────────────────────────
   {
     path: 'profile',
-    loadChildren: () => import('./features/profile/profile.routes').then((m) => m.PROFILE_ROUTES),
+    canActivate: [authGuard],
+    loadChildren: () =>
+      import('./features/profile/profile.routes').then((m) => m.PROFILE_ROUTES),
   },
-  {
-    path: '@:username',
-    loadComponent: () =>
-      import('./features/profile/public-profile/public-profile.component').then(
-        (m) => m.PublicProfileComponent,
-      ),
-    title: 'Profil — AfriDev Hub',
-  },
+
+  // ── Notifications ─────────────────────────────────────────────────
   {
     path: 'notifications',
     canActivate: [authGuard],
@@ -59,19 +130,48 @@ export const appRoutes: Routes = [
       import('./features/notifications/notifications.component').then(
         (m) => m.NotificationsComponent
       ),
-    title: 'Notifications — AfriDev Hub',
   },
+
+  // ── Classement ────────────────────────────────────────────────────
   {
     path: 'leaderboard',
-    loadComponent: () => import('./features/gamification/leaderboard/leaderboard.component').then((m) => m.LeaderboardComponent),
+    loadComponent: () =>
+      import('./features/gamification/leaderboard/leaderboard.component').then(
+        (m) => m.LeaderboardComponent
+      ),
     title: 'Classement — AfriDev Hub',
   },
+
+  // ── Administration ────────────────────────────────────────────────
+  {
+    path: 'admin',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['MODERATOR', 'ADMIN'] },
+    loadChildren: () =>
+      import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),
+  },
+
+  // ── Utilisateur public ────────────────────────────────────────────
+  // L'adresse partagée est /@pseudo (c'est celle des métadonnées Open Graph de l'API) ; l'ancienne
+  // adresse /u/pseudo y renvoie.
+  {
+    matcher: profileMatcher,
+    loadComponent: () =>
+      import('./features/profile/public-profile/public-profile.component').then(
+        (m) => m.PublicProfileComponent
+      ),
+  },
+  {
+    path: 'u/:username',
+    redirectTo: ({ params }) => `/@${params['username']}`,
+  },
+
+  // ── 404 ──────────────────────────────────────────────────────────
   {
     path: '**',
     loadComponent: () =>
       import('./shared/components/not-found/not-found.component').then(
-        (m) => m.NotFoundComponent,
+        (m) => m.NotFoundComponent
       ),
-    title: 'Page introuvable — AfriDev Hub',
   },
 ];

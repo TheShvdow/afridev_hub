@@ -1,0 +1,46 @@
+@startuml
+title Inscription et vérification de l'e-mail
+autonumber
+actor Visiteur
+participant Front
+participant API
+database Base
+participant "E-mail" as Mail
+
+Visiteur -> Front : remplit le formulaire d'inscription
+Front -> API : POST /auth/register
+API -> Base : crée le compte (non vérifié)
+API --> Mail : envoie le code de vérification
+note right of API
+  L'inscription réussit même si
+  l'e-mail échoue : le renvoi reste possible.
+end note
+API --> Front : message + adresse e-mail
+Front -> Visiteur : page de vérification (l'adresse est gardée)
+
+Visiteur -> Front : saisit le code reçu
+Front -> API : POST /auth/verify-email (e-mail, code)
+alt code correct et non expiré
+  API -> Base : compte vérifié, code supprimé
+  API -> API : événement auth.email.verified\n(badge « Dev vérifié » réévalué)
+  API --> Front : 200 « Email vérifié »
+  Front -> Visiteur : invite à se connecter
+else code faux
+  API -> Base : compte l'essai erroné
+  API --> Front : 400 code invalide
+  note right of API
+    Au 5e essai le code est supprimé :
+    il faut en demander un nouveau.
+  end note
+else code expiré ou absent
+  API --> Front : 400 code invalide
+end
+
+opt le code n'est pas arrivé
+  Visiteur -> Front : « Renvoyer le code »
+  Front -> API : POST /auth/resend-verification
+  API -> Base : remplace l'ancien code
+  API --> Mail : nouveau code
+  API --> Front : réponse identique que le compte existe ou non
+end
+@enduml

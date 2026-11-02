@@ -1,5 +1,6 @@
 <nav
-  class="fixed left-2 right-2 top-2 z-50 mx-auto max-w-[1000px] sm:left-4 sm:right-4 sm:top-3"
+  [ngClass]="{'max-lg:rounded-[28px]': menuOpen()}"
+  class="fixed left-2 right-2 top-2 z-50 mx-auto flex max-w-[1000px] flex-col sm:left-4 sm:right-4 sm:top-3"
   aria-label="Navigation principale"
 >
   <div
@@ -48,6 +49,14 @@
                 <p class="truncate px-3 py-2 text-sm font-semibold text-white">
                   {{ authStore.currentUser()?.username ?? 'Mon compte' }}
                 </p>
+
+                <a
+                  routerLink="/tableau-de-bord"
+                  class="block rounded-xl px-3 py-2 text-sm font-semibold text-[#FBBF24] transition-colors hover:bg-white/10"
+                  (click)="userMenuOpen.set(false)"
+                >
+                  Tableau de bord
+                </a>
 
                 <a
                   routerLink="/profile"
@@ -107,7 +116,7 @@
             }
           </div>
         } @else {
-          <a routerLink="/auth/login" class="whitespace-nowrap rounded-full border border-[#0F6932] px-3 py-2 text-[14px] font-semibold leading-6 text-[#0F6932] transition-colors hover:bg-[#0F6932] hover:text-white sm:px-4 sm:text-[15px]">
+          <a routerLink="/auth/login" class="whitespace-nowrap rounded-full border border-[#34B36B] px-3 py-2 text-[14px] font-semibold leading-6 text-[#34B36B] transition-colors hover:bg-[#0F6932] hover:text-white sm:px-4 sm:text-[15px]">
             Rejoindre
           </a>
         }
@@ -146,6 +155,15 @@
                 class="block rounded-xl px-3 py-2.5 text-base font-semibold leading-7 text-white/90 transition-colors hover:bg-white/10 hover:text-white"
                 (click)="menuOpen.set(false)"
               >{{ item.label }}</a>
+            </li>
+          }
+          @if (authStore.isAuthenticated()) {
+            <li>
+              <a
+                routerLink="/tableau-de-bord"
+                class="block rounded-xl px-3 py-2.5 text-base font-semibold leading-7 text-[#FBBF24] transition-colors hover:bg-white/10"
+                (click)="menuOpen.set(false)"
+              >Tableau de bord</a>
             </li>
           }
         </ul>

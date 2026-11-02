@@ -26,6 +26,18 @@ export const AUTHENTIFICATION_ROUTES: Routes = [
     title: 'Inscription — AfriDev Hub',
   },
   {
+    path: 'forgot-password',
+    canActivate: [noAuthGuard],
+    loadComponent: () => import('./mot-de-passe-oublie/mot-de-passe-oublie').then((m) => m.MotDePasseOublie),
+    title: 'Mot de passe oublié — AfriDev Hub',
+  },
+  {
+    path: 'reset-password',
+    canActivate: [noAuthGuard],
+    loadComponent: () => import('./nouveau-mot-de-passe/nouveau-mot-de-passe').then((m) => m.NouveauMotDePasse),
+    title: 'Nouveau mot de passe — AfriDev Hub',
+  },
+  {
     path: 'verify-email',
     loadComponent: () =>
       import('./verification-email/verification-email').then((m) => m.VerificationEmail),

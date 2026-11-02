@@ -58,13 +58,12 @@ describe('ForumService.listPosts — tri', () => {
 });
 
 describe('ForumService.getPost — contenu masqué', () => {
-  const post = {
-    id: 'p1', title: 'Titre', body: 'Corps', isHidden: true,
-    answers: [{ id: 'a1', body: 'Visible', isHidden: false }, { id: 'a2', body: 'Spam', isHidden: true }],
-  };
+  const post = { id: 'p1', title: 'Titre', body: 'Corps', isHidden: true };
+  const answers = [{ id: 'a1', body: 'Visible', isHidden: false }, { id: 'a2', body: 'Spam', isHidden: true }];
   function build() {
     const prisma = {
       post: { findUnique: jest.fn().mockResolvedValue(post), update: jest.fn().mockResolvedValue({}) },
+      answer: { findMany: jest.fn().mockResolvedValue(answers), count: jest.fn().mockResolvedValue(answers.length) },
       vote: { findMany: jest.fn().mockResolvedValue([]) },
     };
     return new ForumService(prisma as never, { emit: jest.fn() } as never);
@@ -85,13 +84,12 @@ describe('ForumService.getPost — contenu masqué', () => {
 });
 
 describe('ForumService.getPost — vote du visiteur', () => {
-  const post = {
-    id: 'p1', title: 'Titre', body: 'Corps', isHidden: false,
-    answers: [{ id: 'a1', body: 'Un', isHidden: false }, { id: 'a2', body: 'Deux', isHidden: false }],
-  };
+  const post = { id: 'p1', title: 'Titre', body: 'Corps', isHidden: false };
+  const answers = [{ id: 'a1', body: 'Un', isHidden: false }, { id: 'a2', body: 'Deux', isHidden: false }];
   function build(votes: { entityId: string; value: string }[]) {
     const prisma = {
       post: { findUnique: jest.fn().mockResolvedValue(post), update: jest.fn().mockResolvedValue({}) },
+      answer: { findMany: jest.fn().mockResolvedValue(answers), count: jest.fn().mockResolvedValue(answers.length) },
       vote: { findMany: jest.fn().mockResolvedValue(votes) },
     };
     return { service: new ForumService(prisma as never, { emit: jest.fn() } as never), prisma };
@@ -117,6 +115,66 @@ describe('ForumService.getPost — vote du visiteur', () => {
     expect(result.userVote).toBeNull();
     expect(result.answers.every((a) => a.userVote === null)).toBe(true);
     expect(prisma.vote.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('ForumService — réponses paginées', () => {
+  function build(opts: { total?: number; exists?: boolean } = {}) {
+    const rows = Array.from({ length: 3 }, (_, i) => ({ id: `a${i}`, body: `Réponse ${i}`, isHidden: i === 2 }));
+    const prisma = {
+      post: {
+        findUnique: jest.fn().mockResolvedValue(opts.exists === false ? null : { id: 'p1', title: 'T', body: 'B', isHidden: false }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      answer: { findMany: jest.fn().mockResolvedValue(rows), count: jest.fn().mockResolvedValue(opts.total ?? 23) },
+      vote: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    return { service: new ForumService(prisma as never, { emit: jest.fn() } as never), prisma };
+  }
+
+  it('le détail d\'une question ne charge que la première page de 10 réponses, avec leur total', async () => {
+    const { service, prisma } = build();
+
+    const result = await service.getPost('p1', null);
+
+    expect(prisma.answer.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { postId: 'p1' }, skip: 0, take: 10 }));
+    expect(result.answersMeta).toEqual({ total: 23, page: 1, limit: 10, totalPages: 3 });
+  });
+
+  it('classe la réponse acceptée d\'abord, puis les mieux notées, puis les plus anciennes', async () => {
+    const { service, prisma } = build();
+
+    await service.listAnswers('p1', { page: 1, limit: 10 }, null);
+
+    expect(prisma.answer.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      orderBy: [{ isAccepted: 'desc' }, { voteScore: 'desc' }, { createdAt: 'asc' }],
+    }));
+  });
+
+  it('calcule le décalage de la page demandée', async () => {
+    const { service, prisma } = build();
+
+    const result = await service.listAnswers('p1', { page: 3, limit: 5 }, null);
+
+    expect(prisma.answer.findMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 10, take: 5 }));
+    expect(result.meta).toEqual({ total: 23, page: 3, limit: 5, totalPages: 5 });
+  });
+
+  it('masque les réponses cachées pour un visiteur et les montre à la modération', async () => {
+    const { service } = build();
+
+    const visitor = await service.listAnswers('p1', {}, null);
+    const moderator = await service.listAnswers('p1', {}, { id: 'm1', role: 'MODERATOR' });
+
+    expect(visitor.data.map((a) => a.body)).toEqual(['Réponse 0', 'Réponse 1', HIDDEN_CONTENT]);
+    expect(moderator.data[2].body).toBe('Réponse 2');
+  });
+
+  it('répond 404 pour une question inexistante, sans lire les réponses', async () => {
+    const { service, prisma } = build({ exists: false });
+
+    await expect(service.listAnswers('absente', {}, null)).rejects.toMatchObject({ code: 'FORUM_QUESTION_NOT_FOUND' });
+    expect(prisma.answer.findMany).not.toHaveBeenCalled();
   });
 });
 

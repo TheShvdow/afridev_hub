@@ -9,6 +9,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
 import { formatSalary } from '../../../core/utils/job-view';
 import { relativeTime } from '../../../shared/utils/forum-thread.mapper';
+import { hasPublicProfile, profilePath } from '../../../shared/utils/profile-link';
 
 export const STATUS_LABELS: Record<JobStatus, string> = {
   PENDING_REVIEW: 'En attente de validation',
@@ -33,6 +34,8 @@ const STATUS_STYLES: Record<JobStatus, string> = {
   templateUrl: './my-jobs.component.html',
 })
 export class MyJobsComponent {
+  readonly profilePath = profilePath;
+  readonly hasPublicProfile = hasPublicProfile;
   private readonly jobs = inject(JobsService);
   private readonly toast = inject(ToastService);
 

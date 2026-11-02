@@ -2,16 +2,61 @@ import { Prisma } from '@prisma/client';
 import { ModerationService } from './moderation.service';
 
 // $transaction reçoit les requêtes déjà construites : on les exécute en séquence pour les vérifier.
-function makePrisma() {
+function makePrisma(roles: Record<string, string> = { mod: 'MODERATOR', target: 'MEMBER' }) {
   const moderationCreate = jest.fn().mockResolvedValue({ id: 'm1' });
   const auditCreate = jest.fn().mockResolvedValue({ id: 'a1' });
   const prisma = {
+    user: {
+      findUnique: jest.fn(({ where }: { where: { id: string } }) =>
+        Promise.resolve(roles[where.id] ? { role: roles[where.id] } : null),
+      ),
+    },
     moderationAction: { create: moderationCreate },
     auditLog:         { create: auditCreate },
     $transaction:     jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };
   return { prisma, moderationCreate, auditCreate };
 }
+
+describe('ModerationService — qui peut bannir qui', () => {
+  const ban = (roles: Record<string, string>, target = 'target', actor = 'mod') => {
+    const { prisma, moderationCreate } = makePrisma(roles);
+    const result = new ModerationService(prisma as never).banUser(target, actor, 'Spam répété');
+    return { result, moderationCreate };
+  };
+
+  it('un modérateur peut bannir un membre', async () => {
+    const { result, moderationCreate } = ban({ mod: 'MODERATOR', target: 'MEMBER' });
+    await expect(result).resolves.toBeDefined();
+    expect(moderationCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it('un administrateur peut bannir un modérateur', async () => {
+    await expect(ban({ mod: 'ADMIN', target: 'MODERATOR' }).result).resolves.toBeDefined();
+  });
+
+  it.each([
+    ['un autre modérateur', { mod: 'MODERATOR', target: 'MODERATOR' }],
+    ['un administrateur', { mod: 'MODERATOR', target: 'ADMIN' }],
+    ['un autre administrateur', { mod: 'ADMIN', target: 'ADMIN' }],
+  ])('un modérateur ou administrateur ne peut pas bannir %s', async (_label, roles) => {
+    const { result, moderationCreate } = ban(roles);
+    await expect(result).rejects.toMatchObject({ code: 'MODERATION_BAN_FORBIDDEN' });
+    expect(moderationCreate).not.toHaveBeenCalled();
+  });
+
+  it('on ne peut pas se bannir soi-même', async () => {
+    const { result, moderationCreate } = ban({ mod: 'ADMIN' }, 'mod', 'mod');
+    await expect(result).rejects.toMatchObject({ code: 'MODERATION_CANNOT_BAN_SELF' });
+    expect(moderationCreate).not.toHaveBeenCalled();
+  });
+
+  it('un compte inexistant répond 404 et ne laisse aucune trace', async () => {
+    const { result, moderationCreate } = ban({ mod: 'MODERATOR' }, 'fantome');
+    await expect(result).rejects.toMatchObject({ code: 'USERS_USER_NOT_FOUND' });
+    expect(moderationCreate).not.toHaveBeenCalled();
+  });
+});
 
 describe('ModerationService — cibles des actions', () => {
   it('records a ban against the USER target type', async () => {
@@ -134,5 +179,102 @@ describe('ModerationService — signalements (FR-20/FR-21)', () => {
   it('refuses to process a report twice', async () => {
     const { service } = build({ status: 'RESOLVED' });
     await expect(service.resolveReport('r1', 'mod', 'HIDDEN')).rejects.toMatchObject({ code: 'MODERATION_REPORT_ALREADY_CLOSED' });
+  });
+});
+
+// Story 7.13 : une offre peut être signalée, et chaque signalement indique où se trouve son contenu.
+describe('ModerationService — offres signalées', () => {
+  function build(opts: { jobStatus?: string; openReports?: number } = {}) {
+    const prisma = {
+      jobOffer: {
+        findUnique: jest.fn().mockResolvedValue({ status: opts.jobStatus ?? 'ACTIVE' }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      report: {
+        create: jest.fn().mockResolvedValue({ id: 'r1' }),
+        count: jest.fn().mockResolvedValue(opts.openReports ?? 1),
+        updateMany: jest.fn(),
+        findUnique: jest.fn(),
+      },
+      moderationAction: { create: jest.fn() },
+      auditLog: { create: jest.fn() },
+      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+    };
+    return { prisma, service: new ModerationService(prisma as never) };
+  }
+
+  it('accepts a report on an offer', async () => {
+    const { prisma, service } = build();
+    await service.createReport('u1', { entityType: 'JOB', entityId: 'j1', reason: 'SPAM' } as never);
+    expect(prisma.report.create).toHaveBeenCalledWith({ data: expect.objectContaining({ entityType: 'JOB', entityId: 'j1' }) });
+    expect(prisma.jobOffer.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('sends the offer back to review once the threshold of reports is reached', async () => {
+    const { prisma, service } = build({ openReports: 3 });
+    await service.createReport('u1', { entityType: 'JOB', entityId: 'j1', reason: 'SPAM' } as never);
+    expect(prisma.jobOffer.updateMany).toHaveBeenCalledWith({
+      where: { id: 'j1', status: 'ACTIVE' },
+      data: { status: 'PENDING_REVIEW' },
+    });
+  });
+
+  it('does not hide an offer that is already out of public view', async () => {
+    const { prisma, service } = build({ jobStatus: 'PENDING_REVIEW', openReports: 5 });
+    await service.createReport('u1', { entityType: 'JOB', entityId: 'j1', reason: 'SPAM' } as never);
+    expect(prisma.jobOffer.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('puts a held offer back online when the report is dismissed, and never a refused one', async () => {
+    const { prisma, service } = build();
+    prisma.report.findUnique.mockResolvedValue({ id: 'r1', status: 'PENDING', entityType: 'JOB', entityId: 'j1' });
+    await service.dismissReport('r1', 'mod');
+    expect(prisma.jobOffer.updateMany).toHaveBeenCalledWith({
+      where: { id: 'j1', status: 'PENDING_REVIEW' },
+      data: { status: 'ACTIVE' },
+    });
+  });
+});
+
+describe('ModerationService — lien vers la cible d\'un signalement', () => {
+  it('gives the parent question of an answer, the slug of a project and the offer id', async () => {
+    const reports = [
+      { id: 'r1', entityType: 'POST', entityId: 'p1' },
+      { id: 'r2', entityType: 'ANSWER', entityId: 'a1' },
+      { id: 'r3', entityType: 'PROJECT', entityId: 'pr1' },
+      { id: 'r4', entityType: 'JOB', entityId: 'j1' },
+      { id: 'r5', entityType: 'POST', entityId: 'deleted' },
+    ];
+    const prisma = {
+      report: { findMany: jest.fn().mockResolvedValue(reports), count: jest.fn().mockResolvedValue(5) },
+      post: { findMany: jest.fn().mockResolvedValue([{ id: 'p1', title: 'Question' }]) },
+      answer: { findMany: jest.fn().mockResolvedValue([{ id: 'a1', postId: 'p9', post: { title: 'Question mère' } }]) },
+      project: { findMany: jest.fn().mockResolvedValue([{ id: 'pr1', slug: 'wolof-api', name: 'Wolof API' }]) },
+      jobOffer: { findMany: jest.fn().mockResolvedValue([{ id: 'j1', title: 'Dev Angular' }]) },
+    };
+    const result = await new ModerationService(prisma as never).listReports('PENDING');
+    const target = (id: string) => result.data.find((r) => r.id === id)!.target;
+
+    expect(target('r1')).toEqual({ title: 'Question', postId: 'p1' });
+    expect(target('r2')).toEqual({ title: 'Question mère', postId: 'p9' });
+    expect(target('r3')).toEqual({ title: 'Wolof API', slug: 'wolof-api' });
+    expect(target('r4')).toEqual({ title: 'Dev Angular', jobId: 'j1' });
+    expect(target('r5')).toBeNull();
+  });
+
+  it('asks for each kind of target once, and not at all when there is none', async () => {
+    const prisma = {
+      report: { findMany: jest.fn().mockResolvedValue([{ id: 'r1', entityType: 'POST', entityId: 'p1' }, { id: 'r2', entityType: 'POST', entityId: 'p1' }]), count: jest.fn().mockResolvedValue(2) },
+      post: { findMany: jest.fn().mockResolvedValue([]) },
+      answer: { findMany: jest.fn() },
+      project: { findMany: jest.fn() },
+      jobOffer: { findMany: jest.fn() },
+    };
+    await new ModerationService(prisma as never).listReports('PENDING');
+    expect(prisma.post.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.post.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { id: { in: ['p1'] } } }));
+    expect(prisma.answer.findMany).not.toHaveBeenCalled();
+    expect(prisma.project.findMany).not.toHaveBeenCalled();
+    expect(prisma.jobOffer.findMany).not.toHaveBeenCalled();
   });
 });

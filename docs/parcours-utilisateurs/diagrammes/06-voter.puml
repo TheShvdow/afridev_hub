@@ -1,0 +1,29 @@
+@startuml
+title Voter sur une question ou une réponse
+autonumber
+actor Membre
+participant Front
+participant API
+database Base
+participant Gamification
+participant Notifications
+
+Membre -> Front : clique sur le pouce
+Front -> Front : met à jour le score et le pouce immédiatement
+Front -> API : POST /votes/answers/{id} (UP ou DOWN)
+alt réputation de 10 points ou plus, contenu d'un autre membre
+  API -> Base : ajoute, change ou retire le vote
+  API --> Front : action (added, changed, removed) et nouveau score
+  Front -> Front : le score de l'API fait foi
+  API ->> Gamification : votes.vote.changed
+  Gamification -> Base : ajuste la réputation de l'auteur (+10 / −2)
+  opt vote positif
+    API ->> Notifications : votes.vote.changed
+    Notifications -> Base : notification VOTE_RECEIVED
+  end
+else réputation insuffisante ou contenu personnel
+  API --> Front : 403
+  Front -> Front : rétablit le score et le pouce précédents
+  Front -> Membre : message d'erreur
+end
+@enduml

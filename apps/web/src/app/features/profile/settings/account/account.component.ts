@@ -21,6 +21,7 @@ import {
   verifiedBadgeCriteria,
 } from '../../../../core/utils/verified-badge';
 import { initialsFrom } from '../../../../shared/utils/forum-thread.mapper';
+import { hasPublicProfile, profilePath } from '../../../../shared/utils/profile-link';
 
 const ROLE_LABELS: Record<string, string> = {
   MEMBER: 'Membre',
@@ -36,6 +37,8 @@ const ROLE_LABELS: Record<string, string> = {
   styleUrl: './account.component.css',
 })
 export class AccountComponent {
+  readonly profilePath = profilePath;
+  readonly hasPublicProfile = hasPublicProfile;
   private readonly fb = inject(FormBuilder);
   private readonly usersService = inject(UsersService);
   private readonly toast = inject(ToastService);

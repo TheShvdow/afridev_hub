@@ -82,7 +82,7 @@ export class OauthLink implements OnInit {
             error: () => this.authStore.setUser(null),
           });
 
-          this.router.navigateByUrl('/forum');
+          this.router.navigateByUrl('/');
         },
         error: (err) => {
           this.loading.set(false);

@@ -13,7 +13,7 @@
 export type UserRole = 'MEMBER' | 'MODERATOR' | 'ADMIN';
 export type VoteEntityType = 'POST' | 'ANSWER';
 export type VoteValue = 'UP' | 'DOWN';
-export type ReportEntityType = 'POST' | 'ANSWER' | 'PROJECT';
+export type ReportEntityType = 'POST' | 'ANSWER' | 'PROJECT' | 'JOB';
 export type ModerationTargetType = 'POST' | 'ANSWER' | 'PROJECT' | 'USER';
 export type ReportStatus = 'PENDING' | 'REVIEWED' | 'RESOLVED' | 'DISMISSED';
 export type ModerationActionType = 'HIDDEN' | 'RESTORED' | 'DISMISSED' | 'WARNING' | 'BAN';
@@ -104,6 +104,10 @@ export interface UserMe {
   isRecruiter: boolean;
   companyName: string | null;
   preferredCurrency: string | null;
+  /** Absents tant que le profil n'est pas complété (onboarding). */
+  country?:    string | null;
+  level?:      'JUNIOR' | 'MID' | 'SENIOR' | null;
+  stack?:      string[];
   createdAt:   string;
 }
 
@@ -353,6 +357,11 @@ export type ErrorCode =
   | 'AUTH_VERIFICATION_TOKEN_INVALID'
   | 'AUTH_VERIFICATION_TOO_MANY_ATTEMPTS'
   | 'AUTH_ALREADY_VERIFIED'
+  | 'AUTH_RESET_CODE_INVALID'
+  | 'AUTH_RESET_TOO_MANY_ATTEMPTS'
+  | 'AUTH_CURRENT_PASSWORD_INVALID'
+  | 'AUTH_PASSWORD_UNCHANGED'
+  | 'AUTH_NO_PASSWORD'
   | 'AUTH_EMAIL_NOT_VERIFIED'
   | 'AUTH_LINK_TOKEN_INVALID'
   | 'AUTH_ACCOUNT_ALREADY_LINKED'
@@ -363,6 +372,9 @@ export type ErrorCode =
   // Utilisateurs
   | 'USERS_USER_NOT_FOUND'
   | 'USERS_FILE_MISSING'
+  // Administration
+  | 'ADMIN_OWN_ROLE_CHANGE_FORBIDDEN'
+  | 'ADMIN_LAST_ADMIN'
   // Forum
   | 'FORUM_QUESTION_NOT_FOUND'
   | 'FORUM_ANSWER_NOT_FOUND'
@@ -400,6 +412,8 @@ export type ErrorCode =
   | 'MODERATION_REPORT_DUPLICATE'
   | 'MODERATION_REPORT_ALREADY_CLOSED'
   | 'MODERATION_TARGET_NOT_FOUND'
+  | 'MODERATION_CANNOT_BAN_SELF'
+  | 'MODERATION_BAN_FORBIDDEN'
   // Paiements
   | 'PAYMENTS_PAYMENT_NOT_FOUND'
   | 'PAYMENTS_PROVIDER_NOT_CONFIGURED'

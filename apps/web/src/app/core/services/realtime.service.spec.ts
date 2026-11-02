@@ -4,6 +4,7 @@ import { signal } from '@angular/core';
 import { RealtimeService } from './realtime.service';
 import { NotificationsService } from './notifications.service';
 import { ToastService } from './toast.service';
+import { HttpCacheService } from '../cache/http-cache.service';
 import { AuthStore } from '../store/auth.store';
 
 type Handler = (...args: unknown[]) => void;
@@ -93,6 +94,17 @@ describe('RealtimeService', () => {
     expect(service.unreadCount()).toBe(5);
     expect(toast.info).toHaveBeenCalledWith('Nouvelle réponse à votre question');
     expect(received).toHaveLength(1);
+  });
+
+  it('clears the cached pages when a notification announces a change', async () => {
+    create();
+    await login();
+    const cache = TestBed.inject(HttpCacheService);
+    cache.set('u1|http://x/forum/posts', { data: [] });
+
+    handlers.get('notification')?.({ id: 'n1', title: 'Nouvelle réponse', message: 'x' });
+
+    expect(cache.get('u1|http://x/forum/posts')).toBeNull();
   });
 
   it('updates the reputation of the signed-in member and congratulates a gain', async () => {

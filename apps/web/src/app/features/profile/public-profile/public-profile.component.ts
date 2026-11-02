@@ -177,6 +177,7 @@ export class PublicProfileComponent implements OnInit {
 
     this.title.setTitle(og?.ogTitle ?? `${name} — AfriDev Hub`);
     this.meta.updateTag({ name: 'description', content: description });
+    this.meta.updateTag({ property: 'og:type', content: 'profile' });
     this.meta.updateTag({ property: 'og:title', content: og?.ogTitle ?? `${name} — AfriDev Hub` });
     this.meta.updateTag({ property: 'og:description', content: description });
 

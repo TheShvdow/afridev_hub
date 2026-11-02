@@ -24,7 +24,7 @@ export interface ProjectsViewer {
 // Statut de l'import GitHub renvoyé à la soumission et au rafraîchissement (FR-23).
 export type GithubImport = 'imported' | 'unavailable';
 
-const AUTHOR_SELECT = { id: true, username: true, displayName: true, avatarUrl: true } as const;
+const AUTHOR_SELECT = { id: true, username: true, displayName: true, avatarUrl: true, role: true } as const;
 
 const LIST_SELECT = {
   id:             true,

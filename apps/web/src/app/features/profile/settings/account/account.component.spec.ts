@@ -146,7 +146,7 @@ describe('AccountComponent', () => {
 
   it('should link to the public profile', () => {
     const link = fixture.nativeElement.querySelector(
-      'a[href="/u/idy_dev"]',
+      'a[href="/@idy_dev"]',
     ) as HTMLAnchorElement;
 
     expect(link?.textContent).toContain('Voir mon profil public');

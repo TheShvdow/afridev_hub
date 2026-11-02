@@ -66,7 +66,8 @@
 
             <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
               <a
-                [routerLink]="['/u', item.user.username]"
+                [routerLink]="profilePath(item.user)"
+                [class.pointer-events-none]="!hasPublicProfile(item.user)"
                 class="group flex items-center gap-3"
               >
                 @if (item.user.avatarUrl) {

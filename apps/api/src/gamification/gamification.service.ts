@@ -62,6 +62,8 @@ export class GamificationService {
   getLeaderboard(page = 1, limit = 50) {
     const skip = (page - 1) * limit;
     return this.prisma.user.findMany({
+      // Un administrateur n'a pas de profil public : il ne figure pas au classement.
+      where:   { role: { not: 'ADMIN' } },
       orderBy: { reputation: 'desc' },
       skip,
       take:    limit,

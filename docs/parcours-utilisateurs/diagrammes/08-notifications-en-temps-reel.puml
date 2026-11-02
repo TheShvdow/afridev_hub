@@ -1,0 +1,39 @@
+@startuml
+title Notifications et réputation en temps réel
+autonumber
+actor Membre
+participant Front
+participant "Temps réel" as WS
+participant API
+database Base
+
+Front -> WS : connexion à /notifications (jeton d'accès)
+alt jeton valide
+  WS --> Front : connecté
+else jeton invalide
+  WS --> Front : déconnexion serveur
+  Front -> Front : nouvel essai (5 au plus, toutes les 5 s)
+end
+Front -> API : GET /notifications/unread-count
+API --> Front : compteur affiché sur le menu du compte
+
+== Un autre membre répond à la question du membre ==
+API -> Base : crée la notification
+API ->> WS : envoie à ce membre
+WS --> Front : événement « notification »
+Front -> Membre : compteur +1 et message à l'écran
+opt la réputation a changé
+  WS --> Front : événement « reputation »
+  Front -> Membre : points mis à jour
+end
+
+== Lecture ==
+Membre -> Front : ouvre le menu du compte
+Front -> API : GET /notifications/unread-count
+Membre -> Front : clique sur une notification
+Front -> API : PATCH /notifications/{id}/read
+Front -> Membre : ouvre la question concernée
+Membre -> Front : « Tout marquer comme lu »
+Front -> API : PATCH /notifications/read-all
+API --> Front : compteur à zéro
+@enduml

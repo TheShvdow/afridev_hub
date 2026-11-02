@@ -6,19 +6,7 @@ export const JOBS_ROUTES: Routes = [
     path: '',
     loadComponent: () =>
       import('./job-list/job-list.component').then((m) => m.JobListComponent),
-    title: "Offres d'emploi — AfriDev Hub",
-  },
-  {
-    path: 'mine',
-    canActivate: [authGuard],
-    loadComponent: () => import('./my-jobs/my-jobs.component').then((m) => m.MyJobsComponent),
-    title: 'Mes offres — AfriDev Hub',
-  },
-  {
-    path: 'alerts',
-    canActivate: [authGuard],
-    loadComponent: () => import('./alerts/job-alerts.component').then((m) => m.JobAlertsComponent),
-    title: 'Mes alertes emploi — AfriDev Hub',
+    title: 'Offres d\'emploi — AfriDev Hub',
   },
   {
     path: 'post',
@@ -28,10 +16,22 @@ export const JOBS_ROUTES: Routes = [
     title: 'Publier une offre — AfriDev Hub',
   },
   {
-    path: ':id/edit',
+    path: 'alerts',
     canActivate: [authGuard],
-    loadComponent: () => import('./job-edit/job-edit.component').then((m) => m.JobEditComponent),
-    title: "Modifier l'offre — AfriDev Hub",
+    loadComponent: () => import('./job-alerts/job-alerts.component').then((m) => m.JobAlertsComponent),
+    title: 'Mes alertes emploi — AfriDev Hub',
+  },
+  {
+    path: 'plan',
+    canActivate: [authGuard],
+    loadComponent: () => import('./recruiter-plan/recruiter-plan.component').then((m) => m.RecruiterPlanComponent),
+    title: 'Plan recruteur — AfriDev Hub',
+  },
+  {
+    path: 'mine',
+    canActivate: [authGuard],
+    loadComponent: () => import('./my-jobs/my-jobs.component').then((m) => m.MyJobsComponent),
+    title: 'Mes offres — AfriDev Hub',
   },
   {
     path: ':id',
@@ -41,10 +41,10 @@ export const JOBS_ROUTES: Routes = [
       ),
   },
   {
-    path: ':id/applications',
+    path: ':id/edit',
     canActivate: [authGuard],
-    loadComponent: () => import('./job-applications/job-applications.component').then((m) => m.JobApplicationsComponent),
-    title: 'Candidatures — AfriDev Hub',
+    loadComponent: () => import('./job-post/job-post.component').then((m) => m.JobPostComponent),
+    title: 'Modifier une offre — AfriDev Hub',
   },
   {
     path: ':id/apply',

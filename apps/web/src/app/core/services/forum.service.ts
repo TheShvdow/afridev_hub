@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 import type { VoteValue } from './votes.service';
 import { environment } from '../../../environments/environment';
 
@@ -89,7 +89,7 @@ export interface ForumAnswer {
   user: ForumAuthorSummary;
 }
 
-/** Réponse de `GET /api/forum/posts/{id}` : la question avec ses réponses. */
+/** Réponse de `GET /api/forum/posts/{id}` : la question avec la première page de ses réponses (10), `answersMeta` donnant le total. */
 export interface ForumPostDetail extends ForumPost {
   userId: string;
   userVote?: VoteValue | null;
@@ -97,6 +97,7 @@ export interface ForumPostDetail extends ForumPost {
   isHidden: boolean;
   updatedAt: string;
   answers: ForumAnswer[];
+  answersMeta?: PaginationMeta;
 }
 
 /**
@@ -123,6 +124,14 @@ export class ForumService {
   /** `GET /api/forum/posts/{id}` — question et ses réponses. */
   getPost(id: string): Observable<ForumPostDetail> {
     return this.http.get<ForumPostDetail>(`${this.base}/posts/${encodeURIComponent(id)}`);
+  }
+
+  /** `GET /api/forum/posts/{id}/answers` — une page de réponses (acceptée d'abord, puis les mieux notées). */
+  listAnswers(postId: string, page: number, limit?: number): Observable<Paginated<ForumAnswer>> {
+    let params = new HttpParams().set('page', page);
+    if (limit !== undefined) params = params.set('limit', limit);
+
+    return this.http.get<Paginated<ForumAnswer>>(`${this.base}/posts/${encodeURIComponent(postId)}/answers`, { params });
   }
 
   /** `GET /api/forum/posts/similar` — 3 questions au titre proche au plus. */
@@ -157,6 +166,11 @@ export class ForumService {
     );
   }
 
+  /** `PATCH /api/forum/answers/{answerId}` — réservé à l'auteur de la réponse. */
+  updateAnswer(answerId: string, dto: CreateAnswerDto): Observable<ForumAnswer> {
+    return this.http.patch<ForumAnswer>(`${this.base}/answers/${encodeURIComponent(answerId)}`, dto);
+  }
+
   /** `PATCH /api/forum/answers/{answerId}/accept` — auteur de la question uniquement. */
   acceptAnswer(answerId: string): Observable<unknown> {
     return this.http.patch(`${this.base}/answers/${encodeURIComponent(answerId)}/accept`, {});
@@ -165,19 +179,5 @@ export class ForumService {
   /** `DELETE /api/forum/answers/{answerId}` — auteur ou modérateur. */
   deleteAnswer(answerId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/answers/${encodeURIComponent(answerId)}`);
-  }
-
-  /** `POST /api/forum/posts/{id}/votes` */
-  votePost(id: string, value: 'UP' | 'DOWN'): Observable<{ action: string; newScore: number }> {
-    return this.http
-      .post<{ data: { action: string; newScore: number } } | { action: string; newScore: number }>(`${this.base}/posts/${encodeURIComponent(id)}/votes`, { value })
-      .pipe(map((res: any) => (res && res.data ? res.data : res)));
-  }
-
-  /** `POST /api/forum/answers/{id}/votes` */
-  voteAnswer(id: string, value: 'UP' | 'DOWN'): Observable<{ action: string; newScore: number }> {
-    return this.http
-      .post<{ data: { action: string; newScore: number } } | { action: string; newScore: number }>(`${this.base}/answers/${encodeURIComponent(id)}/votes`, { value })
-      .pipe(map((res: any) => (res && res.data ? res.data : res)));
   }
 }

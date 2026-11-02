@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { initMonitoring } from './common/monitoring';
 import helmet from 'helmet';
 import type { Request, Response } from 'express';
 import * as compression from 'compression';
@@ -12,6 +13,7 @@ import { applyEnvelopeToDocument } from './common/swagger/envelope.document';
 import { SWAGGER_OAUTH_SCRIPT, SWAGGER_OAUTH_SCRIPT_PATH } from './common/swagger/oauth-login.script';
 
 async function bootstrap() {
+  initMonitoring();
   // rawBody : la vérification HMAC des webhooks Bictorys exige le corps brut
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,

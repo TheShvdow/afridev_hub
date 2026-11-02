@@ -95,7 +95,8 @@ export class AnswerDto {
 
 export class PostDetailDto extends PostDto {
   @ApiProperty({ enum: ['UP', 'DOWN'], nullable: true, description: 'Vote du visiteur connecté, null sinon' }) userVote!: 'UP' | 'DOWN' | null;
-  @ApiProperty({ type: [AnswerDto] }) answers!: AnswerDto[];
+  @ApiProperty({ type: [AnswerDto], description: 'Première page de réponses ; la suite via GET /forum/posts/{id}/answers' }) answers!: AnswerDto[];
+  @ApiProperty({ example: { total: 23, page: 1, limit: 10, totalPages: 3 } }) answersMeta!: { total: number; page: number; limit: number; totalPages: number };
 }
 
 export class SimilarPostDto {
@@ -219,10 +220,19 @@ export class PaymentDto {
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
 }
 
+/** Où se trouve le contenu signalé : de quoi bâtir un lien. */
+export class ReportTargetDto {
+  @ApiProperty() title!: string;
+  @ApiPropertyOptional({ description: 'Question concernée (ou question parente d\'une réponse)' }) postId?: string;
+  @ApiPropertyOptional({ description: 'Identifiant lisible du projet' }) slug?: string;
+  @ApiPropertyOptional({ description: 'Offre d\'emploi concernée' }) jobId?: string;
+}
+
 export class ReportDto {
   @ApiProperty() id!: string;
   @ApiProperty({ enum: ReportEntityType }) entityType!: ReportEntityType;
   @ApiProperty() entityId!: string;
+  @ApiPropertyOptional({ type: ReportTargetDto, nullable: true, description: 'Absent si le contenu a été supprimé' }) target?: ReportTargetDto | null;
   @ApiProperty() reason!: string;
   @ApiProperty({ enum: ReportStatus }) status!: ReportStatus;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;

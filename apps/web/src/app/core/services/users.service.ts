@@ -55,7 +55,7 @@ export interface UpdateProfileDto {
   githubUsername?: string | null;
   linkedinUsername?: string | null;
   twitterUsername?: string | null;
-  preferredCurrency?: string | null;
+  /** E-mails d'activité (réponses, votes, candidatures…) ; les e-mails de confirmation (reçu, accusé) partent toujours. */
   emailNotifications?: boolean;
 }
 
@@ -118,6 +118,11 @@ export class UsersService {
     return this.http.patch<MyProfile>(`${this.base}/me`, dto);
   }
 
+  /** `PATCH /api/users/me/onboarding` — ne remplit que les champs encore vides. */
+  completeOnboarding(dto: { location?: string; country?: string; level?: ExperienceLevel; stack?: string[] }): Observable<unknown> {
+    return this.http.patch(`${this.base}/me/onboarding`, dto);
+  }
+
   /** `POST /api/users/me/recruiter` — active le profil recruteur (nom de l'entreprise). */
   enableRecruiter(companyName: string): Observable<unknown> {
     return this.http.post(`${this.base}/me/recruiter`, { companyName });
@@ -145,12 +150,6 @@ export class UsersService {
   becomeRecruiter(companyName: string): Observable<any> {
     return this.http
       .post<{ data: any } | any>(`${this.base}/me/recruiter`, { companyName })
-      .pipe(map((res: any) => (res && res.data ? res.data : res)));
-  }
-
-  completeOnboarding(dto: { location?: string; country?: string; level?: string; stack?: string[] }): Observable<any> {
-    return this.http
-      .patch<{ data: any } | any>(`${this.base}/me/onboarding`, dto)
       .pipe(map((res: any) => (res && res.data ? res.data : res)));
   }
 

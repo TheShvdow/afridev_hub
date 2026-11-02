@@ -17,6 +17,9 @@
             @if (quotaReached(plan)) {
               <span class="font-semibold text-[#FB2C36]">Quota atteint.</span>
             }
+            @if (!plan.isPremium) {
+              <a routerLink="/jobs/plan" class="font-semibold text-[#0F6932] underline">Passer en premium</a>
+            }
           </p>
         } @else {
           <span></span>
@@ -90,7 +93,7 @@
                           <span class="text-[13px] text-[#94A3B8]">{{ timeAgo(application.createdAt) }}</span>
                         </div>
                         <p class="text-[14px] text-[#64748B]">
-                          <a [routerLink]="['/u', application.user.username]" class="font-semibold text-[#0F6932] hover:underline">&#64;{{ application.user.username }}</a>
+                          <a [routerLink]="profilePath(application.user)" [class.pointer-events-none]="!hasPublicProfile(application.user)" class="font-semibold text-[#0F6932] hover:underline">&#64;{{ application.user.username }}</a>
                           @if (application.user.email; as email) {
                             · <a [href]="'mailto:' + email" class="hover:underline">{{ email }}</a>
                           }

@@ -53,6 +53,25 @@ describe('Connexion', () => {
     component.form.setValue({ email, password, remember: true });
   }
 
+  describe('mot de passe oublié', () => {
+    const forgotLink = () => fixture.nativeElement.querySelector('a[href^="/auth/forgot-password"]') as HTMLAnchorElement | null;
+
+    it('propose un lien vers la réinitialisation, plus un message « pas disponible »', () => {
+      expect(forgotLink()).toBeTruthy();
+      expect(fixture.nativeElement.textContent).not.toContain('pas encore disponible');
+    });
+
+    it('reprend l\'adresse déjà saisie', () => {
+      expect(component.forgotQuery()).toBeNull();
+
+      component.form.controls.email.setValue('  idrissa@example.com ');
+      fixture.detectChanges();
+
+      expect(component.forgotQuery()).toEqual({ email: 'idrissa@example.com' });
+      expect(forgotLink()?.getAttribute('href')).toContain('email=idrissa@example.com');
+    });
+  });
+
   it('connecte l\'utilisateur et stocke les tokens', () => {
     const navigate = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
 
@@ -86,11 +105,25 @@ describe('Connexion', () => {
         role: 'MEMBER',
         isVerified: false,
         reputation: 0,
+        country: 'SN',
         createdAt: '2026-10-20T16:53:59.632Z',
       },
     });
 
-    expect(navigate).toHaveBeenCalledWith('/forum');
+    expect(navigate).toHaveBeenCalledWith('/');
+  });
+
+  it('propose l\'écran de bienvenue quand le profil est encore vide', () => {
+    const navigate = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    fillForm();
+    component.submit();
+    controller.expectOne(`${API}/auth/login`).flush({ data: { accessToken: 'at-1', refreshToken: 'rt-1' } });
+    controller.expectOne((req) => req.url.endsWith('/auth/me')).flush({
+      data: { id: 'user-1', role: 'MEMBER', country: null, level: null, stack: [] },
+    });
+
+    expect(navigate).toHaveBeenCalledWith(['/bienvenue'], { queryParams: { returnUrl: '/' } });
   });
 
   it('conserve la session dans l\'onglet quand « rester connecté » est décoché', () => {

@@ -1,0 +1,47 @@
+@startuml
+title Postuler à une offre avec CV
+autonumber
+actor Candidat
+actor Recruteur
+participant Front
+participant API
+participant R2
+database Base
+participant Notifications
+participant "E-mail" as Mail
+
+Candidat -> Front : ouvre l'offre puis « Postuler »
+Front -> Front : préremplit nom et e-mail depuis le compte
+Candidat -> Front : message, liens, téléphone, salaire souhaité, CV…
+
+opt un CV est joint
+  Front -> API : POST /upload/cv-presign
+  API --> Front : URL signée (PUT, 5 min) et clé du fichier
+  Front -> R2 : PUT du fichier (sans jeton)
+  R2 --> Front : 200
+end
+
+Front -> API : POST /jobs/{id}/apply (champs + clé du CV)
+alt candidature valide
+  API -> Base : enregistre la candidature
+  API --> Front : candidature enregistrée
+  API ->> Notifications : jobs.application.created
+  Notifications -> Base : notification JOB_APPLICATION pour le recruteur
+  Notifications --> Recruteur : notification en temps réel
+  Notifications --> Mail : accusé de réception au candidat
+  Front -> Candidat : confirmation
+else message vide ou lien invalide
+  API --> Front : 400
+else déjà candidat à cette offre
+  API --> Front : 409
+end
+
+== Côté recruteur ==
+Recruteur -> Front : « Mes offres » puis les candidatures
+Front -> API : GET /jobs/{id}/applications
+API --> Front : candidatures avec toutes les informations saisies
+note right of API
+  Plan gratuit : le profil du candidat est réduit.
+  Plan premium : profil complet.
+end note
+@enduml

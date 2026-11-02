@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { Subject } from 'rxjs';
 import type { Socket } from 'socket.io-client';
 import { environment } from '../../../environments/environment';
+import { HttpCacheService } from '../cache/http-cache.service';
 import { AuthStore } from '../store/auth.store';
 import { AppNotification, NotificationsService } from './notifications.service';
 import { ToastService } from './toast.service';
@@ -25,6 +26,7 @@ export class RealtimeService {
   private readonly authStore = inject(AuthStore);
   private readonly notificationsApi = inject(NotificationsService);
   private readonly toast = inject(ToastService);
+  private readonly readCache = inject(HttpCacheService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   /** Nombre de notifications non lues, partagé par la barre de navigation et la page des notifications. */
@@ -86,6 +88,8 @@ export class RealtimeService {
     });
 
     socket.on('notification', (notification: AppNotification) => {
+      // Une notification annonce un changement (réponse, vote, candidature…) : les pages gardées sont périmées.
+      this.readCache.clear();
       this.unreadCount.update((count) => count + 1);
       this.notification$.next(notification);
       this.toast.info(notification.title ?? notification.message);

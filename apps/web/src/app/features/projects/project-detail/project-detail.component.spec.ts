@@ -120,7 +120,7 @@ describe('ProjectDetailComponent', () => {
       fixture.nativeElement.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>,
     );
     const author = links.find(
-      (link) => link.getAttribute('href') === `/u/${PROJECT.user.username}`,
+      (link) => link.getAttribute('href') === `/@${PROJECT.user.username}`,
     );
 
     expect(author?.textContent).toContain('Idrissa Wade');

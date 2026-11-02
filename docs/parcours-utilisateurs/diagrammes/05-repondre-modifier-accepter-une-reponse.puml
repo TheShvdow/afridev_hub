@@ -1,0 +1,51 @@
+@startuml
+title Répondre à une question, modifier sa réponse, l'accepter
+autonumber
+actor Aidant
+actor "Auteur de la question" as Auteur
+participant Front
+participant API
+database Base
+participant Gamification
+participant Notifications
+
+== Répondre ==
+Aidant -> Front : écrit sa réponse (modale ou page de détail)
+Front -> API : POST /forum/posts/{id}/answers
+alt réponse valide
+  API -> Base : crée la réponse
+  API --> Front : réponse créée (affichée sans recharger la page)
+  API ->> Gamification : forum.answer.created
+  Gamification -> Base : +10 points à l'aidant
+  API ->> Notifications : forum.answer.created
+  Notifications -> Base : notification NEW_ANSWER pour l'auteur
+else moins de 30 caractères
+  API --> Front : 400 « au moins 30 caractères »
+else l'aidant est l'auteur de la question
+  API --> Front : 403
+end
+
+== Modifier sa réponse ==
+Aidant -> Front : « Modifier », nouveau texte
+Front -> API : PATCH /forum/answers/{id}
+alt auteur de la réponse
+  API -> Base : met à jour le texte
+  API --> Front : réponse mise à jour
+else autre membre
+  API --> Front : 403
+end
+
+== Accepter une réponse ==
+Auteur -> Front : « Accepter cette réponse »
+Front -> API : PATCH /forum/answers/{id}/accept
+alt auteur de la question
+  API -> Base : désaccepte l'ancienne, accepte celle-ci, question résolue
+  API --> Front : succès
+  API ->> Gamification : forum.answer.accepted
+  Gamification -> Base : +15 points à l'aidant
+  API ->> Notifications : forum.answer.accepted
+  Notifications -> Base : notification ANSWER_ACCEPTED pour l'aidant
+else autre membre
+  API --> Front : 403
+end
+@enduml

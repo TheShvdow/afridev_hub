@@ -51,6 +51,7 @@ const forumStub = {
   getPost: jest.fn(() => of(DETAIL)),
   deletePost: jest.fn(() => of(undefined)),
   deleteAnswer: jest.fn(() => of(undefined)),
+  updateAnswer: jest.fn((_id: string, dto: { body: string }) => of({ body: dto.body })),
   acceptAnswer: jest.fn(() => of({})),
 };
 
@@ -72,6 +73,7 @@ describe('PostDetailComponent', () => {
     forumStub.getPost.mockClear();
     forumStub.deletePost.mockClear();
     forumStub.deleteAnswer.mockClear();
+    forumStub.updateAnswer.mockClear();
     forumStub.acceptAnswer.mockClear();
     votesStub.votePost.mockClear();
     votesStub.voteAnswer.mockClear();
@@ -151,6 +153,61 @@ describe('PostDetailComponent', () => {
 
     expect(forumStub.deletePost).toHaveBeenCalledWith(DETAIL.id);
     expect(router.navigateByUrl).toHaveBeenCalledWith('/forum');
+  });
+
+  describe('answer edition', () => {
+    const NEW_BODY = 'Voici une réponse corrigée, assez longue pour dépasser les trente caractères.';
+
+    function openEditor() {
+      authStub.currentUser.mockReturnValue({ id: DETAIL.answers[0].user.id, role: 'MEMBER' });
+      const authorFixture = TestBed.createComponent(PostDetailComponent);
+      authorFixture.detectChanges();
+
+      const article = authorFixture.nativeElement.querySelectorAll('article')[1] as HTMLElement;
+      const editButton = Array.from(article.querySelectorAll('button')).find(
+        (button) => button.textContent?.trim() === 'Modifier',
+      ) as HTMLButtonElement;
+      editButton.click();
+      authorFixture.detectChanges();
+      return { authorFixture, article };
+    }
+
+    function type(article: HTMLElement, value: string) {
+      const textarea = article.querySelector('textarea') as HTMLTextAreaElement;
+      textarea.value = value;
+      textarea.dispatchEvent(new Event('input'));
+    }
+
+    it('should save the new version of the answer', () => {
+      const { authorFixture, article } = openEditor();
+
+      type(article, NEW_BODY);
+      (article.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+      authorFixture.detectChanges();
+
+      expect(forumStub.updateAnswer).toHaveBeenCalledWith(DETAIL.answers[0].id, { body: NEW_BODY });
+      expect(authorFixture.componentInstance.post()?.answers[0].body).toBe(NEW_BODY);
+      expect(article.querySelector('textarea')).toBeNull();
+      authorFixture.destroy();
+    });
+
+    it('should refuse an answer shorter than 30 characters', () => {
+      const { authorFixture, article } = openEditor();
+
+      type(article, 'trop court');
+      (article.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+      authorFixture.detectChanges();
+
+      expect(forumStub.updateAnswer).not.toHaveBeenCalled();
+      expect(article.textContent).toContain('au moins 30 caractères');
+      authorFixture.destroy();
+    });
+
+    it('should not offer to edit the answer of another member', () => {
+      const articles = fixture.nativeElement.querySelectorAll('article');
+      const labels = Array.from((articles[1] as HTMLElement).querySelectorAll('button')).map((b) => (b as HTMLElement).textContent?.trim());
+      expect(labels).not.toContain('Modifier');
+    });
   });
 
   it('should delete an answer after confirmation', () => {
@@ -269,5 +326,105 @@ describe('PostDetailComponent', () => {
     expect(forumStub.acceptAnswer).toHaveBeenCalledWith('answer-2');
     expect(component.post()?.answers.map((answer) => answer.isAccepted)).toEqual([false, true]);
     expect(component.post()?.isResolved).toBe(true);
+  });
+});
+
+describe('PostDetailComponent — réponses paginées', () => {
+  const answer = (n: number) => ({
+    ...DETAIL.answers[0],
+    id: `a${n}`,
+    body: `Réponse numéro ${n}`,
+    isAccepted: false,
+    user: { ...DETAIL.answers[0].user, id: `u${n}` },
+  });
+  const page = (from: number, count: number) => Array.from({ length: count }, (_, i) => answer(from + i));
+  const META = (pageNumber: number) => ({ total: 23, page: pageNumber, limit: 10, totalPages: 3 });
+
+  const paginatedStub = {
+    ...forumStub,
+    getPost: jest.fn(() => of({ ...DETAIL, _count: { answers: 23 }, answers: page(1, 10), answersMeta: META(1) })),
+    listAnswers: jest.fn(),
+  };
+
+  let component: PostDetailComponent;
+  let fixture: ComponentFixture<PostDetailComponent>;
+
+  const button = () =>
+    Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>).find((item) =>
+      item.textContent?.includes('Afficher plus de réponses'),
+    );
+
+  beforeEach(async () => {
+    paginatedStub.listAnswers.mockReset();
+    await TestBed.configureTestingModule({
+      imports: [PostDetailComponent],
+      providers: [
+        provideRouter([]),
+        { provide: ForumService, useValue: paginatedStub },
+        { provide: AuthStore, useValue: authStub },
+        { provide: VotesService, useValue: votesStub },
+        { provide: ModerationService, useValue: { report: jest.fn(() => of({})) } },
+        { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: DETAIL.id })) } },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(PostDetailComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('affiche le total des réponses et propose de charger les 13 restantes', () => {
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('23 réponses');
+    expect(button()?.textContent).toContain('(13)');
+    expect(fixture.nativeElement.querySelectorAll('article').length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('charge la page suivante et l\'ajoute à la suite, sans doublon', () => {
+    paginatedStub.listAnswers.mockReturnValue(of({ data: [answer(10), ...page(11, 10)], meta: META(2) }));
+
+    button()?.click();
+    fixture.detectChanges();
+
+    expect(paginatedStub.listAnswers).toHaveBeenCalledWith(DETAIL.id, 2, 10);
+    expect(component.post()?.answers.map((item) => item.id)).toEqual(Array.from({ length: 20 }, (_, i) => `a${i + 1}`));
+    expect(button()?.textContent).toContain('(3)');
+  });
+
+  it('retire le bouton quand tout est chargé', () => {
+    paginatedStub.listAnswers
+      .mockReturnValueOnce(of({ data: page(11, 10), meta: META(2) }))
+      .mockReturnValueOnce(of({ data: page(21, 3), meta: META(3) }));
+
+    button()?.click();
+    fixture.detectChanges();
+    button()?.click();
+    fixture.detectChanges();
+
+    expect(component.post()?.answers.length).toBe(23);
+    expect(button()).toBeUndefined();
+  });
+
+  it('affiche l\'erreur et garde le bouton quand le chargement échoue', () => {
+    paginatedStub.listAnswers.mockReturnValue(throwError(() => ({ status: 500, error: { error: { message: 'Panne' } } })));
+
+    button()?.click();
+    fixture.detectChanges();
+
+    expect(component.moreAnswersError()).toBeTruthy();
+    expect(button()).toBeDefined();
+    expect(component.loadingMoreAnswers()).toBe(false);
+  });
+
+  it('une réponse publiée augmente le total sans toucher à la pagination', () => {
+    component.answerForm.setValue({ body: 'Voici une réponse suffisamment longue pour être valide.' });
+    (paginatedStub as unknown as { createAnswer: jest.Mock }).createAnswer = jest.fn(() => of({ ...answer(99), body: 'Voici une réponse suffisamment longue pour être valide.' }));
+
+    component.submitAnswer();
+
+    expect(component.answerTotal()).toBe(24);
+    expect(component.post()?.answersMeta?.total).toBe(24);
+    expect(component.remainingAnswers()).toBe(13);
   });
 });

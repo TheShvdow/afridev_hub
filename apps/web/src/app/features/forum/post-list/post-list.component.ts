@@ -1,6 +1,7 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Subject, debounceTime, distinctUntilChanged, map } from 'rxjs';
 import { CardThreadComponent, Thread } from '../../../shared/components/card-thread/card-thread.component';
 import { ForumFiltersComponent } from '../../../shared/components/forum-filters/forum-filters.component';
 import { PageHeroComponent } from '../../../shared/components/page-hero/page-hero.component';
@@ -10,6 +11,8 @@ import { mapPostToThread } from '../../../shared/utils/forum-thread.mapper';
 import { ForumService } from '../../../core/services/forum.service';
 
 const PAGE_SIZE = 20;
+const SEARCH_PAUSE_MS = 350;
+const MAX_SEARCH_LENGTH = 100;
 
 @Component({
   selector: 'app-post-list',
@@ -20,10 +23,17 @@ const PAGE_SIZE = 20;
 export class PostListComponent implements OnInit {
   private readonly forum = inject(ForumService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly threads = signal<Thread[]>([]);
   readonly selectedTag = signal(ALL_TAGS);
   readonly selectedThread = signal<Thread | null>(null);
+  /** Texte tapé dans le champ de recherche. */
+  readonly search = signal('');
+  /** Texte réellement envoyé à l'API (après la pause de saisie). */
+  readonly appliedSearch = signal('');
+  private readonly typed$ = new Subject<string>();
 
   readonly loading = signal(false);
   readonly loadingMore = signal(false);
@@ -38,13 +48,64 @@ export class PostListComponent implements OnInit {
   readonly hasMore = computed(() => this.page() < this.totalPages());
 
   ngOnInit(): void {
+    // La recherche et le tag sont dans l'adresse : une page filtrée se partage et survit à un rechargement.
+    const params = this.route.snapshot.queryParamMap;
+    const query = (params.get('q') ?? '').trim().slice(0, MAX_SEARCH_LENGTH);
+    const tag = params.get('tag');
+    if (query) {
+      this.search.set(query);
+      this.appliedSearch.set(query);
+    }
+    if (tag) this.selectedTag.set(tag);
+
+    // Une pause de saisie avant d'interroger l'API : pas un appel par touche.
+    this.typed$
+      .pipe(debounceTime(SEARCH_PAUSE_MS), map((value) => value.trim()), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => this.applySearch(value));
+
     this.loadFirstPage();
+  }
+
+  onSearchInput(value: string): void {
+    this.search.set(value);
+    this.typed$.next(value);
+  }
+
+  /** Entrée dans le champ : on n'attend pas la pause. */
+  submitSearch(): void {
+    this.applySearch(this.search().trim());
+  }
+
+  clearSearch(): void {
+    this.search.set('');
+    this.applySearch('');
   }
 
   selectTag(tag: string): void {
     if (tag === this.selectedTag()) return;
     this.selectedTag.set(tag);
+    this.syncUrl();
     this.loadFirstPage();
+  }
+
+  private applySearch(value: string): void {
+    // Un seul caractère ne cherche rien d'utile : on attend le deuxième.
+    if (value.length === 1) return;
+    const next = value.slice(0, MAX_SEARCH_LENGTH);
+    if (next === this.appliedSearch()) return;
+
+    this.appliedSearch.set(next);
+    this.syncUrl();
+    this.loadFirstPage();
+  }
+
+  private syncUrl(): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { q: this.appliedSearch() || null, tag: this.tagFilter() ?? null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   reload(): void {
@@ -59,7 +120,7 @@ export class PostListComponent implements OnInit {
     this.loadingMore.set(true);
 
     this.forum
-      .listPosts({ page, limit: PAGE_SIZE, sort: 'newest', tag: this.tagFilter() })
+      .listPosts({ page, limit: PAGE_SIZE, sort: 'newest', tag: this.tagFilter(), search: this.appliedSearch() || undefined })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
@@ -100,7 +161,7 @@ export class PostListComponent implements OnInit {
     this.error.set(false);
 
     this.forum
-      .listPosts({ page: 1, limit: PAGE_SIZE, sort: 'newest', tag })
+      .listPosts({ page: 1, limit: PAGE_SIZE, sort: 'newest', tag, search: this.appliedSearch() || undefined })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
@@ -112,7 +173,8 @@ export class PostListComponent implements OnInit {
           this.totalPages.set(response.meta.totalPages);
           this.loading.set(false);
 
-          if (!tag) {
+          // Les tags proposés viennent de la liste complète : pas d'une recherche, qui les réduirait.
+          if (!tag && !this.appliedSearch()) {
             this.knownTags.set([...new Set(threads.flatMap((thread) => thread.tags))]);
           }
         },

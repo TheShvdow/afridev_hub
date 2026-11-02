@@ -13,7 +13,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
 import { relativeTime } from '../../../shared/utils/forum-thread.mapper';
 
-const OPEN_STATUSES: ReportStatus[] = ['PENDING', 'REVIEWED'];
+const OPEN_STATUSES = new Set<ReportStatus>(['PENDING', 'REVIEWED']);
 
 @Component({
   selector: 'app-reports',
@@ -57,7 +57,7 @@ export class ReportsComponent {
   }
 
   isOpen(report: AdminReport): boolean {
-    return OPEN_STATUSES.includes(report.status);
+    return OPEN_STATUSES.has(report.status);
   }
 
   /** Motif lisible : la partie avant « : », la précision éventuelle après. */
@@ -77,8 +77,21 @@ export class ReportsComponent {
     return labels[code] ?? code;
   }
 
-  contentLink(report: AdminReport): string[] | null {
-    return report.entityType === 'POST' ? ['/forum', report.entityId] : null;
+  /** Lien vers le contenu signalé : la question (la question parente pour une réponse), le projet ou l'offre. */
+  contentLink(report: AdminReport): { commands: string[]; label: string } | null {
+    const target = report.target;
+    if (!target) return null;
+    if (target.postId) {
+      return { commands: ['/forum', target.postId], label: report.entityType === 'ANSWER' ? 'Voir la réponse dans sa question' : 'Voir la question' };
+    }
+    if (target.slug) return { commands: ['/projects', target.slug], label: 'Voir le projet' };
+    if (target.jobId) return { commands: ['/jobs', target.jobId], label: 'Voir l\'offre' };
+    return null;
+  }
+
+  entityLabel(type: AdminReport['entityType']): string {
+    const labels: Record<AdminReport['entityType'], string> = { POST: 'Question', ANSWER: 'Réponse', PROJECT: 'Projet', JOB: 'Offre' };
+    return labels[type] ?? type;
   }
 
   timeAgo(iso: string): string {

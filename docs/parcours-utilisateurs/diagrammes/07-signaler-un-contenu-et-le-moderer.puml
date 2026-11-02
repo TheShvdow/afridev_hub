@@ -1,0 +1,45 @@
+@startuml
+title Signalement et modération
+autonumber
+actor Membre
+actor Modérateur
+participant Front
+participant API
+database Base
+
+Membre -> Front : « Signaler » + motif\n(question, réponse, projet ou offre d'emploi)
+Front -> API : POST /moderation/reports
+alt premier signalement, contenu d'un autre membre
+  API -> Base : enregistre le signalement
+  opt le seuil de 3 signalements est atteint
+    API -> Base : masque le contenu\n(une offre repasse en « à valider »)
+  end
+  API --> Front : 201
+  Front -> Membre : bouton verrouillé « Signalé »
+else déjà signalé
+  API --> Front : 409
+else contenu personnel
+  API --> Front : 403
+end
+
+== Traitement par la modération ==
+Modérateur -> Front : onglet « Signalements »
+Front -> API : GET /moderation/reports
+API --> Front : signalements en attente, chacun avec sa cible\n(question, question parente d'une réponse, slug du projet, offre)
+Front -> Modérateur : « Voir la question / le projet / l'offre »
+alt le signalement est fondé
+  Modérateur -> Front : « Masquer le contenu »
+  Front -> API : PATCH /moderation/reports/{id}/resolve
+  API -> Base : masque le contenu, signalement résolu
+else le signalement est infondé
+  Modérateur -> Front : « Rejeter »
+  Front -> API : PATCH /moderation/reports/{id}/dismiss
+  API -> Base : signalement classé sans suite
+end
+
+opt un contenu masqué à tort
+  Modérateur -> Front : « Rétablir »
+  Front -> API : PATCH /moderation/content/{type}/{id}/restore
+  API -> Base : contenu de nouveau visible
+end
+@enduml

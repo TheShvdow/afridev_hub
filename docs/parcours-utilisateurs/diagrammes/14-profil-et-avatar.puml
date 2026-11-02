@@ -1,0 +1,30 @@
+@startuml
+title Mise à jour du profil et de l'avatar
+autonumber
+actor Membre
+participant Front
+participant API
+participant R2
+database Base
+participant Gamification
+
+Membre -> Front : choisit une image
+Front -> API : POST /upload/avatar-presign
+API --> Front : URL signée (PUT) et clé du fichier
+Front -> R2 : PUT de l'image (sans jeton)
+R2 --> Front : 200
+Front -> API : PATCH /users/me/avatar (clé)
+alt le fichier existe dans R2
+  API -> Base : enregistre l'adresse publique
+  API --> Front : profil mis à jour
+else fichier introuvable
+  API --> Front : 400
+end
+
+Membre -> Front : modifie nom, bio, pile, pays
+Front -> API : PATCH /users/me
+API -> Base : met à jour le profil
+API ->> Gamification : users.profile.updated
+Gamification -> Base : attribue ou retire le badge « Dev vérifié »
+API --> Front : profil mis à jour
+@enduml

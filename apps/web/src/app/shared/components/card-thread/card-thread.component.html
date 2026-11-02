@@ -1,4 +1,5 @@
-<article
+<div
+  [appPrefetch]="'/forum/posts/' + thread().id"
   tabindex="0"
   role="button"
   (click)="opened.emit(thread())"
@@ -33,4 +34,4 @@
     <span class="text-[24px] font-semibold leading-[38px] text-[#141219]">{{ thread().replies }}</span>
     <span class="text-[16px] font-normal leading-[26px] text-[#64748B]">réponses</span>
   </div>
-</article>
+</div>

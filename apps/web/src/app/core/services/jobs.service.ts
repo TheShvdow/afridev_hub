@@ -312,7 +312,7 @@ export class JobsService {
   }
 
   listJobsForReview(page = 1, limit = 20): Observable<Paginated<JobOffer>> {
-    let params = new HttpParams().set('page', page).set('limit', limit);
+    const params = new HttpParams().set('page', page).set('limit', limit);
     return this.http.get<Paginated<JobOffer>>(`${this.base}/review`, { params });
   }
 

@@ -8,7 +8,7 @@ type Mock = jest.Mock;
 describe('AdminService', () => {
   let service: AdminService;
   let prisma: {
-    user: { count: Mock; findMany: Mock; update: Mock };
+    user: { count: Mock; findMany: Mock; update: Mock; findUnique: Mock };
     post: { count: Mock };
     project: { count: Mock };
     jobOffer: { count: Mock };
@@ -21,7 +21,7 @@ describe('AdminService', () => {
 
   beforeEach(async () => {
     prisma = {
-      user:       { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]), update: jest.fn() },
+      user:       { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]), update: jest.fn(), findUnique: jest.fn() },
       post:       { count: jest.fn().mockResolvedValue(0) },
       project:    { count: jest.fn().mockResolvedValue(0) },
       jobOffer:   { count: jest.fn().mockResolvedValue(0) },
@@ -155,6 +155,7 @@ describe('AdminService', () => {
 
   describe('updateUserRole', () => {
     it('met à jour le rôle et journalise l\'action avec l\'administrateur qui l\'a faite', async () => {
+      prisma.user.findUnique.mockResolvedValue({ role: UserRole.MEMBER });
       prisma.user.update.mockResolvedValue({ id: 'u1', username: 'amadou', role: UserRole.MODERATOR });
       prisma.auditLog.create.mockResolvedValue({});
 
@@ -176,10 +177,53 @@ describe('AdminService', () => {
     });
 
     it('n\'écrit pas de trace si la mise à jour échoue', async () => {
-      prisma.user.update.mockRejectedValue(new Error('not found'));
+      prisma.user.findUnique.mockResolvedValue({ role: UserRole.MEMBER });
+      prisma.user.update.mockRejectedValue(new Error('panne base'));
 
-      await expect(service.updateUserRole('missing', UserRole.ADMIN, 'admin-1')).rejects.toThrow('not found');
+      await expect(service.updateUserRole('u1', UserRole.ADMIN, 'admin-1')).rejects.toThrow('panne base');
       expect(prisma.auditLog.create).not.toHaveBeenCalled();
+    });
+
+    it('répond 404 pour un compte inexistant', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.updateUserRole('missing', UserRole.ADMIN, 'admin-1')).rejects.toMatchObject({ code: 'USERS_USER_NOT_FOUND' });
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('refuse qu\'un administrateur change son propre rôle', async () => {
+      await expect(service.updateUserRole('admin-1', UserRole.MEMBER, 'admin-1')).rejects.toMatchObject({ code: 'ADMIN_OWN_ROLE_CHANGE_FORBIDDEN' });
+      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(prisma.auditLog.create).not.toHaveBeenCalled();
+    });
+
+    it('refuse de rétrograder le dernier administrateur', async () => {
+      prisma.user.findUnique.mockResolvedValue({ role: UserRole.ADMIN });
+      prisma.user.count.mockResolvedValue(1);
+
+      await expect(service.updateUserRole('admin-2', UserRole.MODERATOR, 'admin-1')).rejects.toMatchObject({ code: 'ADMIN_LAST_ADMIN' });
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('autorise de rétrograder un administrateur quand il en reste un autre', async () => {
+      prisma.user.findUnique.mockResolvedValue({ role: UserRole.ADMIN });
+      prisma.user.count.mockResolvedValue(2);
+      prisma.user.update.mockResolvedValue({ id: 'admin-2', username: 'b', role: UserRole.MODERATOR });
+      prisma.auditLog.create.mockResolvedValue({});
+
+      const user = await service.updateUserRole('admin-2', UserRole.MODERATOR, 'admin-1');
+
+      expect(user.role).toBe(UserRole.MODERATOR);
+    });
+
+    it('autorise de promouvoir un membre sans compter les administrateurs', async () => {
+      prisma.user.findUnique.mockResolvedValue({ role: UserRole.MEMBER });
+      prisma.user.update.mockResolvedValue({ id: 'u1', username: 'a', role: UserRole.ADMIN });
+      prisma.auditLog.create.mockResolvedValue({});
+
+      await service.updateUserRole('u1', UserRole.ADMIN, 'admin-1');
+
+      expect(prisma.user.count).not.toHaveBeenCalled();
     });
   });
 

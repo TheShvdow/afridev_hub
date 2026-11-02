@@ -9,22 +9,27 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
+import { AnswerEditFormComponent } from '../../../shared/components/answer-edit-form/answer-edit-form.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ForumPostDetail } from '../../../core/services/forum.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error';
 import { ReportButtonComponent } from '../../../shared/components/report-button/report-button.component';
 import { VoteControlComponent } from '../../../shared/components/vote-control/vote-control.component';
+import { MarkdownPipe } from '../../../shared/markdown/markdown.pipe';
 import { AnswerThreadBase } from '../../../shared/forum/answer-thread.base';
+import { hasPublicProfile, profilePath } from '../../../shared/utils/profile-link';
 
 @Component({
   selector: 'app-post-detail',
   standalone: true,
-  imports: [RouterLink, ReactiveFormsModule, ReportButtonComponent, VoteControlComponent],
+  imports: [RouterLink, ReactiveFormsModule, ReportButtonComponent, VoteControlComponent, AnswerEditFormComponent, MarkdownPipe],
   templateUrl: './post-detail.component.html',
   styleUrl: './post-detail.component.css',
 })
 export class PostDetailComponent extends AnswerThreadBase implements OnInit {
+  readonly profilePath = profilePath;
+  readonly hasPublicProfile = hasPublicProfile;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);

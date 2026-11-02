@@ -4,7 +4,7 @@ title: Interfaces web Phase 1
 parent: ../initiative-afridev-hub-phase1.md
 covers: ["CAP-1", "CAP-2", "CAP-3", "CAP-4", "CAP-5", "CAP-6"]
 created: 2026-10-27
-status: in-progress
+status: done
 ---
 
 # Interfaces web Phase 1
@@ -65,3 +65,5 @@ Un membre, un recruteur, un modérateur et un administrateur accomplissent dans 
 - Glossaire : `../../spec-afridev-hub-phase1/glossary.md`
 - Seed de démonstration : `../../../../../prisma/seed-demo.ts`
 - AGENTS.md : `../../../AGENTS.md`
+
+**Decision:** 2026-10-28 — le paiement du plan premium passe par le checkout hébergé de Bictorys (aucun `payment_type` envoyé) ; l'acheteur choisit son moyen de paiement sur la page de Bictorys. Validé en sandbox avec un paiement Wave : voir `bictorys-integration-notes.md` (story 26).

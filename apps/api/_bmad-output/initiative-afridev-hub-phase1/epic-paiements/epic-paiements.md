@@ -4,7 +4,7 @@ title: Paiements Africains
 parent: ../initiative-afridev-hub-phase1.md
 covers: ["CAP-6"]
 created: 2026-10-13
-status: in-progress
+status: done
 ---
 
 # Paiements Africains

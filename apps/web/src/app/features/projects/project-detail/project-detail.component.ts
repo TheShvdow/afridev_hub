@@ -19,6 +19,7 @@ import { extractApiErrorMessage } from '../../../core/utils/api-error';
 import { ReportButtonComponent } from '../../../shared/components/report-button/report-button.component';
 import { compactCount } from '../../../shared/utils/project-card.mapper';
 import { initialsFrom, relativeTime } from '../../../shared/utils/forum-thread.mapper';
+import { hasPublicProfile, profilePath } from '../../../shared/utils/profile-link';
 
 @Component({
   selector: 'app-project-detail',
@@ -28,6 +29,8 @@ import { initialsFrom, relativeTime } from '../../../shared/utils/forum-thread.m
   styleUrl: './project-detail.component.css',
 })
 export class ProjectDetailComponent implements OnInit {
+  readonly profilePath = profilePath;
+  readonly hasPublicProfile = hasPublicProfile;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly projectsService = inject(ProjectsService);
