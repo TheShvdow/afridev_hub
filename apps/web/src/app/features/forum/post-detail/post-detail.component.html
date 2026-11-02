@@ -106,13 +106,8 @@
             </a>
           }
 
-<<<<<<< HEAD
-          <button type="button" (click)="votePost('UP')" class="text-[14px] text-[#0F6932]">+1</button>
-          <button type="button" (click)="votePost('DOWN')" class="text-[14px] text-red-600">-1</button>
-=======
           <app-report-button entityType="POST" [entityId]="question.id" [authorId]="question.userId" />
 
->>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
           @if (canDelete()) {
             <button
               type="button"
@@ -212,13 +207,6 @@
                     </span>
                   }
 
-<<<<<<< HEAD
-                  <span class="rounded-full bg-[#F8FAFC] px-3 py-1 text-[13px] font-medium text-[#64748B]">
-                  <button type="button" (click)="voteAnswer(answer, 'UP')" class="text-sm text-[#0F6932]">+1</button>
-                    {{ answer.voteScore }} votes
-                  <button type="button" (click)="voteAnswer(answer, 'DOWN')" class="text-sm text-red-600">-1</button>
-                  </span>
-=======
                   <app-vote-control
                     [score]="answer.voteScore"
                     [userVote]="answer.userVote"
@@ -237,7 +225,6 @@
                       Accepter cette réponse
                     </button>
                   }
->>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
                 </div>
 
                 <p class="mt-4 whitespace-pre-line break-words text-[16px] leading-[26px] text-[#475569]">

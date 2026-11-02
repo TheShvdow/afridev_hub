@@ -1,105 +1,3 @@
-<<<<<<< HEAD
-<section class="bg-[#F8FAFC]">
-  <div class="mx-auto w-full max-w-[800px] px-6 py-12 sm:px-10 lg:px-0">
-    <div class="mb-8">
-      <h1 class="text-[32px] font-bold text-[#141219]">Publier une offre</h1>
-      <p class="mt-2 text-[16px] text-[#64748B]">Votre offre sera soumise à validation avant publication.</p>
-    </div>
-
-    <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-6 rounded-[14px] bg-white p-6 shadow-sm sm:p-8">
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <label class="flex flex-col gap-2">
-          <span class="text-[14px] font-medium text-[#141219]">Titre du poste</span>
-          <input formControlName="title" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" placeholder="Développeur Angular Senior" />
-        </label>
-        <label class="flex flex-col gap-2">
-          <span class="text-[14px] font-medium text-[#141219]">Entreprise</span>
-          <input formControlName="company" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" placeholder="TechStartup Dakar" />
-        </label>
-      </div>
-
-      <label class="flex flex-col gap-2">
-        <span class="text-[14px] font-medium text-[#141219]">Description</span>
-        <textarea formControlName="description" rows="5" class="rounded-lg border border-[#E2E8F0] px-3 py-2 text-[16px]" placeholder="Nous recherchons..."></textarea>
-      </label>
-
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <label class="flex flex-col gap-2">
-          <span class="text-[14px] font-medium text-[#141219]">Pays</span>
-          <select formControlName="country" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]">
-            <option value="SN">Sénégal (SN)</option>
-            <option value="FR">France (FR)</option>
-            <option value="NG">Nigeria (NG)</option>
-            <option value="MA">Maroc (MA)</option>
-            <option value="CI">Côte d'Ivoire (CI)</option>
-            <option value="GH">Ghana (GH)</option>
-            <option value="KE">Kenya (KE)</option>
-          </select>
-        </label>
-        <label class="flex flex-col gap-2">
-          <span class="text-[14px] font-medium text-[#141219]">Type de contrat</span>
-          <select formControlName="type" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]">
-            <option value="FULL_TIME">CDI / Full Time</option>
-            <option value="PART_TIME">Temps partiel</option>
-            <option value="CONTRACT">Contrat</option>
-            <option value="FREELANCE">Freelance</option>
-            <option value="INTERNSHIP">Stage</option>
-          </select>
-        </label>
-        <label class="flex flex-col gap-2">
-          <span class="text-[14px] font-medium text-[#141219]">Mode</span>
-          <select formControlName="mode" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]">
-            <option value="REMOTE">Télétravail</option>
-            <option value="HYBRID">Hybride</option>
-            <option value="ONSITE">Sur site</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <label class="flex flex-col gap-2">
-          <span class="text-[14px] font-medium text-[#141219]">Salaire min</span>
-          <input type="number" formControlName="salaryMin" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" />
-        </label>
-        <label class="flex flex-col gap-2">
-          <span class="text-[14px] font-medium text-[#141219]">Salaire max</span>
-          <input type="number" formControlName="salaryMax" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" />
-        </label>
-        <label class="flex flex-col gap-2">
-          <span class="text-[14px] font-medium text-[#141219]">Devise</span>
-          <select formControlName="currency" class="h-12 rounded-lg border border-[#E2E8F0] px-3 text-[16px]">
-            <option value="XOF">XOF</option>
-            <option value="EUR">EUR</option>
-            <option value="USD">USD</option>
-            <option value="NGN">NGN</option>
-            <option value="MAD">MAD</option>
-          </select>
-        </label>
-      </div>
-
-      <div>
-        <div class="mb-2 flex items-center justify-between">
-          <span class="text-[14px] font-medium text-[#141219]">Technologies / Stack</span>
-          <button type="button" (click)="addStack()" class="text-[14px] font-semibold text-[#0F6932]">Ajouter</button>
-        </div>
-        <div class="flex flex-col gap-2" formArrayName="stack">
-          @for (ctrl of stack.controls; track $index) {
-            <div class="flex items-center gap-2">
-              <input [formControlName]="$index" class="h-12 flex-1 rounded-lg border border-[#E2E8F0] px-3 text-[16px]" placeholder="angular" />
-              @if (stack.length > 1) {
-                <button type="button" (click)="removeStack($index)" class="text-[14px] text-[#64748B]">Supprimer</button>
-              }
-            </div>
-          }
-        </div>
-      </div>
-
-      @if (error) {
-        <div class="rounded-lg bg-red-50 p-4 text-[14px] text-red-700">
-          <p>{{ error }}</p>
-          @if (errorCode === 'JOBS_RECRUITER_REQUIRED') {
-            <a routerLink="/profile" class="mt-2 inline-block font-semibold underline">Activer mon profil recruteur</a>
-=======
 <app-page-hero
   [title]="editing ? 'Modifier mon offre' : 'Publier une offre'"
   [subtitle]="editing ? 'Corrigez ou complétez votre offre. Une offre refusée est de nouveau relue par la modération.' : 'Votre offre sera relue par la modération avant d\'être visible, et reste en ligne 60 jours.'"
@@ -142,19 +40,10 @@
             >
               {{ activating() ? 'Activation…' : "Activer mon profil recruteur avec ce nom d'entreprise" }}
             </button>
->>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
           }
         </div>
       }
 
-<<<<<<< HEAD
-      <div class="flex justify-end">
-        <button type="submit" [disabled]="loading" class="inline-flex h-12 items-center justify-center rounded-full bg-[#0F1011] px-6 text-[16px] font-semibold text-white disabled:opacity-50">
-          {{ loading ? 'Envoi...' : "Soumettre l'offre" }}
-        </button>
-      </div>
-    </form>
-=======
       <div class="flex flex-col gap-2">
         <label for="job-title" class="text-[16px] font-semibold text-[#141219]">Intitulé du poste *</label>
         <input id="job-title" formControlName="title" type="text" [attr.maxlength]="limits.title.max" class="rounded-2xl border border-[#E2E8F0] px-5 py-3 text-[16px] text-[#141219] focus:border-[#0F1011] focus:outline-none" />
@@ -275,6 +164,5 @@
       </div>
     </form>
     }
->>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
   </div>
 </section>

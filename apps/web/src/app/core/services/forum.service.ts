@@ -1,11 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-<<<<<<< HEAD
 import { Observable, map } from 'rxjs';
-=======
-import { Observable } from 'rxjs';
 import type { VoteValue } from './votes.service';
->>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
 import { environment } from '../../../environments/environment';
 
 export type ForumSort = 'newest' | 'votes' | 'unanswered' | 'active';

@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { JobsService, ApiJob } from '../../../core/services/jobs.service';
-=======
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PagerComponent } from '../../../shared/components/pager/pager.component';
@@ -15,71 +9,10 @@ import { relativeTime } from '../../../shared/utils/forum-thread.mapper';
 
 /** Contrainte de `RejectJobDto.reason`. */
 export const REJECTION_REASON_MIN_LENGTH = 5;
->>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
 
 @Component({
   selector: 'app-admin-jobs',
   standalone: true,
-<<<<<<< HEAD
-  imports: [CommonModule, FormsModule],
-  templateUrl: './admin-jobs.component.html',
-  styleUrl: './admin-jobs.component.css',
-})
-export class AdminJobsComponent implements OnInit {
-  private readonly jobsService = inject(JobsService);
-
-  readonly jobs = signal<ApiJob[]>([]);
-  readonly loading = signal(false);
-  readonly meta = signal({ total: 0, page: 1, limit: 20, totalPages: 1 });
-  rejectReason = '';
-  rejectingId: string | null = null;
-
-  ngOnInit(): void {
-    this.load();
-  }
-
-  load(): void {
-    this.loading.set(true);
-    this.jobsService.listJobsForReview(this.meta().page, this.meta().limit).subscribe({
-      next: (res) => {
-        this.jobs.set(res.data);
-        this.meta.set(res.meta);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loading.set(false);
-      },
-    });
-  }
-
-  approve(id: string): void {
-    this.jobsService.approveJob(id).subscribe({
-      next: () => this.load(),
-      error: () => {},
-    });
-  }
-
-  startReject(id: string): void {
-    this.rejectingId = id;
-    this.rejectReason = '';
-  }
-
-  cancelReject(): void {
-    this.rejectingId = null;
-    this.rejectReason = '';
-  }
-
-  confirmReject(id: string): void {
-    if (!this.rejectReason.trim()) return;
-    this.jobsService.rejectJob(id, this.rejectReason.trim()).subscribe({
-      next: () => {
-        this.cancelReject();
-        this.load();
-      },
-      error: () => {},
-    });
-  }
-=======
   imports: [RouterLink, PagerComponent],
   templateUrl: './admin-jobs.component.html',
 })
@@ -179,5 +112,4 @@ export class AdminJobsComponent {
       },
     });
   }
->>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
 }

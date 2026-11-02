@@ -49,11 +49,7 @@ export interface UpdateProfileDto {
   bio?: string | null;
   location?: string | null;
   country?: string | null;
-<<<<<<< HEAD
-  level?: string | null;
-=======
   level?: ExperienceLevel | null;
->>>>>>> ce75cd1be8af82b11ef23739427de6b7d57a124b
   stack?: string[];
   websiteUrl?: string | null;
   githubUsername?: string | null;
