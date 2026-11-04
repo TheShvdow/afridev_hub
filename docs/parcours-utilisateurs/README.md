@@ -39,7 +39,7 @@ Ce document décrit chaque parcours de l'application sous forme de diagramme de 
 | --- | --- |
 | Visiteur, Membre, Candidat, Recruteur, Modérateur, Administrateur | Les personnes. Un rôle est une facette d'un même compte, sauf Modérateur et Administrateur, portés par `User.role`. |
 | Front | Application Angular 18 (Vercel). |
-| API | NestJS (Render). Les modules ne s'appellent pas entre eux : ils passent par des événements (`forum.answer.created`, `jobs.application.created`…). |
+| API | NestJS (Systalink). Les modules ne s'appellent pas entre eux : ils passent par des événements (`forum.answer.created`, `jobs.application.created`…). |
 | Base | PostgreSQL (Neon). |
 | Temps réel | Passerelle Socket.IO de l'API, espace `/notifications`. |
 | Bictorys | Agrégateur de paiement. |
