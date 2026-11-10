@@ -53,52 +53,48 @@
                 Tableau de bord
               </a>
 
-              <a
-                routerLink="/profile"
-                class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
-                (click)="userMenuOpen.set(false)"
+            @if (userMenuOpen()) {
+              <div
+                class="absolute right-0 top-[calc(100%+12px)] z-50 w-[228px] max-w-[calc(100vw-2rem)] rounded-2xl border border-white/10 bg-[#1e1e1e] p-2 shadow-2xl"
               >
-                Mon profil
-              </a>
+                <p class="truncate px-3 py-2 text-sm font-semibold text-white">
+                  {{ authStore.currentUser()?.username ?? 'Mon compte' }}
+                </p>
 
-              <a
-                routerLink="/notifications"
-                class="flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
-                (click)="userMenuOpen.set(false)"
-              >
-                Notifications
-                @if (unreadCount() > 0) {
-                  <span class="rounded-full bg-[#FBBF24] px-2 py-0.5 text-[12px] font-semibold text-[#141219]">{{ unreadCount() }}</span>
-                }
-              </a>
-
-              <a
-                routerLink="/jobs/alerts"
-                class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
-                (click)="userMenuOpen.set(false)"
-              >
-                Mes alertes emploi
-              </a>
-
-              @if (authStore.currentUser()?.isRecruiter) {
                 <a
-                  routerLink="/jobs/mine"
+                  routerLink="/tableau-de-bord"
+                  class="block rounded-xl px-3 py-2 text-sm font-semibold text-[#FBBF24] transition-colors hover:bg-white/10"
+                  (click)="userMenuOpen.set(false)"
+                >
+                  Tableau de bord
+                </a>
+
+                <a
+                  routerLink="/profile"
                   class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
                   (click)="userMenuOpen.set(false)"
                 >
-                  Mes offres
+                  Mon profil
                 </a>
-              }
 
-              @if (canModerate()) {
                 <a
-                  routerLink="/admin"
+                  routerLink="/notifications"
+                  class="flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+                  (click)="userMenuOpen.set(false)"
+                >
+                  Notifications
+                  @if (unreadCount() > 0) {
+                    <span class="rounded-full bg-[#FBBF24] px-2 py-0.5 text-[12px] font-semibold text-[#141219]">{{ unreadCount() }}</span>
+                  }
+                </a>
+
+                <a
+                  routerLink="/jobs/alerts"
                   class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
                   (click)="userMenuOpen.set(false)"
                 >
-                  Administration
+                  Mes alertes emploi
                 </a>
-              }
 
               <button
                 type="button"
@@ -134,7 +130,6 @@
         </span>
       </button>
     </div>
-  </div>
 
   <div class="navbar__accent lg:hidden" aria-hidden="true"></div>
 

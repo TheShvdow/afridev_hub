@@ -32,6 +32,6 @@ export function mapProjectToCard(
     city: countryNames.get(project.country) ?? project.country,
     author: project.user.displayName ?? project.user.username,
     href: project.demoUrl ?? project.repoUrl,
-    detailHref: `/projects/${project.slug}`,
+    detailHref: `/projets/${project.slug}`
   };
 }
