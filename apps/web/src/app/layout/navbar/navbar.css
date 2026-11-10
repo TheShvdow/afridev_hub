@@ -1,0 +1,244 @@
+/* Menu mobile — dépliage spectaculaire depuis la barre pilule */
+
+:host {
+  display: contents;
+}
+
+nav.navbar {
+  transition:
+    border-radius 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 360ms ease,
+    border-color 360ms ease;
+}
+
+nav.navbar--open {
+  box-shadow:
+    0 0 0 1px rgba(52, 179, 107, 0.18),
+    0 18px 50px rgba(0, 0, 0, 0.45),
+    0 0 60px rgba(52, 179, 107, 0.12);
+  border-color: rgba(226, 232, 240, 0.22);
+}
+
+@media (max-width: 1023px) {
+  nav.navbar--open {
+    border-radius: 28px;
+  }
+}
+
+/* Trait vert qui se dessine sous le header */
+.navbar__accent {
+  height: 1px;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: center;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(52, 179, 107, 0.15) 20%,
+    #34b36b 50%,
+    rgba(52, 179, 107, 0.15) 80%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition:
+    transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 320ms ease;
+}
+
+.navbar--open .navbar__accent {
+  transform: scaleX(1);
+  opacity: 1;
+  transition-delay: 80ms;
+}
+
+/* Panneau : grid 0fr → 1fr pour une hauteur fluide */
+.mobile-menu {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    grid-template-rows 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 280ms ease,
+    visibility 0s linear 400ms;
+}
+
+.mobile-menu--open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    grid-template-rows 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 360ms ease 40ms,
+    visibility 0s linear 0s;
+}
+
+.mobile-menu__inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mobile-menu__list {
+  position: relative;
+}
+
+.mobile-menu__list::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    #34b36b 20%,
+    #66bb6a 50%,
+    #34b36b 80%,
+    transparent
+  );
+  opacity: 0;
+  transform: scaleY(0.4);
+  transform-origin: top;
+  transition:
+    opacity 420ms ease,
+    transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mobile-menu--open .mobile-menu__list::before {
+  opacity: 0.7;
+  transform: scaleY(1);
+  transition-delay: 160ms;
+}
+
+.mobile-menu__item {
+  --i: 0;
+  opacity: 0;
+  transform: translate3d(-12px, -14px, 0) scale(0.96);
+  filter: blur(6px);
+  transition:
+    opacity 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 420ms ease,
+    background-color 220ms ease,
+    color 220ms ease;
+  transition-delay: 0ms;
+}
+
+.mobile-menu--open .mobile-menu__item {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: blur(0);
+  transition-delay: calc(120ms + (var(--i) * 58ms));
+}
+
+.mobile-menu__link {
+  position: relative;
+  overflow: hidden;
+}
+
+.mobile-menu__link::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 6px;
+  height: 1px;
+  background: linear-gradient(90deg, #34b36b, transparent 70%);
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0;
+  transition:
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 240ms ease;
+}
+
+.mobile-menu__link:hover::after,
+.mobile-menu__link:focus-visible::after {
+  transform: scaleX(1);
+  opacity: 0.85;
+}
+
+/* Morphing hamburger → X */
+.nav-toggle__icon {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 14px;
+}
+
+.nav-toggle__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  transition:
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 240ms ease,
+    top 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-toggle__bar:nth-child(1) {
+  top: 0;
+}
+.nav-toggle__bar:nth-child(2) {
+  top: 6px;
+}
+.nav-toggle__bar:nth-child(3) {
+  top: 12px;
+}
+
+.navbar--open .nav-toggle__bar:nth-child(1) {
+  top: 6px;
+  transform: rotate(45deg);
+}
+.navbar--open .nav-toggle__bar:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0.4);
+}
+.navbar--open .nav-toggle__bar:nth-child(3) {
+  top: 6px;
+  transform: rotate(-45deg);
+}
+
+.nav-toggle {
+  transition:
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 240ms ease,
+    border-color 240ms ease,
+    box-shadow 320ms ease;
+}
+
+.navbar--open .nav-toggle {
+  border-color: rgba(52, 179, 107, 0.45);
+  background: rgba(52, 179, 107, 0.12);
+  box-shadow: 0 0 18px rgba(52, 179, 107, 0.2);
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  nav.navbar,
+  .navbar__accent,
+  .mobile-menu,
+  .mobile-menu__list::before,
+  .mobile-menu__item,
+  .mobile-menu__link::after,
+  .nav-toggle,
+  .nav-toggle__bar {
+    transition: none !important;
+  }
+
+  .mobile-menu:not(.mobile-menu--open) {
+    display: none;
+  }
+
+  .mobile-menu--open .mobile-menu__item {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}

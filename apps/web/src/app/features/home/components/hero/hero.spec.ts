@@ -4,6 +4,7 @@ import { Hero, SWAP_DELAY_MS } from './hero';
 
 describe('Hero — titre qui change', () => {
   let fixture: ComponentFixture<Hero>;
+  let playMock: jest.Mock;
 
   const bouton = () => (fixture.nativeElement as HTMLElement).querySelector('h1 button') as HTMLButtonElement;
   const phrases = () => {
@@ -15,14 +16,46 @@ describe('Hero — titre qui change', () => {
   };
   const visible = (span: HTMLElement) => span.className.includes('opacity-100');
 
+  const mockMatchMedia = (matchesReducedMotion = false) => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: jest.fn().mockImplementation((query: string) => ({
+        matches: matchesReducedMotion && query.includes('prefers-reduced-motion'),
+        media: query,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      })),
+    });
+  };
+
   beforeEach(async () => {
     jest.useFakeTimers();
+    mockMatchMedia(false);
+    playMock = jest.fn().mockResolvedValue(undefined);
+    Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+      configurable: true,
+      writable: true,
+      value: playMock,
+    });
+    Object.defineProperty(HTMLMediaElement.prototype, 'pause', {
+      configurable: true,
+      writable: true,
+      value: jest.fn(),
+    });
     await TestBed.configureTestingModule({ imports: [Hero], providers: [provideRouter([])] }).compileComponents();
     fixture = TestBed.createComponent(Hero);
     fixture.detectChanges();
   });
 
-  afterEach(() => jest.useRealTimers());
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+  });
 
   it('affiche « par les devs » en vert à l\'arrivée, « et pour les devs » étant masqué', () => {
     const { par, pour } = phrases();
@@ -124,5 +157,53 @@ describe('Hero — titre qui change', () => {
 
     expect(h1.className).toContain('text-[min(48px,calc((100vw-40px)/8))]');
     expect(bouton().className).toContain('whitespace-nowrap');
+  });
+
+  it('couvre le viewport mobile (svh) et garde un poster toujours visible', () => {
+    const section = (fixture.nativeElement as HTMLElement).querySelector('section')!;
+    const poster = (fixture.nativeElement as HTMLElement).querySelector('img[src="assets/images/hero_img.png"]');
+
+    expect(section.className).toContain('min-h-[100svh]');
+    expect(poster).toBeTruthy();
+  });
+
+  it('joue la vidéo hero en boucle en arrière-plan (muette, autoplay, playsinline)', async () => {
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    const video = (fixture.nativeElement as HTMLElement).querySelector('video') as HTMLVideoElement;
+    const source = video.querySelector('source');
+
+    expect(fixture.componentInstance.useVideo()).toBe(true);
+    expect(video).toBeTruthy();
+    expect(video.autoplay).toBe(true);
+    expect(video.loop).toBe(true);
+    expect(video.hasAttribute('playsinline')).toBe(true);
+    expect(video.hasAttribute('webkit-playsinline')).toBe(true);
+    expect(video.getAttribute('poster')).toBe('assets/images/hero_img.png');
+    expect(source?.getAttribute('src')).toBe('assets/images/hero.mp4');
+    expect(playMock).toHaveBeenCalled();
+  });
+
+  it('repasse sur le poster si la vidéo échoue (mobile / PWA / hors-ligne)', () => {
+    expect(fixture.componentInstance.useVideo()).toBe(true);
+    expect((fixture.nativeElement as HTMLElement).querySelector('video')).toBeTruthy();
+
+    fixture.componentInstance.onVideoError();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.useVideo()).toBe(false);
+    expect((fixture.nativeElement as HTMLElement).querySelector('video')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('img[src="assets/images/hero_img.png"]')).toBeTruthy();
+  });
+
+  it('désactive la vidéo si prefers-reduced-motion', () => {
+    mockMatchMedia(true);
+
+    const local = TestBed.createComponent(Hero);
+    local.detectChanges();
+
+    expect(local.componentInstance.useVideo()).toBe(false);
+    expect(local.nativeElement.querySelector('video')).toBeNull();
   });
 });

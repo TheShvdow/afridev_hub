@@ -7,7 +7,7 @@ import { AppModule } from './app.module';
 import { initMonitoring } from './common/monitoring';
 import helmet from 'helmet';
 import type { Request, Response } from 'express';
-import * as compression from 'compression';
+import compression from 'compression';
 import { corsOrigins } from './common/cors';
 import { applyEnvelopeToDocument } from './common/swagger/envelope.document';
 import { SWAGGER_OAUTH_SCRIPT, SWAGGER_OAUTH_SCRIPT_PATH } from './common/swagger/oauth-login.script';
