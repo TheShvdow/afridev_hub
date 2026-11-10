@@ -49,7 +49,7 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
         heading: 'Hébergement',
         items: [
           'Site web (interface) : Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis.',
-          'Serveur applicatif (API) : Render Services, Inc., 525 Brannan Street, Suite 300, San Francisco, CA 94107, États-Unis.',
+          'Serveur applicatif (API) : Systalink (platform-systalink.com).',
           'Base de données : Neon, hébergée en Allemagne (Francfort).',
           'Fichiers envoyés (avatars, CV) : Cloudflare, Inc. (stockage R2).',
         ],
@@ -209,7 +209,7 @@ export const LEGAL_DOCS: Record<LegalSlug, LegalDoc> = {
         ],
         items: [
           'Vercel (États-Unis) : diffusion du site.',
-          'Render (États-Unis) : exécution du serveur applicatif.',
+          'Systalink (platform-systalink.com) : exécution du serveur applicatif.',
           'Neon (Allemagne) : base de données.',
           'Upstash : stockage temporaire des sessions de connexion.',
           'Cloudflare R2 : fichiers que vous envoyez (avatar, CV).',
