@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs';
 import { AuthStore } from './core/store/auth.store';
 import { RealtimeService } from './core/services/realtime.service';
+import { PwaUpdateService } from './core/services/pwa-update.service';
 import { Navbar } from './layout/navbar/navbar';
 import { Footer } from './layout/footer/footer';
 import { AppToastContainer } from './layout/toast-container/toast-container.component';
@@ -25,6 +26,7 @@ export class AppComponent implements OnInit {
   private readonly router = inject(Router);
   // Instancié ici : la connexion temps réel suit l'état de connexion du membre.
   private readonly realtime = inject(RealtimeService);
+  private readonly pwaUpdate = inject(PwaUpdateService);
 
   // Les écrans d'authentification et le tableau de bord (qui a sa barre latérale) sont pleine page :
   // la barre de navigation et le pied de page du site sont masqués.
@@ -40,5 +42,6 @@ export class AppComponent implements OnInit {
     // Rehydrater l'état auth depuis le token stocké (si présent)
     this.authStore.initializeAuth();
     this.chromeHidden.set(hidesSiteChrome(this.router.url));
+    this.pwaUpdate.init();
   }
 }

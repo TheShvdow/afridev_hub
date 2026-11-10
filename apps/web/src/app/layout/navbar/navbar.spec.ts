@@ -75,16 +75,34 @@ describe('Navbar', () => {
     fixture.detectChanges();
     const nav = fixture.nativeElement.querySelector('nav') as HTMLElement;
     const toggle = fixture.nativeElement.querySelector('button[aria-label="Ouvrir le menu"]') as HTMLButtonElement;
-    expect(nav.classList).not.toContain('max-lg:rounded-[28px]');
+    expect(nav.classList).not.toContain('navbar--open');
+    expect(nav.querySelector('.mobile-menu')?.classList).not.toContain('mobile-menu--open');
 
     toggle.click();
     fixture.detectChanges();
 
     // Le panneau est dans la colonne de la barre, sinon il se placerait à côté du logo.
     expect(nav.classList).toContain('flex-col');
-    expect(nav.classList).toContain('max-lg:rounded-[28px]');
-    expect(nav.querySelectorAll('ul li a').length).toBeGreaterThanOrEqual(5);
+    expect(nav.classList).toContain('navbar--open');
+    expect(nav.querySelector('.mobile-menu')?.classList).toContain('mobile-menu--open');
+    expect(nav.querySelectorAll('.mobile-menu__list li a').length).toBeGreaterThanOrEqual(5);
     expect(fixture.nativeElement.querySelector('button[aria-label="Fermer le menu"]')).toBeTruthy();
+  });
+
+  it('anime le panneau mobile via les classes d’état (ouverture stylée)', () => {
+    fixture.detectChanges();
+    const menu = fixture.nativeElement.querySelector('.mobile-menu') as HTMLElement;
+    const items = fixture.nativeElement.querySelectorAll('.mobile-menu__item');
+
+    expect(menu).toBeTruthy();
+    expect(items.length).toBeGreaterThanOrEqual(5);
+    expect(menu.classList.contains('mobile-menu--open')).toBe(false);
+
+    fixture.nativeElement.querySelector('button[aria-label="Ouvrir le menu"]').click();
+    fixture.detectChanges();
+
+    expect(menu.classList.contains('mobile-menu--open')).toBe(true);
+    expect((items[0] as HTMLElement).style.getPropertyValue('--i')).toBe('0');
   });
 
   it('remplace le bouton Rejoindre par l\'icône du compte quand on est connecté', () => {

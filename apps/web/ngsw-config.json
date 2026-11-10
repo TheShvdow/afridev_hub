@@ -16,13 +16,38 @@
       }
     },
     {
+      "name": "pwa-icons",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": [
+          "/assets/icons/**",
+          "/assets/images/logo.png"
+        ]
+      }
+    },
+    {
       "name": "assets",
       "installMode": "lazy",
       "updateMode": "prefetch",
       "resources": {
         "files": [
           "/assets/**",
+          "!/assets/icons/**",
+          "!/assets/**/*.mp4",
+          "!/assets/**/*.webm",
+          "!/assets/**/*.ogg",
           "/*.(svg|cur|jpg|jpeg|png|apng|webp|avif|gif|otf|ttf|woff|woff2)"
+        ]
+      }
+    },
+    {
+      "name": "hero-poster",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": [
+          "/assets/images/hero_img.png"
         ]
       }
     }
