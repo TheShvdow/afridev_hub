@@ -138,24 +138,24 @@ export class UsersService {
   getUserActivity(username: string): Observable<UserActivity> {
     return this.http
       .get<{ data: UserActivity } | UserActivity>(`${this.base}/${encodeURIComponent(username)}/activity`)
-      .pipe(map((res: any) => (res && res.data ? res.data : res)));
+      .pipe(map((res: any) => res?.data ?? res));
   }
 
   getUserBadges(username: string): Observable<UserBadge[]> {
     return this.http
       .get<{ data: UserBadge[] } | UserBadge[]>(`${this.base}/${encodeURIComponent(username)}/badges`)
-      .pipe(map((res: any) => (Array.isArray(res) ? res : res?.data || [])));
+      .pipe(map((res: any) => (Array.isArray(res) ? res : res?.data ?? [])));
   }
 
   becomeRecruiter(companyName: string): Observable<any> {
     return this.http
-      .post<{ data: any } | any>(`${this.base}/me/recruiter`, { companyName })
-      .pipe(map((res: any) => (res && res.data ? res.data : res)));
+      .post<any>(`${this.base}/me/recruiter`, { companyName })
+      .pipe(map((res: any) => res?.data ?? res));
   }
 
   updateAvatar(key: string): Observable<any> {
     return this.http
-      .patch<{ data: any } | any>(`${this.base}/me/avatar`, { key })
-      .pipe(map((res: any) => (res && res.data ? res.data : res)));
+      .patch<any>(`${this.base}/me/avatar`, { key })
+      .pipe(map((res: any) => res?.data ?? res));
   }
 }

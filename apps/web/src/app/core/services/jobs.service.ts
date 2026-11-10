@@ -122,7 +122,7 @@ export interface JobAlert {
 
 export interface CreateJobAlertDto {
   country?: string;
-  mode?: JobMode | string;
+  mode?: string;
   stack?: string[];
   salaryMin?: number;
   currency?: string;
