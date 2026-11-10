@@ -132,6 +132,16 @@ export const appRoutes: Routes = [
       ),
   },
 
+  // ── Classement ────────────────────────────────────────────────────
+  {
+    path: 'leaderboard',
+    loadComponent: () =>
+      import('./features/gamification/leaderboard/leaderboard.component').then(
+        (m) => m.LeaderboardComponent
+      ),
+    title: 'Classement — AfriDev Hub',
+  },
+
   // ── Administration ────────────────────────────────────────────────
   {
     path: 'admin',

@@ -145,3 +145,50 @@
     }
   </div>
 </section>
+    <section class="mx-auto mt-8 w-full max-w-[1100px] px-4 sm:px-6 lg:px-0">
+      <h2 class="mb-4 text-[24px] font-bold text-[#141219]">Activité récente</h2>
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div class="rounded-[14px] bg-white p-6 shadow-sm">
+          <h3 class="mb-3 text-[18px] font-semibold text-[#141219]">Questions</h3>
+          @for (post of activity()?.recentPosts || []; track post.id) {
+            <a [routerLink]="['/forum', post.id]" class="block py-2 text-[16px] text-[#0F6932]">{{ post.title }}</a>
+          }
+          @if ((activity()?.recentPosts || []).length === 0) {
+            <p class="text-[16px] text-[#64748B]">Aucune question</p>
+          }
+        </div>
+        <div class="rounded-[14px] bg-white p-6 shadow-sm">
+          <h3 class="mb-3 text-[18px] font-semibold text-[#141219]">Réponses</h3>
+          @for (ans of activity()?.recentAnswers || []; track ans.id) {
+            <a [routerLink]="['/forum', ans.post.id]" class="block py-2 text-[16px] text-[#0F6932]">{{ ans.post.title }}</a>
+          }
+          @if ((activity()?.recentAnswers || []).length === 0) {
+            <p class="text-[16px] text-[#64748B]">Aucune réponse</p>
+          }
+        </div>
+        <div class="rounded-[14px] bg-white p-6 shadow-sm">
+          <h3 class="mb-3 text-[18px] font-semibold text-[#141219]">Projets</h3>
+          @for (proj of activity()?.recentProjects || []; track proj.id) {
+            <a [routerLink]="['/projects', proj.slug]" class="block py-2 text-[16px] text-[#0F6932]">{{ proj.name }}</a>
+          }
+          @if ((activity()?.recentProjects || []).length === 0) {
+            <p class="text-[16px] text-[#64748B]">Aucun projet</p>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="mx-auto mt-8 w-full max-w-[1100px] px-4 sm:px-6 lg:px-0">
+      <h2 class="mb-4 text-[24px] font-bold text-[#141219]">Badges</h2>
+      <div class="flex flex-wrap gap-3">
+        @for (ub of badges(); track ub.id) {
+          <div class="flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm">
+            <span>{{ ub.badge.icon }}</span>
+            <span class="text-[16px] font-medium text-[#141219]">{{ ub.badge.name }}</span>
+          </div>
+        }
+        @if (badges().length === 0) {
+          <p class="text-[16px] text-[#64748B]">Aucun badge</p>
+        }
+      </div>
+    </section>

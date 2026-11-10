@@ -29,6 +29,7 @@ export class Navbar {
     { label: 'Mentorat', link: '/mentorat' },
     { label: 'Emplois', link: '/jobs' },
     { label: 'Communautés', link: '/communautes' },
+    { label: 'Classement', link: '/leaderboard' },
   ];
 
   /** Les modérateurs et administrateurs accèdent à l'administration. */

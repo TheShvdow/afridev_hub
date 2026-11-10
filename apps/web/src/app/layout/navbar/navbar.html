@@ -1,166 +1,173 @@
 <nav
   [ngClass]="{'max-lg:rounded-[28px]': menuOpen()}"
-  class="fixed top-0 left-0 right-0 z-50 flex flex-col justify-center top-3 px-4 py-2 sm:px-[14px] md:px-[16px] pointer-events-auto w-full max-w-[1000px] mx-auto rounded-[1000px] border border-slate-[#E2E8F029] bg-[#1e1e1e]/90 backdrop-blur-md"
-  aria-label="Navigation principale">
+  class="fixed left-2 right-2 top-2 z-50 mx-auto flex max-w-[1000px] flex-col sm:left-4 sm:right-4 sm:top-3"
+  aria-label="Navigation principale"
+>
+  <div
+    [class]="
+      'border border-white/10 bg-[#1e1e1e]/90 backdrop-blur-md transition-colors ' +
+      (menuOpen() ? 'rounded-[24px]' : 'rounded-full')
+    "
+  >
+    <div class="flex items-center justify-between gap-2 px-3 py-2 sm:px-4">
+      <a routerLink="/" class="flex shrink-0 items-center" aria-label="AfriDev Hub">
+        <img src="assets/images/logo.png" alt="AfriDev Hub" class="h-7 w-auto sm:h-8" />
+      </a>
 
-
-  <div class="w-full flex items-center justify-between">
-    <a routerLink="/" class="flex shrink-0 items-center" aria-label="AfriDev Hub">
-      <img src="assets/images/logo.png" alt="AfriDev Hub" class="h-8 w-auto" />
-    </a>
-
-    <ul class="hidden items-center lg:flex lg:gap-2">
-      @for (item of links; track item.label) {
-        <li>
-          <a
-            [routerLink]="item.link"
-            [fragment]="item.fragment"
-            class="flex h-9 items-center px-3 text-[15px] font-semibold leading-6 text-white transition-colors hover:text-white/80"
-          >{{ item.label }}</a>
-        </li>
-      }
-    </ul>
-
-    <div class="flex items-center gap-3">
-      @if (authStore.isAuthenticated()) {
-        <div class="relative">
-          <button
-            type="button"
-            class="relative inline-flex size-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/10"
-            (click)="toggleUserMenu($event)"
-            [attr.aria-label]="unreadCount() > 0 ? 'Menu du compte, ' + badgeCount() + ' notification(s) non lue(s)' : 'Menu du compte'"
-            [attr.aria-expanded]="userMenuOpen()"
-          >
-            <app-icon name="user" class="size-5"></app-icon>
-            @if (unreadCount() > 0) {
-              <span class="absolute -right-0.5 -top-0.5 flex min-w-[18px] items-center justify-center rounded-full bg-[#FBBF24] px-1 text-[11px] font-bold leading-[18px] text-[#141219]" aria-hidden="true">{{ badgeCount() }}</span>
-            }
-          </button>
-
-          @if (userMenuOpen()) {
-            <div
-              class="absolute right-0 top-[calc(100%+12px)] z-50 w-[228px] rounded-2xl border border-white/10 bg-[#1e1e1e] p-2 shadow-2xl"
-            >
-              <p class="truncate px-3 py-2 text-sm font-semibold text-white">
-                {{ authStore.currentUser()?.username ?? 'Mon compte' }}
-              </p>
-
-              <a
-                routerLink="/tableau-de-bord"
-                class="block rounded-xl px-3 py-2 text-sm font-semibold text-[#FBBF24] transition-colors hover:bg-white/10"
-                (click)="userMenuOpen.set(false)"
-              >
-                Tableau de bord
-              </a>
-
-              <a
-                routerLink="/profile"
-                class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
-                (click)="userMenuOpen.set(false)"
-              >
-                Mon profil
-              </a>
-
-              <a
-                routerLink="/notifications"
-                class="flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
-                (click)="userMenuOpen.set(false)"
-              >
-                Notifications
-                @if (unreadCount() > 0) {
-                  <span class="rounded-full bg-[#FBBF24] px-2 py-0.5 text-[12px] font-semibold text-[#141219]">{{ unreadCount() }}</span>
-                }
-              </a>
-
-              <a
-                routerLink="/jobs/alerts"
-                class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
-                (click)="userMenuOpen.set(false)"
-              >
-                Mes alertes emploi
-              </a>
-
-              @if (authStore.currentUser()?.isRecruiter) {
-                <a
-                  routerLink="/jobs/mine"
-                  class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
-                  (click)="userMenuOpen.set(false)"
-                >
-                  Mes offres
-                </a>
-              }
-
-              @if (canModerate()) {
-                <a
-                  routerLink="/admin"
-                  class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
-                  (click)="userMenuOpen.set(false)"
-                >
-                  Administration
-                </a>
-              }
-
-              <button
-                type="button"
-                class="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
-                (click)="signOut()"
-              >
-                Déconnexion
-              </button>
-            </div>
-          }
-        </div>
-      } @else {
-        <a routerLink="/auth/login" class="text-[#34B36B] border border-[#34B36B] rounded-[1000px] px-4 py-2 text-[15px] font-semibold leading-6 transition-colors hover:bg-[#0F6932] hover:text-white">
-          Rejoindre
-        </a>
-      }
-      <button
-        type="button"
-        class="inline-flex size-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/10 lg:hidden"
-        (click)="menuOpen.set(!menuOpen())"
-        [attr.aria-label]="menuOpen() ? 'Fermer le menu' : 'Ouvrir le menu'"
-        [attr.aria-expanded]="menuOpen()"
-      >
-        @if (menuOpen()) {
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-        } @else {
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="size-5" aria-hidden="true">
-            <path d="M4 7h16" />
-            <path d="M4 12h16" />
-            <path d="M4 17h16" />
-          </svg>
-        }
-      </button>
-    </div>
-  </div>
-
-  @if (menuOpen()) {
-    <div class="mt-2 w-full border-t border-white/10 px-2 pb-3 pt-4 lg:hidden">
-      <ul class="flex flex-col gap-1">
+      <ul class="hidden items-center gap-0 lg:flex xl:gap-2">
         @for (item of links; track item.label) {
           <li>
             <a
               [routerLink]="item.link"
               [fragment]="item.fragment"
-              class="block rounded-xl px-3 py-2.5 text-base font-semibold leading-7 text-white/90 transition-colors hover:bg-white/10 hover:text-white"
-              (click)="menuOpen.set(false)"
+              class="flex h-9 items-center px-2.5 text-[14px] font-semibold leading-6 text-white transition-colors hover:text-white/80 xl:px-3 xl:text-[15px]"
             >{{ item.label }}</a>
           </li>
         }
-        @if (authStore.isAuthenticated()) {
-          <li>
-            <a
-              routerLink="/tableau-de-bord"
-              class="block rounded-xl px-3 py-2.5 text-base font-semibold leading-7 text-[#FBBF24] transition-colors hover:bg-white/10"
-              (click)="menuOpen.set(false)"
-            >Tableau de bord</a>
-          </li>
-        }
       </ul>
+
+      <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+        @if (authStore.isAuthenticated()) {
+          <div class="relative">
+            <button
+              type="button"
+              class="relative inline-flex size-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/10"
+              (click)="toggleUserMenu($event)"
+              [attr.aria-label]="unreadCount() > 0 ? 'Menu du compte, ' + badgeCount() + ' notification(s) non lue(s)' : 'Menu du compte'"
+              [attr.aria-expanded]="userMenuOpen()"
+            >
+              <app-icon name="user" class="size-5"></app-icon>
+              @if (unreadCount() > 0) {
+                <span class="absolute -right-0.5 -top-0.5 flex min-w-[18px] items-center justify-center rounded-full bg-[#FBBF24] px-1 text-[11px] font-bold leading-[18px] text-[#141219]" aria-hidden="true">{{ badgeCount() }}</span>
+              }
+            </button>
+
+            @if (userMenuOpen()) {
+              <div
+                class="absolute right-0 top-[calc(100%+12px)] z-50 w-[228px] max-w-[calc(100vw-2rem)] rounded-2xl border border-white/10 bg-[#1e1e1e] p-2 shadow-2xl"
+              >
+                <p class="truncate px-3 py-2 text-sm font-semibold text-white">
+                  {{ authStore.currentUser()?.username ?? 'Mon compte' }}
+                </p>
+
+                <a
+                  routerLink="/tableau-de-bord"
+                  class="block rounded-xl px-3 py-2 text-sm font-semibold text-[#FBBF24] transition-colors hover:bg-white/10"
+                  (click)="userMenuOpen.set(false)"
+                >
+                  Tableau de bord
+                </a>
+
+                <a
+                  routerLink="/profile"
+                  class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+                  (click)="userMenuOpen.set(false)"
+                >
+                  Mon profil
+                </a>
+
+                <a
+                  routerLink="/notifications"
+                  class="flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+                  (click)="userMenuOpen.set(false)"
+                >
+                  Notifications
+                  @if (unreadCount() > 0) {
+                    <span class="rounded-full bg-[#FBBF24] px-2 py-0.5 text-[12px] font-semibold text-[#141219]">{{ unreadCount() }}</span>
+                  }
+                </a>
+
+                <a
+                  routerLink="/jobs/alerts"
+                  class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+                  (click)="userMenuOpen.set(false)"
+                >
+                  Mes alertes emploi
+                </a>
+
+                @if (authStore.currentUser()?.isRecruiter) {
+                  <a
+                    routerLink="/jobs/mine"
+                    class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+                    (click)="userMenuOpen.set(false)"
+                  >
+                    Mes offres
+                  </a>
+                }
+
+                @if (canModerate()) {
+                  <a
+                    routerLink="/admin"
+                    class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+                    (click)="userMenuOpen.set(false)"
+                  >
+                    Administration
+                  </a>
+                }
+
+                <button
+                  type="button"
+                  class="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+                  (click)="signOut()"
+                >
+                  Déconnexion
+                </button>
+              </div>
+            }
+          </div>
+        } @else {
+          <a routerLink="/auth/login" class="whitespace-nowrap rounded-full border border-[#34B36B] px-3 py-2 text-[14px] font-semibold leading-6 text-[#34B36B] transition-colors hover:bg-[#0F6932] hover:text-white sm:px-4 sm:text-[15px]">
+            Rejoindre
+          </a>
+        }
+        <button
+          type="button"
+          class="inline-flex size-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/10 lg:hidden"
+          (click)="menuOpen.set(!menuOpen())"
+          [attr.aria-label]="menuOpen() ? 'Fermer le menu' : 'Ouvrir le menu'"
+          [attr.aria-expanded]="menuOpen()"
+          aria-controls="mobile-navigation"
+        >
+          @if (menuOpen()) {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="size-5" aria-hidden="true">
+              <path d="M4 7h16" />
+              <path d="M4 12h16" />
+              <path d="M4 17h16" />
+            </svg>
+          }
+        </button>
+      </div>
     </div>
-  }
+
+    @if (menuOpen()) {
+      <div id="mobile-navigation" class="border-t border-white/10 px-4 pb-4 pt-3 lg:hidden">
+        <ul class="flex flex-col gap-1">
+          @for (item of links; track item.label) {
+            <li>
+              <a
+                [routerLink]="item.link"
+                [fragment]="item.fragment"
+                class="block rounded-xl px-3 py-2.5 text-base font-semibold leading-7 text-white/90 transition-colors hover:bg-white/10 hover:text-white"
+                (click)="menuOpen.set(false)"
+              >{{ item.label }}</a>
+            </li>
+          }
+          @if (authStore.isAuthenticated()) {
+            <li>
+              <a
+                routerLink="/tableau-de-bord"
+                class="block rounded-xl px-3 py-2.5 text-base font-semibold leading-7 text-[#FBBF24] transition-colors hover:bg-white/10"
+                (click)="menuOpen.set(false)"
+              >Tableau de bord</a>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  </div>
 </nav>

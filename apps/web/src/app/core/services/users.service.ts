@@ -1,6 +1,29 @@
+export interface UserBadge {
+  id: string;
+  userId: string;
+  badgeId: string;
+  awardedAt: string;
+  badge: {
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+    condition: string;
+    slug: string;
+    category: string;
+    requiredPoints: number;
+  };
+}
+
+export interface UserActivity {
+  recentPosts: Array<{ id: string; title: string; createdAt: string }>;
+  recentAnswers: Array<{ id: string; createdAt: string; isAccepted: boolean; post: { id: string; title: string; createdAt: string } }>;
+  recentProjects: Array<{ id: string; slug: string; name: string; createdAt: string }>;
+}
+
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 /** Niveau d'expérience déclaré (enum `ExperienceLevel` de l'API). */
@@ -110,5 +133,29 @@ export class UsersService {
     return this.http.get<PublicUserProfile>(
       `${this.base}/${encodeURIComponent(username)}`,
     );
+  }
+
+  getUserActivity(username: string): Observable<UserActivity> {
+    return this.http
+      .get<{ data: UserActivity } | UserActivity>(`${this.base}/${encodeURIComponent(username)}/activity`)
+      .pipe(map((res: any) => res?.data ?? res));
+  }
+
+  getUserBadges(username: string): Observable<UserBadge[]> {
+    return this.http
+      .get<{ data: UserBadge[] } | UserBadge[]>(`${this.base}/${encodeURIComponent(username)}/badges`)
+      .pipe(map((res: any) => (Array.isArray(res) ? res : res?.data ?? [])));
+  }
+
+  becomeRecruiter(companyName: string): Observable<any> {
+    return this.http
+      .post<any>(`${this.base}/me/recruiter`, { companyName })
+      .pipe(map((res: any) => res?.data ?? res));
+  }
+
+  updateAvatar(key: string): Observable<any> {
+    return this.http
+      .patch<any>(`${this.base}/me/avatar`, { key })
+      .pipe(map((res: any) => res?.data ?? res));
   }
 }

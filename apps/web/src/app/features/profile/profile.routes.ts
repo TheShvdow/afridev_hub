@@ -31,4 +31,9 @@ export const PROFILE_ROUTES: Routes = [
       },
     ],
   },
+  {
+    path: 'recruiter',
+    loadComponent: () => import('./recruiter/recruiter.component').then((m) => m.RecruiterComponent),
+    title: 'Devenir recruteur — AfriDev Hub',
+  },
 ];

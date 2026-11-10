@@ -1,4 +1,4 @@
-<section class="min-h-screen bg-[#F8FAFC]">
+<section class="min-h-screen bg-[#F8FAFC] pt-[100px]">
   <div class="mx-auto w-full max-w-[1100px] px-6 py-16 sm:px-10 lg:px-0 lg:py-12">
     <a
       routerLink="/projets"
@@ -146,7 +146,7 @@
               }
               @if (canEdit()) {
                 <a
-                  [routerLink]="['/projects', item.id, 'edit']"
+                  [routerLink]="['/projets', item.id, 'edit']"
                   class="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/30 px-5 text-[15px] font-semibold text-white transition-colors hover:bg-white/10"
                 >
                   Modifier le projet
@@ -255,11 +255,11 @@
         (click)="cancelDelete()"
       ></button>
 
-      <div
-        role="dialog"
+      <dialog
+        open
         aria-modal="true"
         aria-labelledby="delete-project-title"
-        class="relative z-10 w-full max-w-[480px] rounded-[24px] bg-white p-6 shadow-2xl sm:p-8"
+        class="relative z-10 m-0 w-full max-w-[480px] rounded-[24px] border-0 bg-white p-6 shadow-2xl sm:p-8"
       >
         <span
           aria-hidden="true"
@@ -304,7 +304,7 @@
             {{ deleting() ? 'Suppression…' : 'Supprimer définitivement' }}
           </button>
         </div>
-      </div>
+      </dialog>
     </div>
   }
 </section>

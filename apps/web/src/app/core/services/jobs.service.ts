@@ -122,11 +122,14 @@ export interface JobAlert {
 
 export interface CreateJobAlertDto {
   country?: string;
-  mode?: JobMode;
+  mode?: string;
   stack?: string[];
   salaryMin?: number;
   currency?: string;
 }
+
+/** Alias de compatibilité avec les écrans importés (`ApiJob` = offre de l'API). */
+export type ApiJob = JobOffer;
 
 /** 5 alertes au plus par membre, 5 technologies au plus par alerte (`CreateJobAlertDto`). */
 export const MAX_ALERTS = 5;
@@ -281,5 +284,71 @@ export class JobsService {
   /** `DELETE /api/jobs/alerts/{id}` (204) */
   deleteAlert(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/alerts/${encodeURIComponent(id)}`);
+  }
+
+  // Alias de compatibilité pour les écrans importés (noms historiques).
+  listJobs(query: ListJobsQuery = {}): Observable<Paginated<JobOffer>> {
+    return this.list(query);
+  }
+
+  getJob(id: string): Observable<JobOffer> {
+    return this.get(id);
+  }
+
+  createJob(dto: CreateJobDto): Observable<JobOffer> {
+    return this.create(dto);
+  }
+
+  updateJob(id: string, dto: Partial<CreateJobDto>): Observable<JobOffer> {
+    return this.update(id, dto);
+  }
+
+  listMyJobs(): Observable<MyJobOffer[]> {
+    return this.listMine();
+  }
+
+  getRecruiterPlan(): Observable<RecruiterPlan> {
+    return this.getPlan();
+  }
+
+  listJobsForReview(page = 1, limit = 20): Observable<Paginated<JobOffer>> {
+    const params = new HttpParams().set('page', page).set('limit', limit);
+    return this.http.get<Paginated<JobOffer>>(`${this.base}/review`, { params });
+  }
+
+  approveJob(id: string): Observable<JobOffer> {
+    return this.approve(id);
+  }
+
+  rejectJob(id: string, reason: string): Observable<JobOffer> {
+    return this.reject(id, reason);
+  }
+
+  closeJob(id: string): Observable<JobOffer> {
+    return this.close(id);
+  }
+
+  renewJob(id: string): Observable<JobOffer> {
+    return this.renew(id);
+  }
+
+  applyToJob(id: string, dto: ApplyJobDto): Observable<JobApplication> {
+    return this.apply(id, dto);
+  }
+
+  getJobApplications(id: string): Observable<ReceivedApplication[]> {
+    return this.listApplications(id);
+  }
+
+  listJobAlerts(): Observable<JobAlert[]> {
+    return this.listAlerts();
+  }
+
+  createJobAlert(dto: CreateJobAlertDto): Observable<JobAlert> {
+    return this.createAlert(dto);
+  }
+
+  deleteJobAlert(id: string): Observable<void> {
+    return this.deleteAlert(id);
   }
 }
