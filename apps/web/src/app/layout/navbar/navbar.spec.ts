@@ -162,6 +162,25 @@ describe('Navbar', () => {
     expect(fixture.nativeElement.textContent).toContain('Mes offres');
   });
 
+  it('propose « Administration » à la modération seulement', () => {
+    const ouvrirMenu = () => {
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector('button[aria-label="Menu du compte"]').click();
+      realtime.unreadCount.set(0);
+      fixture.detectChanges();
+    };
+
+    store.setTokens('at-1', 'rt-1');
+    store.setUser({ ...user, role: 'MEMBER' });
+    ouvrirMenu();
+    expect(fixture.nativeElement.querySelector('a[routerlink="/admin"]')).toBeNull();
+
+    fixture.nativeElement.querySelector('button[aria-label="Menu du compte"]').click();
+    store.setUser({ ...user, role: 'MODERATOR' });
+    ouvrirMenu();
+    expect(fixture.nativeElement.querySelector('a[routerlink="/admin"]')?.textContent).toContain('Administration');
+  });
+
   it('déconnecte et ferme le menu au clic sur « Déconnexion »', () => {
     store.setTokens('at-1', 'rt-1');
     store.setUser(user);

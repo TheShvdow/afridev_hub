@@ -39,20 +39,6 @@
             }
           </button>
 
-          @if (userMenuOpen()) {
-            <div class="absolute right-0 top-[calc(100%+12px)] z-50 w-[228px] rounded-2xl border border-white/10 bg-[#1e1e1e] p-2 shadow-2xl">
-              <p class="truncate px-3 py-2 text-sm font-semibold text-white">
-                {{ authStore.currentUser()?.username ?? 'Mon compte' }}
-              </p>
-
-              <a
-                routerLink="/tableau-de-bord"
-                class="block rounded-xl px-3 py-2 text-sm font-semibold text-[#FBBF24] transition-colors hover:bg-white/10"
-                (click)="userMenuOpen.set(false)"
-              >
-                Tableau de bord
-              </a>
-
             @if (userMenuOpen()) {
               <div
                 class="absolute right-0 top-[calc(100%+12px)] z-50 w-[228px] max-w-[calc(100vw-2rem)] rounded-2xl border border-white/10 bg-[#1e1e1e] p-2 shadow-2xl"
@@ -96,6 +82,26 @@
                   Mes alertes emploi
                 </a>
 
+                @if (authStore.currentUser()?.isRecruiter) {
+                  <a
+                    routerLink="/jobs/mine"
+                    class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+                    (click)="userMenuOpen.set(false)"
+                  >
+                    Mes offres
+                  </a>
+                }
+
+                @if (canModerate()) {
+                  <a
+                    routerLink="/admin"
+                    class="block rounded-xl px-3 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+                    (click)="userMenuOpen.set(false)"
+                  >
+                    Administration
+                  </a>
+                }
+
               <button
                 type="button"
                 class="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
@@ -130,6 +136,7 @@
         </span>
       </button>
     </div>
+  </div>
 
   <div class="navbar__accent lg:hidden" aria-hidden="true"></div>
 
