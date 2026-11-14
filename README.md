@@ -103,7 +103,7 @@ npm run docker:reset        # repart de zéro (supprime les volumes)
 
 ## Paiements (Bictorys)
 
-Le plan recruteur premium se paie par le checkout hébergé de Bictorys : l'API crée la charge sans moyen de paiement, le front redirige vers la page de Bictorys, puis un webhook (`POST /api/payments/webhooks/bictorys`) et une réconciliation toutes les 10 minutes règlent le paiement. Variables : `BICTORYS_API_URL`, `BICTORYS_API_KEY` (clé publique), `BICTORYS_WEBHOOK_SECRET`, `BICTORYS_COUNTRY` (SN par défaut).
+Le plan recruteur premium se paie par le checkout hébergé de Bictorys : l'API crée la charge sans moyen de paiement, le front redirige vers la page de Bictorys, puis un webhook (`POST /api/payments/webhooks/bictorys`) et une réconciliation toutes les heures règlent le paiement. Variables : `BICTORYS_API_URL`, `BICTORYS_API_KEY` (clé publique), `BICTORYS_WEBHOOK_SECRET`, `BICTORYS_COUNTRY` (SN par défaut).
 
 - `WEB_URL` doit être une adresse publique, même en local : Bictorys refuse (403) les URLs de retour qui contiennent `localhost`.
 - Les frais payés par le client s'ajoutent au prix (25 000 devient 25 507,53 en sandbox) ; le prix reste fixé par le serveur.

@@ -205,7 +205,7 @@ export class ProjectNewComponent {
         next: (project) => {
           this.loading.set(false);
           this.toast.success('Le projet a été mis à jour.');
-          this.router.navigate(['/projets', project.slug]);
+          this.router.navigate(['/projects', project.slug]);
         },
         error: (error) => {
           this.loading.set(false);
