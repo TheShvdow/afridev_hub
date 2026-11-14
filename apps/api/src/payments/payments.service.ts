@@ -286,7 +286,10 @@ export class PaymentsService {
 
   // Réconciliation (job planifié) : relit les paiements restés en attente auprès de Bictorys.
   // Une fenêtre évite de doubler les webhooks récents ; au-delà de 24 h, on ne touche plus.
-  @Cron(CronExpression.EVERY_10_MINUTES)
+  // Toutes les heures, à la même minute que l'expiration des offres : la base (Neon, mise en veille après
+  // 5 min d'inactivité) n'est réveillée qu'une fois par heure. Toutes les 10 min, elle ne dormait jamais
+  // et épuisait le quota mensuel de l'offre gratuite. Le webhook Bictorys reste le chemin principal.
+  @Cron(CronExpression.EVERY_HOUR, { name: 'payments-reconcile' })
   async reconcilePendingPayments(now: Date = new Date()): Promise<{ checked: number; settled: number }> {
     const pending = await this.prisma.payment.findMany({
       where: {
