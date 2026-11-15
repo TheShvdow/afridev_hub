@@ -9,6 +9,7 @@ import helmet from 'helmet';
 import type { Request, Response } from 'express';
 import compression from 'compression';
 import { corsOrigins } from './common/cors';
+import { trustProxy } from './common/throttle';
 import { applyEnvelopeToDocument } from './common/swagger/envelope.document';
 import { SWAGGER_OAUTH_SCRIPT, SWAGGER_OAUTH_SCRIPT_PATH } from './common/swagger/oauth-login.script';
 
@@ -22,6 +23,9 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
 
   // ── Sécurité ─────────────────────────────────────────────────────
+  // Derrière le proxy de Render : req.ip doit être l'IP du visiteur, pas celle du proxy,
+  // sinon tous les visiteurs partagent les mêmes limites de requêtes.
+  app.set('trust proxy', trustProxy(process.env));
   app.use(helmet());
   app.use(compression());
 
