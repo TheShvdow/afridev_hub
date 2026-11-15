@@ -3,6 +3,7 @@ import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { throttlers } from './common/throttle';
 import { configValidationSchema } from './config/config.schema';
 import { LoggerModule } from 'nestjs-pino';
 import { PrismaModule } from './prisma/prisma.module';
@@ -41,12 +42,7 @@ import { serializeRequest, serializeResponse } from './common/logging/request-se
     EventEmitterModule.forRoot(),
 
     // ── Rate limiting ─────────────────────────────────────────────
-    ThrottlerModule.forRoot([
-      {
-        ttl:   Number.parseInt(process.env['THROTTLE_TTL']   ?? '60000'),
-        limit: Number.parseInt(process.env['THROTTLE_LIMIT'] ?? '60'),
-      },
-    ]),
+    ThrottlerModule.forRoot(throttlers(process.env)),
 
     // ── Logging ───────────────────────────────────────────────────
     LoggerModule.forRoot({

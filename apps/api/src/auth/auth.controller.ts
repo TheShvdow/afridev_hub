@@ -16,6 +16,7 @@ import { Request, Response } from 'express';
 import { OAuthCallbackFilter } from './filters/oauth-callback.filter';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
+import { EMAIL_THROTTLER } from '../common/throttle';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ResendVerificationDto, VerifyEmailDto } from './dto/verify-email.dto';
@@ -67,7 +68,8 @@ export class AuthController {
   // ── Connexion ────────────────────────────────────────────────────────
 
   @Post('login')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  // 5 essais par minute par IP, et 5 par minute sur une même adresse e-mail.
+  @Throttle({ default: { limit: 5, ttl: 60000 }, [EMAIL_THROTTLER]: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Se connecter' })
   @ApiData({ type: AuthTokensDto, description: 'Tokens d\'accès et de rafraîchissement' })

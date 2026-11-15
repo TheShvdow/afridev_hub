@@ -8,6 +8,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { AuthStore } from '../../../core/store/auth.store';
 import { extractApiErrorCode, extractApiErrorMessage } from '../../../core/utils/api-error';
 import { decodeJwtPayload } from '../../../core/utils/jwt';
+import { needsOnboarding } from '../../../core/utils/onboarding';
 
 /**
  * Page de retour du fournisseur OAuth (GitHub, Google).
@@ -55,6 +56,11 @@ export class OauthCallback implements OnInit {
     this.authService.getMe().subscribe({
       next: (user) => {
         this.authStore.setUser(user);
+        // Profil encore vide (première connexion GitHub ou Google) : écrans de bienvenue.
+        if (needsOnboarding(user)) {
+          this.router.navigate(['/bienvenue'], { queryParams: { returnUrl: '/' } });
+          return;
+        }
         this.router.navigateByUrl('/');
       },
       error: (err) => {
